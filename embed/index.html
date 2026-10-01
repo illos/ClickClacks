@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#111415" />
+    <title>Power Roller · Embedded tray</title>
+    <style>
+      body { margin: 0; background: #111415; color: #e8e5df; font-family: system-ui, sans-serif; }
+      #boot-message { position: fixed; inset: 0; z-index: 10; margin: 0; padding: 24px; background: #111415; font-size: 14px; }
+      #boot-message[hidden] { display: none; }
+    </style>
+  </head>
+  <body class="mini-tray">
+    <p id="boot-message" role="status">Loading dice tray…</p>
+    <div id="root" data-tray-history="true"></div>
+    <script type="module" src="/web/embed-demo/tray.ts"></script>
+  </body>
+</html>

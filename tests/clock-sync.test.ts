@@ -3,9 +3,10 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { startClockSync } from '../web/dice-demo-v2/clock-sync';
 
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
-function environment() {
+function environment(framed = false) {
   vi.useFakeTimers();
-  const events = new EventTarget(), page = new EventTarget();
+  const events = new EventTarget(), page = Object.assign(new EventTarget(), { parent: null as EventTarget | null });
+  page.parent = framed ? new EventTarget() : page;
   const doc = { hidden: false, addEventListener: events.addEventListener.bind(events), removeEventListener: events.removeEventListener.bind(events) };
   vi.stubGlobal('document', doc); vi.stubGlobal('window', page);
   vi.stubGlobal('performance', { now: () => Date.now() });
@@ -22,6 +23,24 @@ it('gathers seven independent samples in one round trip and still excludes slowe
   await vi.advanceTimersByTimeAsync(599); expect(update).not.toHaveBeenCalled();
   await vi.advanceTimersByTimeAsync(1); expect(update).toHaveBeenLastCalledWith({ offset: 10000, uncertainty: 60 });
   stop(); expect(vi.getTimerCount()).toBe(0);
+});
+
+it.each([true, false])('iframe=%s preserves first-click readiness while focus refreshes the clock', async framed => {
+  const { doc, events, page } = environment(framed), update = vi.fn();
+  const ping = vi.fn(async () => Date.now());
+  const stop = startClockSync(ping, () => true, update);
+  await vi.advanceTimersByTimeAsync(0);
+  expect(update.mock.calls.at(-1)![0]).not.toBeNull();
+  update.mockClear();
+  page.dispatchEvent(new Event('focus'));
+  if (framed) expect(update).not.toHaveBeenCalled();
+  else expect(update).toHaveBeenLastCalledWith(null);
+  await vi.advanceTimersByTimeAsync(100);
+  expect(ping).toHaveBeenCalledTimes(14);
+  expect(update.mock.calls.at(-1)![0]).not.toBeNull();
+  doc.hidden = true; events.dispatchEvent(new Event('visibilitychange'));
+  expect(update).toHaveBeenLastCalledWith(null);
+  stop();
 });
 
 it('rejects a batch invalidated by backgrounding and collects fresh samples on return', async () => {

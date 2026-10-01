@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Power Roller · Embed demo</title>
+  </head>
+  <body>
+    <main class="embed-demo">
+      <section>
+        <p class="eyebrow">Power Roller · Embed demo</p>
+        <h1>A dice tray for your site.</h1>
+        <p>Include the tray, roll controls and six recent results on any page.</p>
+        <form id="embed-options">
+          <label for="room">Shared room <span>(optional)</span></label>
+          <div class="room-input">
+            <input id="room" autocomplete="off" placeholder="Room code or invite link" />
+            <button type="submit">Apply</button>
+          </div>
+          <p id="room-status" role="status">Leave empty for a personal tray.</p>
+        </form>
+        <label for="snippet">Paste this HTML into your page</label>
+        <textarea id="snippet" readonly rows="8" spellcheck="false"></textarea>
+        <button id="copy" type="button">Copy embed code</button>
+        <p id="copy-status" role="status" aria-live="polite"></p>
+      </section>
+      <section class="preview" aria-label="Embed preview">
+        <iframe id="tray" title="Power Roller dice tray" width="480" height="420"></iframe>
+      </section>
+    </main>
+    <script type="module" src="/web/embed-demo/main.ts"></script>
+  </body>
+</html>

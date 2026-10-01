@@ -456,3 +456,25 @@ fetch, bounded results, clear/new-track boundaries, credentials and retries.
 The complete delayed-preparation/second-tap/fresh-observer journey is authored in
 `tests/browser-overlapping-rolls.mjs` for the updated backend. Physical iOS audio
 and the previously agreed accessibility/device release checks remain pending.
+
+## Private listening preview
+
+Owner requested Tailscale hosting after the public sound demo failed to load.
+The multiple-entry production build had emitted renderer/font helpers that
+imported the main application entry. That entry tried to mount its React root
+on the demo document, producing React error 299 before demo initialization.
+Earlier demo checks had exercised the unbundled development server; they did
+not catch this built-page dependency error.
+
+The normal production build again has only its original site entry. The sound
+demo builds independently with `examples/critical-sounds/vite.config.ts` into
+ignored `.preview/critical-sounds`, outside the public artifact. It serves over
+a dedicated Tailscale HTTPS endpoint backed by a loopback-only preview server.
+No backend or roll behavior changed in this correction.
+
+Typecheck, isolated demo build and normal site build passed. The actual built
+Tailscale page loaded its canvas and enabled Roll without startup errors;
+alternating forced natural success/failure played distinct non-silent buffers,
+volume and mute worked, and preferences stayed unchanged. The regression journey
+is `tests/browser-critical-sound-preview.mjs`. Production output was checked to
+exclude the demo HTML.

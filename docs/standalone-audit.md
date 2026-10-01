@@ -496,3 +496,34 @@ audio/session/asset tests passed, including detaching decode buffers and fetch
 retry. The built listening demo now exercises the default production player;
 Chromium confirmed the actual .768s sword and 1.3s fail buffers at reveal, volume,
 mute, unchanged preferences and no startup errors. No backend change is needed.
+
+## Live floating tray and log movement
+
+The owner requested promotion of peer PiP prototype f619cd2: a top-menu icon only
+on supported desktop browsers, the original tray and controls, and the six most
+recent revealed rolls behind the dice. There is no alternate popup fallback.
+`web/site/popout.ts` opens Document Picture-in-Picture and boots the original site
+inside the same-origin tray iframe. It shares the current table and participant
+instead of claiming a second tab identity. Controls and the two-second roll gate
+stay synchronized between windows in memory; counts, modifiers and bonus dice
+are not persisted. Profile/preferences changes synchronize through browser storage.
+The opener pauses its heartbeat/customization and audio while PiP is active, so
+one player and one audio owner remain. Closing restores the normal player; table
+departure closes the floating window. Startup failures retain a visible error and
+support retry. The tested iframe-focus readiness fix from peer6319529 is included:
+focusing an already-visible iframe refreshes clock samples without disabling Roll
+between pointerdown and click. Background/disconnect still invalidate the clock.
+
+The main log retains its existing history limit and row contents. New rows and
+displaced rows slide down over360ms; rows stay fully opaque, with a48px bottom
+viewport fade only when more scroll content remains. Reaching the bottom removes
+that mask. Reduced motion and high contrast are respected by both log displays.
+The production build has separate site and PiP entry graphs and publishes the
+floating entry under `pip/`, keeping auxiliary startup out of the main entry.
+
+Typecheck, both production entry builds and five clock tests passed. The built
+headed Chromium journey in `tests/browser-live-popout.mjs` passed: seven real
+rolls with persisted readback, one table member, synchronized controls/design/
+cooldown, one audio owner, six overlay rows and all main rows, vertical containment,
+slide movement and bottom-only fading, reduced-motion/high-contrast, close/reopen,
+table departure, hidden icon on mobile/unsupported browsers and failed-module retry.

@@ -22,7 +22,7 @@
   },
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 9591 --strictPort",
-    "build": "vite build",
+    "build": "node scripts/build-site.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "cli": "node scripts/cli.ts"

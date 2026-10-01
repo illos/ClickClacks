@@ -76,9 +76,21 @@ export function startClockSync(
       update(null);
     } else resume();
   };
+  function focus() {
+    if (window.parent === window) {
+      resume();
+      return;
+    }
+    // Focusing an already-visible iframe is often the first Roll pointerdown.
+    // Refresh its clock without disabling that button before pointerup/click.
+    // Visibility changes, disconnects and failed samples still clear readiness.
+    invalidate();
+    failures = 0;
+    schedule(100);
+  }
   document.addEventListener('visibilitychange', visibility);
   window.addEventListener('pageshow', resume);
-  window.addEventListener('focus', resume);
+  window.addEventListener('focus', focus);
   window.addEventListener('online', resume);
   schedule(0);
   return () => {
@@ -86,7 +98,7 @@ export function startClockSync(
     invalidate();
     document.removeEventListener('visibilitychange', visibility);
     window.removeEventListener('pageshow', resume);
-    window.removeEventListener('focus', resume);
+    window.removeEventListener('focus', focus);
     window.removeEventListener('online', resume);
   };
 }

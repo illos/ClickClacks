@@ -11,7 +11,7 @@ import {
   useState,
   type PointerEvent,
 } from 'react';
-import { Check, Copy, X, Users, Eraser, Volume2, VolumeX, Link as LinkIcon } from 'lucide-react';
+import { Check, Copy, X, Users, Eraser, Volume2, VolumeX, PictureInPicture2, Link as LinkIcon } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { makeFunctionReference } from 'convex/server';
 import { createController, type Identity, type Profile, type DeliveredRoll } from '../../lib/client';
@@ -49,6 +49,8 @@ import { createDiceSound } from './dice-sound';
 import { AccessibilityControls } from './accessibility-controls';
 import { DiceDesignControls } from './dice-design-controls';
 import { startClockSync } from './clock-sync';
+import { RollLog } from './roll-log';
+export type RollControls = { diceCount: number; bonusD4: boolean; edges: number; banes: number; readyAt?: number };
 export type PowerRollerOptions = {
   client: ConvexReactClient;
   roomKey: string;
@@ -65,6 +67,13 @@ export type PowerRollerOptions = {
   onRoll?: (code: string, roll: ParticipantRoll) => void | Promise<void>;
   /** Show the six latest revealed rolls beneath the dice inside the tray. */
   trayHistory?: boolean;
+  /** Host-provided desktop Document PiP; omitted when unsupported. */
+  onPopout?: () => void;
+  popoutActive?: boolean;
+  popoutError?: string;
+  /** Transient host synchronization; these controls are never saved to browser preferences. */
+  controls?: RollControls;
+  onControls?: (controls: RollControls) => void;
 };
 const RollerContext = createContext<PowerRollerOptions | null>(null);
 function useRoller() { const value = useContext(RollerContext); if (!value) throw new Error('Mount inside PowerRoller.'); return value; }
@@ -218,16 +227,18 @@ function RollEntry({ roll, viewer, avatarStyle }: { roll: LogRoll; viewer: strin
   );
 }
 
-function TrayHistory({ rolls, viewer }: { rolls: LogRoll[]; viewer: string }) {
+function TrayHistory({ rolls, viewer, motion }: { rolls: LogRoll[]; viewer: string; motion: SitePreferences['motion'] }) {
   const host = useRef<HTMLDivElement>(null);
   const positions = useRef(new Map<string, number>());
+  const reduced = motion === 'reduce' || (motion === 'device' && matchMedia('(prefers-reduced-motion: reduce)').matches);
   useLayoutEffect(() => {
     const next = new Map<string, number>();
     for (const row of host.current!.querySelectorAll<HTMLElement>('[data-history-key]')) {
       const key = row.dataset.historyKey!;
       const top = row.offsetTop;
       next.set(key, top);
-      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      if (reduced) row.getAnimations().forEach(animation => animation.cancel());
+      else {
         const previous = positions.current.get(key);
         if (previous !== top) {
           row.getAnimations().forEach(animation => animation.cancel());
@@ -239,8 +250,8 @@ function TrayHistory({ rolls, viewer }: { rolls: LogRoll[]; viewer: string }) {
       }
     }
     positions.current = next;
-  }, [rolls]);
-  return <div className="tray-history" ref={host} role="region" aria-label="Recent tray rolls">
+  }, [rolls, reduced]);
+  return <div className="tray-history" ref={host} role="region" aria-label="Recent tray rolls" data-motion={reduced ? 'reduce' : 'full'}>
     {rolls.slice(0, 6).map(roll => <div className="tray-history-row"
       key={`${roll.roller}:${roll.id}`} data-history-key={`${roll.roller}:${roll.id}`}>
       <RollEntry roll={roll} viewer={viewer} />
@@ -436,7 +447,7 @@ function DiceRoom() {
     const audio = createDiceSound(); sound.current = audio; audio.setEnabled(preferencesRef.current.sound === true);
     return () => { audio.dispose(); sound.current = null; };
   }, []);
-  useEffect(() => { sound.current?.setEnabled(preferences.sound === true); }, [preferences.sound]);
+  useEffect(() => { sound.current?.setEnabled(preferences.sound === true && !options.popoutActive); }, [preferences.sound, options.popoutActive]);
   function unlockSound() {
     void sound.current?.unlock().then(() => {
       const clock = clockRef.current;
@@ -489,12 +500,16 @@ function DiceRoom() {
   useEffect(() => {
     profileRef.current = profile;
   }, [profile]);
+  useEffect(() => {
+    if (options.profile && JSON.stringify(options.profile) !== JSON.stringify(profileRef.current))
+      setProfile(options.profile);
+  }, [options.profile]);
   const connection = useConvexConnectionState();
   const [presenceError, setPresenceError] = useState('');
   const selectedDice = preferences.selectedDice ?? 'power';
-  const [bonusD4, setBonusD4] = useState(false);
+  const [bonusD4, setBonusD4] = useState(options.controls?.bonusD4 ?? false);
   const [pointerPicker, setPointerPicker] = useState(false);
-  const [diceCount, setDiceCount] = useState(1),
+  const [diceCount, setDiceCount] = useState(options.controls?.diceCount ?? 1),
     [choosingDice, setChoosingDice] = useState(false);
   const rollControls = useRef<HTMLDivElement>(null),
     dicePicker = useRef<HTMLButtonElement>(null),
@@ -530,8 +545,15 @@ function DiceRoom() {
     faces?: number[];
     motion?: Motion;
   } | null>(null);
-  const [edges, setEdges] = useState(0);
-  const [banes, setBanes] = useState(0);
+  const [edges, setEdges] = useState(options.controls?.edges ?? 0);
+  const [banes, setBanes] = useState(options.controls?.banes ?? 0);
+  const incomingControls = useRef<RollControls | undefined>(undefined);
+  useEffect(() => {
+    if (!options.controls) return;
+    incomingControls.current = options.controls;
+    setDiceCount(options.controls.diceCount); setBonusD4(options.controls.bonusD4);
+    setEdges(options.controls.edges); setBanes(options.controls.banes);
+  }, [options.controls]);
   const [clock, setClock] = useState<Clock | null>(null);
   const [clockConnection, setClockConnection] = useState(-1);
   const clockReady = !!clock && clockConnection === connection.connectionCount;
@@ -688,7 +710,7 @@ function DiceRoom() {
       // A faster clock batch can finish during the initial join. Publish its ready
       // state after that join instead of dropping the update until the 10s timer.
       if (heartbeatPending.current) await heartbeatPending.current.catch(() => {});
-      if (cancelled || changingTableRef.current || heartbeatPending.current || !identityReady || !nameReady || document.hidden || !connection.isWebSocketConnected)
+      if (cancelled || options.popoutActive || changingTableRef.current || heartbeatPending.current || !identityReady || !nameReady || document.hidden || !connection.isWebSocketConnected)
         return;
       // First membership can wait for the concurrent clock batch and be ready in
       // one mutation. Later reconnects still publish an unready existing member.
@@ -719,7 +741,7 @@ function DiceRoom() {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [join, viewer, credential, identityReady, ready, nameReady, connection.isWebSocketConnected]);
+  }, [join, viewer, credential, identityReady, ready, nameReady, connection.isWebSocketConnected, options.popoutActive]);
   const report = useCallback(
     (
       roll: ParticipantRoll,
@@ -886,7 +908,7 @@ function DiceRoom() {
   const ownParticipant = room?.participants.find(p => p.id === viewer);
   const joined = !!ownParticipant;
   useEffect(() => {
-    if (!joined || profile === initial || !profile.name.trim()) return;
+    if (options.popoutActive || !joined || profile === initial || !profile.name.trim()) return;
     const timer = setTimeout(() => {
       if (changingTableRef.current) return;
       const request = customize({
@@ -901,9 +923,20 @@ function DiceRoom() {
         .finally(() => { if (customizePending.current === request) customizePending.current = null; });
     }, 300);
     return () => clearTimeout(timer);
-  }, [profile, initial, joined, viewer, credential, customize]);
+  }, [profile, initial, joined, viewer, credential, customize, options.popoutActive]);
   const [rollLockUntil, setRollLockUntil] = useState(0);
   const rollLock = useRef(0);
+  useEffect(() => {
+    const deadline = (options.controls?.readyAt ?? 0) - performance.timeOrigin;
+    if (deadline > rollLock.current) { rollLock.current = deadline; setRollLockUntil(deadline); setNow(performance.now()); }
+  }, [options.controls?.readyAt]);
+  useEffect(() => {
+    const incoming = incomingControls.current;
+    // Let an incoming snapshot settle before notifying the host of local state.
+    if (incoming && (incoming.diceCount !== diceCount || incoming.bonusD4 !== bonusD4 || incoming.edges !== edges || incoming.banes !== banes)) return;
+    incomingControls.current = undefined;
+    options.onControls?.({diceCount, bonusD4, edges, banes, readyAt:rollLockUntil ? Math.round(performance.timeOrigin + rollLockUntil) : 0});
+  }, [diceCount, bonusD4, edges, banes, rollLockUntil, options.controls]);
   const submissions = useRef(0);
   const rollQueue = useRef<Promise<void>>(Promise.resolve());
   useEffect(() => {
@@ -1053,6 +1086,12 @@ function DiceRoom() {
       <div className="roll-area">
         <header className="lab-header">
           <h1 className="power-title">Power Roller</h1>
+          {options.onPopout && <button type="button" className="customize-trigger"
+            aria-label={options.popoutActive ? 'Focus dice tray' : 'Pop out dice tray'}
+            title={options.popoutActive ? 'Focus dice tray' : 'Pop out dice tray'}
+            aria-pressed={options.popoutActive === true} onClick={options.onPopout}>
+            <PictureInPicture2 aria-hidden />
+          </button>}
           <button
             type="button"
             className="customize-trigger"
@@ -1092,7 +1131,7 @@ function DiceRoom() {
         </header>
         <div className="dice-card">
           <section className="stage" aria-label="Shared 3D dice tray">
-            {options.trayHistory && <TrayHistory rolls={rollLog} viewer={viewer} />}
+            {options.trayHistory && <TrayHistory rolls={rollLog} viewer={viewer} motion={preferences.motion} />}
             <div className="canvas-host" ref={host} />
             <div className="stage-label">
               <span className="dot" />
@@ -1107,7 +1146,7 @@ function DiceRoom() {
               title={preferences.sound ? 'Mute dice sounds' : 'Enable dice sounds'}
               onClick={() => {
                 const enabled = !preferences.sound;
-                sound.current?.setEnabled(enabled);
+                sound.current?.setEnabled(enabled && !options.popoutActive);
                 changePreferences({ ...preferences, sound: enabled });
                 if (enabled) unlockSound();
               }}>
@@ -1334,27 +1373,33 @@ function DiceRoom() {
           hasTrack={hasTrack}
         />
       ))}
-      <section className="track-results" aria-label="Roll log" tabIndex={0}>
+      <RollLog motion={preferences.motion}>
         {rollLog.length ? (
           rollLog.map(roll => (
-            <RollEntry
+            <div
+              className="roll-log-row"
+              data-log-key={`${roll.roller}:${roll.id}`}
               key={`${roll.roller}:${roll.id}`}
-              roll={roll}
-              viewer={viewer}
-              avatarStyle={roll.roller === viewer ? profile.style : room?.participants.find(member => member.id === roll.roller)?.style}
-            />
+            >
+              <RollEntry
+                roll={roll}
+                viewer={viewer}
+                avatarStyle={roll.roller === viewer ? profile.style : room?.participants.find(member => member.id === roll.roller)?.style}
+              />
+            </div>
           ))
         ) : (
           <p className="empty-log">Throw dice to start the log.</p>
         )}
 
-      </section>
+      </RollLog>
       {createPortal(<span className="visually-hidden" role="status" aria-live="polite" aria-atomic="true">{announcement}</span>, (customizing ? customization.current : socializing ? socialDialog.current : null) ?? host.current?.parentElement ?? document.body)}
       {error && !customizing && !socializing && (
         <p className="error" role="alert">
           {error}
         </p>
       )}
+      {options.popoutError && <p className="error" role="alert">{options.popoutError}</p>}
       {presenceError && (
         <p className="error" role="alert">
           {presenceError}

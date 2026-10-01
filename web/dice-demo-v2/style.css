@@ -13,6 +13,7 @@
   font-size: 0.85rem;
 }
 .track-results {
+  position: relative;
   max-height: min(360px, 35vh);
   overflow-y: auto;
   overflow-x: hidden;
@@ -24,6 +25,11 @@
   gap: 0;
   margin: 24px 0;
 }
+.roll-log-row { min-width: 0; }
+.track-results[data-bottom-fade='true'] {
+  mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 48px), transparent 100%);
+}
+.high-contrast .track-results { mask-image: none; }
 .v2 fieldset {
   display: flex;
   flex-wrap: wrap;
@@ -527,7 +533,8 @@
   padding: 10px 6px 10px 41px;
   min-width: 0;
 }
-.roll-log-entry + .roll-log-entry {
+.roll-log-entry + .roll-log-entry,
+.roll-log-row + .roll-log-row .roll-log-entry {
   border-top: 1px solid #242b2d;
 }
 .roll-log-entry.critical-success {

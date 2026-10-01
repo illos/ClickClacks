@@ -30,7 +30,7 @@ Float64 transfer buffer; this changes transport representation, not frame rate.
 
 See `api-coverage.md` for exact API coverage. The plan's broader collaborative
 mixed groups, alternate rulesets, context metadata and logical pools above 20
-remain follow-up work; the current community UI follows the owner's requested
+are queued by the owner for a later release; the current community UI follows the owner's requested
 stock-die picker. Pure APIs cover mixed dice, keep/drop, percentiles and cited
 Draw Steel interpretations, and hosts can present already accepted results.
 This is not completion of every proposed P3 collaborative capability.
@@ -51,3 +51,27 @@ Backend component-focused checks: original/authority tests 8 passed and componen
 TypeScript passed. Production build with the explicit dedicated public endpoint
 includes separately loaded renderer, preview, physics worker and all four fonts.
 Final focused browser and consumer results will be recorded with the release.
+
+Host asset overrides are explicit: `loadDiceFonts(customSources)` accepts per-font
+URLs; `createThrowPlanner({workerFactory})` accepts a host-managed worker factory.
+Defaults retain the copied bundled font/worker URLs. Vite's project-base setting
+can be overridden for a custom-domain build without changing application source.
+
+Focused Chromium acceptance on the dedicated dev backend passed: two contexts
+observed the same persisted power faces/total, all six stock models accepted
+recorded paths, seven cached log entries survived reload, and a motionless roll
+reached a full-3D peer without errors. Fresh hidden-3D boot requested no graphics
+or physics modules. Name/style/preferences restored; Arrow/Escape menu handling
+and dialog focus return passed. Two mounted rollers retained host styling and
+independent selections without duplicate IDs or graphics loading.
+
+A 320×225 viewport exposes the copied layout's short-height clipping. A concrete
+vertical-wrap preview is prepared; applying it awaits the owner's decision.
+Normal 390×844 and 640×450 layouts have no horizontal overflow and reachable Roll.
+Real assistive technology and physical devices remain pending, not simulated.
+
+The packed artifact was installed into an independent temporary consumer. Its
+core/client build rejected React, Three, Cannon and CSS imports; its optional
+Three build rejected React/CSS imports. Both built successfully. Installed
+component source and the consumer typechecked. Generated component bindings are
+included in artifacts, never committed. npm publication is not part of this release.

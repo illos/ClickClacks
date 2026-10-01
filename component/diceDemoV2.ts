@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 /** Independent participant tracks, accessed through a public room capability. No campaign writes. */
 import { ConvexError, v } from "convex/values";
+import { authorityError } from "./lib/errors";
 import {
   mutation,
   query,
@@ -33,7 +34,7 @@ const validKey = (key: string) => {
   if (
     !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(key)
   )
-    throw new ConvexError("Invalid room link.");
+    throw authorityError("INVALID_REQUEST","Invalid room link.");
 };
 const codePattern = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/;
 async function room(ctx: MutationCtx | QueryCtx, key: string) {
@@ -105,7 +106,7 @@ function profile(name: string, style: { color: string; ink: string }) {
     !/^#[a-f0-9]{6}$/i.test(style.color) ||
     !/^#[a-f0-9]{6}$/i.test(style.ink)
   )
-    throw new ConvexError("Choose a name and valid dice colors.");
+    throw authorityError("INVALID_REQUEST","Choose a name and valid dice colors.");
 }
 const defaultPolicy = {
   capacity: 8,
@@ -119,12 +120,12 @@ function config(dice?: DiceConfiguration) {
     const checked = validateDiceConfiguration(dice ?? defaultDice);
     return { kind: checked.kind, sides: checked.sides, count: checked.count };
   } catch (e) {
-    throw new ConvexError((e as Error).message);
+    throw authorityError("INVALID_REQUEST",(e as Error).message);
   }
 }
 function validCredential(credential: string) {
   if (credential.length < 32 || credential.length > 256)
-    throw new ConvexError("Use your private session credential.");
+    throw authorityError("UNAUTHORIZED","Use your private session credential.");
 }
 async function member(
   ctx: MutationCtx | QueryCtx,
@@ -134,7 +135,7 @@ async function member(
 ) {
   const found = await room(ctx, key);
   if (!found || found.expiresAt <= Date.now())
-    throw new ConvexError("Room expired. Open a new room.");
+    throw authorityError("ROOM_EXPIRED","Room expired. Open a new room.");
   validCredential(credential);
   const session = await ctx.db
     .query("diceDemoV2Sessions")
@@ -143,11 +144,11 @@ async function member(
     )
     .unique();
   if (!session || session.credential !== credential)
-    throw new ConvexError("Invalid private session credential.");
+    throw authorityError("UNAUTHORIZED","Invalid private session credential.");
   const owner = found.participants.find(
     (p) => p.id === viewer && p.seenAt > Date.now() - 30000,
   );
-  if (!owner) throw new ConvexError("Reconnect to this room before throwing.");
+  if (!owner) throw authorityError("UNAUTHORIZED","Reconnect to this room before throwing.");
   return { found, owner, session };
 }
 export const view = query({
@@ -207,15 +208,15 @@ export const join = mutation({
     validKey(args.viewer);
     validCredential(args.credential);
     if (args.credential === args.viewer || args.credential === args.key)
-      throw new ConvexError(
+      throw authorityError("UNAUTHORIZED",
         "Use a private credential distinct from the public identity.",
       );
     profile(args.name, args.style);
     if (!Number.isFinite(args.uncertainty) || args.uncertainty < 0)
-      throw new ConvexError("Invalid clock estimate.");
+      throw authorityError("INVALID_REQUEST","Invalid clock estimate.");
     const found = await room(ctx, args.key);
     if (!found && codePattern.test(args.key.trim().toUpperCase()))
-      throw new ConvexError("Room code not found.");
+      throw authorityError("INVALID_REQUEST","Room code not found.");
     const session = found
       ? await ctx.db
           .query("diceDemoV2Sessions")
@@ -225,7 +226,7 @@ export const join = mutation({
           .unique()
       : null;
     if (session && session.credential !== args.credential)
-      throw new ConvexError("Invalid private session credential.");
+      throw authorityError("UNAUTHORIZED","Invalid private session credential.");
     if (!session && (found?.sessionCount ?? 0) >= 200)
       throw new ConvexError(
         "This room reached its session limit. Open a new room.",
@@ -234,7 +235,7 @@ export const join = mutation({
     const code = found?.code ?? (await allocateCode(ctx));
     const now = Date.now();
     if (found && found.expiresAt <= now)
-      throw new ConvexError("Room expired. Open a new room.");
+      throw authorityError("ROOM_EXPIRED","Room expired. Open a new room.");
     const alive = (found?.participants ?? []).filter(
       (p) => p.seenAt > now - 30000,
     );
@@ -356,9 +357,9 @@ async function requestReceipt(
       receipt.dice.sides !== dice.sides ||
       receipt.dice.count !== dice.count
     )
-      throw new ConvexError("Throw ID already used for another throw.");
+      throw authorityError("CONFLICT","Throw ID already used for another throw.");
     if (receipt.expiresAt <= Date.now() || !receipt.faces.length)
-      throw new ConvexError("Request expired. Start a new roll with a new ID.");
+      throw authorityError("REQUEST_EXPIRED","Request expired. Start a new roll with a new ID.");
   }
   return { found, owner, session, dice, receipt };
 }
@@ -398,7 +399,7 @@ export const recordSample = mutation({
       args.faces.length !== dice.count ||
       args.faces.some((n) => !Number.isInteger(n) || n < 1 || n > dice.sides)
     )
-      throw new ConvexError("Invalid server-generated dice.");
+      throw authorityError("INVALID_REQUEST","Invalid server-generated dice.");
     if ((found.requestCount ?? 0) >= selected.maxRolls)
       throw new ConvexError(
         "This room reached its request limit. Open a new room.",
@@ -453,13 +454,13 @@ async function acceptThrow(
   const edges = args.edges ?? 0,
     banes = args.banes ?? 0;
   if ([edges, banes].some((n) => !Number.isInteger(n) || n < 0 || n > 2))
-    throw new ConvexError("Choose zero, one or two edges and banes.");
+    throw authorityError("INVALID_REQUEST","Choose zero, one or two edges and banes.");
   let { found, owner, session, dice, receipt } = await requestReceipt(
     ctx,
     args,
   );
   if (!receipt && !supplied)
-    throw new ConvexError(
+    throw authorityError("INVALID_REQUEST",
       "Sample server-generated faces with this throw ID first.",
     );
   if (
@@ -467,11 +468,16 @@ async function acceptThrow(
     (receipt.source !== (supplied ? "supplied" : "generated") ||
       JSON.stringify(receipt.faces) !== JSON.stringify(args.faces))
   )
-    throw new ConvexError("Throw ID already used for another throw.");
+    throw authorityError("CONFLICT","Throw ID already used for another throw.");
   const fingerprint = semanticFingerprint(args);
   if (receipt?.fingerprint && receipt.fingerprint !== fingerprint)
-    throw new ConvexError("Throw ID already used for another throw.");
-  if (receipt?.roll) return receipt.roll;
+    throw authorityError("CONFLICT","Throw ID already used for another throw.");
+  if (receipt?.roll) {
+    const presentation=await ctx.db.query("diceDemoV2Presentations")
+      .withIndex("by_request",q=>q.eq("key",found.key).eq("viewer",args.viewer).eq("id",args.id)).unique();
+    const motion=presentation && presentation.expiresAt>Date.now() && (presentation.motion.version??1)===1 ? presentation.motion : undefined;
+    return {...receipt.roll,...(motion?{motion}:{})};
+  }
   if (!owner.ready && args.motion)
     throw new ConvexError("Wait for your dice to warm up.");
   const previous = await ctx.db
@@ -486,7 +492,7 @@ async function acceptThrow(
     args.faces.length !== dice.count ||
     args.faces.some((n) => !Number.isInteger(n) || n < 1 || n > dice.sides)
   )
-    throw new ConvexError("Choose valid dice results for this pool.");
+    throw authorityError("INVALID_REQUEST","Choose valid dice results for this pool.");
   const duration = args.motion ? validateMotion(args.motion, dice.count) : 2200;
   const lead = Math.min(
     500,
@@ -528,7 +534,7 @@ async function acceptThrow(
     sequence,
     ...(power ? { power } : {}),
     styles: Array.from({ length: dice.count }, () => owner.style),
-    ...(args.motion ? { motion: args.motion } : {}),
+    ...(args.motion ? { motion: {...args.motion,version:1} } : {}),
     startsAt,
     duration,
     revealAt:
@@ -549,7 +555,12 @@ async function acceptThrow(
       receipts: [],
       expiresAt: found.expiresAt,
     });
-  if (receipt) await ctx.db.patch(receipt._id, { fingerprint, roll, sequence });
+  const {motion,...compactRoll}=roll;
+  const expiresAt=receipt?.expiresAt ?? Math.min(found.expiresAt,Date.now()+(found.policy??defaultPolicy).receiptTtlMs);
+  if(motion) await ctx.db.insert("diceDemoV2Presentations",{
+    key:found.key,viewer:args.viewer,id:args.id,motion,expiresAt,
+  });
+  if (receipt) await ctx.db.patch(receipt._id, { fingerprint, roll:compactRoll, sequence });
   else
     await ctx.db.insert("diceDemoV2Requests", {
       key: found.key,
@@ -559,7 +570,7 @@ async function acceptThrow(
       faces: args.faces,
       source: "supplied",
       fingerprint,
-      roll,
+      roll:compactRoll,
       sequence,
       expiresAt: Math.min(
         found.expiresAt,
@@ -618,7 +629,7 @@ export const receipt = mutation({
         (n) => typeof n === "number" && !Number.isFinite(n),
       )
     )
-      throw new ConvexError("Invalid timing sample.");
+      throw authorityError("INVALID_REQUEST","Invalid timing sample.");
     await ctx.db.patch(current._id, {
       receipts: [
         ...current.receipts.filter((p) => p.viewer !== sample.viewer),
@@ -671,10 +682,10 @@ export const events = query({
       args.after < 0 ||
       args.after > (found.sequence ?? 0)
     )
-      throw new ConvexError("Invalid result cursor.");
+      throw authorityError("INVALID_REQUEST","Invalid result cursor.");
     const size = args.limit ?? 20;
     if (!Number.isInteger(size) || size < 1 || size > 100)
-      throw new ConvexError("Choose a result page of 1–100 records.");
+      throw authorityError("INVALID_REQUEST","Choose a result page of 1–100 records.");
     const limit = Math.min(size, 20);
     const docs = await ctx.db
       .query("diceDemoV2Requests")
@@ -697,8 +708,7 @@ export const events = query({
     return {
       rolls: page.flatMap((receipt) => {
         if (!receipt.roll) return [];
-        const { motion, ...compact } = receipt.roll;
-        return [compact];
+        return [receipt.roll];
       }),
       cursor: page.at(-1)?.sequence ?? args.after,
       hasMore: docs.length > limit,
@@ -711,7 +721,7 @@ export const setPolicy = mutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const found = await room(ctx, args.key);
-    if (!found) throw new ConvexError("Room unavailable.");
+    if (!found) throw authorityError("ROOM_EXPIRED","Room unavailable.");
     const p = args.policy;
     for (const [value, min, max] of [
       [p.capacity, 1, 32],
@@ -721,7 +731,7 @@ export const setPolicy = mutation({
       [p.minRollIntervalMs, 250, 60000],
     ])
       if (!Number.isSafeInteger(value) || value < min || value > max)
-        throw new ConvexError("Invalid room policy.");
+        throw authorityError("INVALID_REQUEST","Invalid room policy.");
     await ctx.db.patch(found._id, { policy: p, expiresAt: found._creationTime + p.ttlMs });
     return null;
   },

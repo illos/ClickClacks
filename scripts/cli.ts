@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ConvexHttpClient } from 'convex/browser';
 import { makeFunctionReference } from 'convex/server';
-import { createController, type Identity, type Profile, type Transport } from '../lib/client.ts';
+import { createController, redactError, type Identity, type Profile, type Transport } from '../lib/client.ts';
 import type { DiceConfiguration } from '../shared/dice.ts';
 
 type Saved={version:1;backend:string;key:string;identity:Identity;profile:Profile};
@@ -44,7 +44,7 @@ export async function runCli(argv:string[]){
   else if(command==='profile'){await controller.profile(state.profile);await save(path,state);console.log(JSON.stringify(await transport.call('diceDemoV2:view',{key:state.key}),null,2));}
   else if(command==='clear'){await controller.clear();console.log(JSON.stringify({room:await transport.call('diceDemoV2:view',{key:state.key}),ownTrack:await transport.call('diceDemoV2:track',{key:state.key,viewer:state.identity.viewer})},null,2));}
   else if(command==='leave'){await controller.leave();await unlink(path);console.log(JSON.stringify({left:true,key:state.key}));}
- }catch(error){throw new Error(String(error).replaceAll(state.identity.credential,'[private credential]'));}
+ }catch(error){throw redactError(error,[state.identity.credential]);}
  finally{await controller.dispose();}
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href){void runCli(process.argv.slice(2)).catch(error=>{console.error((error as Error).message);process.exitCode=1;});}

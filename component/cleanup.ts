@@ -12,6 +12,7 @@ export const expired = mutation({
     for (const table of [
       "diceDemoV2Rooms",
       "diceDemoV2Tracks",
+      "diceDemoV2Presentations",
       "diceDemoV2Sessions",
     ] as const) {
       const docs = await ctx.db
@@ -22,16 +23,16 @@ export const expired = mutation({
         .take(
           table === "diceDemoV2Rooms"
             ? 1
-            : table === "diceDemoV2Tracks"
-              ? 10
+            : (table === "diceDemoV2Tracks" || table === "diceDemoV2Presentations")
+              ? 8
               : 100,
         );
       more ||=
         docs.length ===
         (table === "diceDemoV2Rooms"
           ? 1
-          : table === "diceDemoV2Tracks"
-            ? 10
+          : (table === "diceDemoV2Tracks" || table === "diceDemoV2Presentations")
+            ? 8
             : 100);
       for (const doc of docs) {
         if (table === "diceDemoV2Rooms") {

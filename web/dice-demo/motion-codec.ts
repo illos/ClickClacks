@@ -15,6 +15,8 @@ export function unpackMotion(motion: Motion): Motion {
 }
 export function unpackRoll<T extends Roll>(roll: T): T {
   if (!roll.motion) return roll;
+  const version = (roll.motion as Motion & { version?: number }).version;
+  if (version !== undefined && version !== 1) return { ...roll, motion: undefined };
   const motion = unpackMotion(roll.motion);
   return motion === roll.motion ? roll : { ...roll, motion };
 }

@@ -11,3 +11,8 @@ export function backend(): Backend {
   t.registerComponent("powerroller",componentSchema,componentModules);
   return t;
 }
+
+/** Direct component harness permits persisted-table assertions without exposing debug endpoints. */
+export function componentBackend() {
+  return convexTest(componentSchema,componentModules);
+}

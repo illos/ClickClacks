@@ -20,6 +20,7 @@ export const demoParticipantStyle = v.object({
   ),
 });
 export const demoMotion = v.object({
+  version: v.optional(v.number()),
   seed: v.number(),
   stepMs: v.number(),
   samples: v.array(v.number()),

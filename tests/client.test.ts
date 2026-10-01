@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createController, type ParticipantRoll, type Transport } from '../lib/client';
+import { createController, redactError, RollerError, type ParticipantRoll, type Transport } from '../lib/client';
 const identity={viewer:'v',credential:'private-session-credential'},profile={name:'River',style:{color:'#70dac3',ink:'#fff4e5',pattern:'solid' as const}};
 function record(id:string,sequence=1,revealAt=Date.now()+2000):ParticipantRoll{return{id,roller:identity.viewer,name:profile.name,faces:[7,8],styles:[profile.style,profile.style],startsAt:Date.now()+100,duration:1900,revealAt,sequence,total:15,source:'generated'};}
 function fake(records:ParticipantRoll[]=[]){
@@ -22,6 +22,9 @@ async function flush(){for(let i=0;i<12;i++)await Promise.resolve();}
 afterEach(()=>vi.useRealTimers());
 function clock(){vi.useFakeTimers();vi.setSystemTime(100000);}
 describe('independent authority and delivery controller',()=>{
+ it('serializes explicit backend codes with redacted diagnostics without guessing prose',()=>{
+  const source=Object.assign(new Error(`Uncaught Error: REQUEST_CONFLICT: ${identity.credential}`),{data:{code:'REQUEST_CONFLICT',credential:identity.credential}}),error=redactError(source,[identity.credential]);expect(error).toBeInstanceOf(RollerError);expect(JSON.parse(JSON.stringify(error))).toEqual({code:'REQUEST_CONFLICT',message:'Uncaught Error: REQUEST_CONFLICT: [private credential]'});expect(error).not.toHaveProperty('data');expect(redactError(Error('The room expired yesterday'),[]).code).toBe('BACKEND_ERROR');
+ });
  it('binds sampling and acceptance to one private request and works when cosmetic preparation fails',async()=>{
   clock();const f=fake(),c=createController({transport:f.transport,key:'room',identity,profile}),accepted=vi.fn(),available=vi.fn();c.on('accepted',accepted);c.on('available',available);await c.join();const roll=await c.roll({id:'stable'},async()=>{throw Error('WebGL unavailable');});
   const sample=f.call.mock.calls.find(([method])=>method==='diceDemo:sampleFaces')![1],thrown=f.call.mock.calls.find(([method])=>method==='diceDemoV2:throwDice')![1];expect(sample).toMatchObject({key:'room',...identity,id:'stable'});expect(thrown).toMatchObject({...sample,faces:[7,8]});expect(thrown).not.toHaveProperty('motion');expect((await f.transport.call('diceDemoV2:track',{key:'room',viewer:identity.viewer})).roll).toEqual(roll);expect(accepted).toHaveBeenCalledOnce();expect(available).not.toHaveBeenCalled();await vi.advanceTimersByTimeAsync(2000);expect(available).toHaveBeenCalledOnce();await c.dispose();
@@ -53,6 +56,14 @@ describe('independent authority and delivery controller',()=>{
 
  it('observes host-owned membership without joining, heartbeating or leaving it',async()=>{
   clock();const f=fake([record('host-roll')]),c=createController({transport:f.transport,key:'room',identity,profile}),available=vi.fn();c.on('available',available);await c.observe();await vi.advanceTimersByTimeAsync(30000);expect(available).toHaveBeenCalledOnce();expect(f.call.mock.calls.filter(([method])=>method==='diceDemoV2:join')).toHaveLength(0);await c.dispose();expect(f.call.mock.calls.filter(([method])=>method==='diceDemoV2:leave')).toHaveLength(0);
+ });
+
+ it('redacts private credentials from thrown SDK errors and emitted subscription errors',async()=>{
+  clock();const f=fake(),watch=f.transport.watch;let subscriptionError!:(error:Error)=>void;f.transport.watch=(method,args,next,error)=>{subscriptionError=error;return watch(method,args,next,error);};const c=createController({transport:f.transport,key:'room',identity,profile}),errors=vi.fn();c.on('error',errors);await c.join();subscriptionError(Error(`Subscription args ${encodeURIComponent(identity.credential)}`));expect(errors).toHaveBeenCalledOnce();expect(errors.mock.calls[0][0].message).toContain('[private credential]');expect(errors.mock.calls[0][0].stack).not.toContain(identity.credential);f.transport.call=vi.fn(async()=>{throw Error(`Invalid args credential ${identity.credential}`);});
+  // The injected transport remains instance-owned; its mutable call implementation is observed.
+  await expect(c.roll({id:'redact'})).rejects.toThrow('[private credential]');
+  try{await c.roll({id:'redact'});}catch(error){expect(String(error)).not.toContain(identity.credential);expect((error as Error).stack).not.toContain(identity.credential);}
+  await c.dispose();
  });
 
 });

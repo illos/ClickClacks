@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 /** Original reveal threshold, generalized only from a pair to an arbitrary recorded pool. */
-export function recordedRevealDelay(roll: { duration: number; faces: readonly number[]; motion?: { stepMs: number; samples: readonly number[]; packed?: ArrayBuffer } }): number {
+export function recordedRevealDelay(roll: { duration: number; faces: readonly number[]; motion?: { version?: number; stepMs: number; samples: readonly number[]; packed?: ArrayBuffer } }): number {
   const motion = roll.motion;
-  if (!motion) return roll.duration;
+  if (!motion || motion.version !== undefined && motion.version !== 1) return roll.duration;
   const samples = motion.packed ? new Float64Array(motion.packed) : motion.samples;
   const stride = roll.faces.length * 7;
   const count = samples.length / stride;

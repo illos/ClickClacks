@@ -112,9 +112,13 @@ counts apply numeric ±2/±4 and do not produce a tier. It does not persist mixe
 pools, keep/drop choices, percentile interpretations, custom totals or the other
 Draw Steel presets. Those are available as pure host-side operations where
 implemented; adding shared interpretation requires a trusted host integration.
-The original motion shape is retained, with packed Float64 data for large pools;
-it is not a newly versioned cross-renderer format. Compact events omit motion,
-but retained acceptance receipts still store motion alongside their result.
+The original motion frames are retained, with packed Float64 data for large pools
+and explicit version 1. Missing versions mean legacy v1. New unsupported versions
+are rejected before attachment; replay of an unavailable version falls back to
+semantic/text results without rejecting an already accepted roll. Compact receipts
+and events contain no motion. A separate per-request presentation record restores
+the original known motion on retry after clearing or replacement, and expires
+independently at the receipt retention deadline.
 
 Legacy `diceDemo:throwDice` remains the original supplied-face V1 presentation
 experiment in a separate table. Use V2 for authoritative collaborative generation.

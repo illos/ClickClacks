@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 /** V244 presentation experiment. Possession of an unguessable room link grants demo access. */
 import { ConvexError, v } from "convex/values";
+import { authorityError } from "./lib/errors";
 import { action, mutation, query } from "./_generated/server";
 import {
   demoMotion,
@@ -42,7 +43,7 @@ export const sampleFaces = action({
     try {
       dice = validateDiceConfiguration(args.dice ?? defaultDice);
     } catch (e) {
-      throw new ConvexError((e as Error).message);
+      throw authorityError("INVALID_REQUEST",(e as Error).message);
     }
     const hasSession = [args.key, args.viewer, args.credential, args.id].some(
       (value) => value !== undefined,
@@ -51,7 +52,7 @@ export const sampleFaces = action({
       hasSession &&
       (!args.key || !args.viewer || !args.credential || !args.id)
     )
-      throw new ConvexError(
+      throw authorityError("INVALID_REQUEST",
         "Provide the room, viewer, private credential and stable throw ID.",
       );
     const session = hasSession
@@ -195,7 +196,8 @@ export const throwDice = mutation({
     validKey(args.id);
     if (
       args.motion &&
-      (!Number.isInteger(args.motion.seed) ||
+      ((args.motion.version ?? 1) !== 1 ||
+        !Number.isInteger(args.motion.seed) ||
         args.motion.seed < 0 ||
         args.motion.seed > 0xffffffff ||
         Math.abs(args.motion.stepMs - 1000 / 60) > 1e-8 ||

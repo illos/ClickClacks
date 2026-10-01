@@ -2,6 +2,18 @@
   "name": "powerroller",
   "version": "0.1.0",
   "private": true,
+  "files": [
+    "lib/",
+    "shared/",
+    "web/",
+    "component/",
+    "component/_generated/*.ts",
+    "scripts/cli.ts",
+    "examples/",
+    "docs/",
+    "LICENSE",
+    "README.md"
+  ],
   "type": "module",
   "license": "MIT",
   "packageManager": "pnpm@11.5.3",

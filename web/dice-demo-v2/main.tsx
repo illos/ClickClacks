@@ -14,7 +14,7 @@ import { Check, Copy, X, Users, Eraser, Link as LinkIcon } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { makeFunctionReference } from 'convex/server';
 import { createController, type Identity, type Profile, type DeliveredRoll } from '../../lib/client';
-import { displayError } from '../../lib/errors';
+import { displayError, redactError } from '../../lib/errors';
 import { describeRoll } from '../../lib/format';
 import {
   ConvexProvider,
@@ -50,6 +50,7 @@ export type PowerRollerOptions = {
   roomKey: string;
   identity?: Identity;
   profile?: Profile;
+  nameProvider?: () => string | Promise<string>;
   preferences?: SitePreferences;
   onPreferences?: (preferences: SitePreferences) => void;
   onProfile?: (profile: Profile) => void;
@@ -498,7 +499,7 @@ function DiceRoom() {
   useEffect(() => {
     if (nameReady) return;
     let cancelled = false;
-    void chooseName({})
+    void Promise.resolve().then(() => options.nameProvider ? options.nameProvider() : chooseName({}))
       .then(name => {
         if (cancelled) return;
         setInitial(old => ({ ...old, name }));
@@ -840,7 +841,7 @@ function DiceRoom() {
       setBanes(0);
     } catch (e) {
       setError(displayError(e, credential));
-      if (/REQUEST_EXPIRED|REQUEST_CONFLICT|INVALID|ROOM_EXPIRED|UNAUTHORIZED/.test(String(e)))
+      if (['REQUEST_EXPIRED','REQUEST_CONFLICT','CONFLICT','INVALID','INVALID_REQUEST','ROOM_EXPIRED','UNAUTHORIZED'].includes(redactError(e, [credential]).code))
         retryThrow.current = null;
     } finally {
       setPending(false);

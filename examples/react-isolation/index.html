@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Two isolated React rollers</title>
+  <style>
+    body {
+      margin: 16px;
+      background: #fff;
+      color: #123456;
+      font: 16px system-ui;
+    }
+    .host {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .mount {
+      width: calc(50% - 8px);
+      height: 760px;
+      min-width: 320px;
+    }
+    body > .lab {
+      padding: 7px;
+      border: 3px solid #112233;
+    }
+    body > .primary {
+      font: 13px monospace;
+      color: #112233;
+      padding: 5px;
+    }
+    h1 {
+      font-size: 20px;
+    }
+    @media (max-width: 700px) {
+      .host {
+        display: block;
+      }
+      .mount {
+        width: 100%;
+        margin-top: 20px;
+      }
+    }
+  </style>
+  <h1>Host application</h1>
+  <button class="primary" id="host-button">Host action</button>
+  <div class="lab" id="host-lab">Host panel</div>
+  <div class="host">
+    <div class="mount" id="first"></div>
+    <div class="mount" id="second"></div>
+  </div>
+  <script type="module" src="./main.tsx"></script>
+</html>

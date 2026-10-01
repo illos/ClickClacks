@@ -10,12 +10,13 @@ let loading: Promise<DieFont[]> | undefined;
 const fontDeadlineMs = 3000;
 
 /** Load once before baking numeral textures; all remote styles are available before shared tray playback. */
-export function loadDiceFonts() {
-  return (loading ??= Promise.all(
+export function loadDiceFonts(customSources?: Partial<Record<DieFont, string>>) {
+  if (!customSources && loading) return loading;
+  const result = Promise.all(
     dieFonts.map(async font => {
       let timeout: ReturnType<typeof setTimeout> | undefined;
       try {
-        const face = new FontFace(dieFontFamilies[font], `url(${sources[font]})`, {
+        const face = new FontFace(dieFontFamilies[font], `url(${customSources?.[font] ?? sources[font]})`, {
           weight: String(dieFontWeights[font]),
           style: 'normal',
         });
@@ -37,5 +38,7 @@ export function loadDiceFonts() {
         clearTimeout(timeout);
       }
     }),
-  ).then(results => results.filter((font): font is DieFont => font !== null)));
+  ).then(results => results.filter((font): font is DieFont => font !== null));
+  if (!customSources) loading = result;
+  return result;
 }

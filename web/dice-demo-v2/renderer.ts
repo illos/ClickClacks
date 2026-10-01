@@ -389,6 +389,11 @@ export function createRoomTray(
       wake();
     },
     play(roll: ParticipantRoll, clock: { offset: number; uncertainty: number }) {
+      roll = unpackRoll(roll);
+      if (!roll.motion) {
+        this.clear(roll.roller);
+        return;
+      }
       const lane = lanes.get(roll.roller);
       if (!lane) {
         queued.set(roll.roller, { roll, clock });
@@ -402,7 +407,6 @@ export function createRoomTray(
         }
         return;
       }
-      roll = unpackRoll(roll);
       lane.roll = roll;
       style(lane, { style: lane.appearance } as Participant);
       const total = document.createElement('strong');

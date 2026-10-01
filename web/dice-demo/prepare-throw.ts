@@ -7,7 +7,7 @@ type Reply = {
   planningMs?: number;
   error?: string;
 };
-export function createThrowPlanner() {
+export function createThrowPlanner(options: { workerFactory?: () => Worker } = {}) {
   let disposed = false;
   let worker: Worker | undefined;
   let nextId = 0;
@@ -22,7 +22,7 @@ export function createThrowPlanner() {
   function request(faces?: number[], scene: ThrowScene = {}): Promise<Reply> {
     if (disposed) return Promise.reject(new Error('Throw planner is disposed.'));
     if (!worker) {
-      worker = new Worker(new URL('./physics-worker.ts', import.meta.url), {
+      worker = options.workerFactory?.() ?? new Worker(new URL('./physics-worker.ts', import.meta.url), {
         type: 'module',
       });
       worker.onmessage = ({ data }: MessageEvent<Reply>) => {

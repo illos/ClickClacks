@@ -57,8 +57,16 @@ pnpm add 'powerroller@git+https://github.com/illos/powerroller.git#COMMIT'
 ```
 
 Replace `COMMIT` with the revision you reviewed. The package exports TypeScript
-source; a raw JavaScript-only consumer needs to compile it first. Convex component
-bindings are generated against your own app during setup.
+source; a raw JavaScript-only consumer needs to compile it first. A Vite consumer
+should include `vite/client` types and the `DOM.Iterable` TypeScript library for
+font assets. Node's native TypeScript runner does not load TypeScript packages
+from `node_modules`; use a bundler for these source exports.
+
+Generated Convex bindings are deliberately absent from Git. To distribute a local
+backend component artifact, generate bindings during your Convex setup, then run
+`pnpm pack` and install the resulting `.tgz` into the consumer. The package includes
+the generated component bindings without committing them. A Git-only installation
+needs component codegen before using `powerroller/_generated/component.js`.
 
 | Import | Purpose |
 | --- | --- |
@@ -66,7 +74,7 @@ bindings are generated against your own app during setup.
 | `powerroller/draw-steel` | Cited Draw Steel resolution helpers and presets. |
 | `powerroller/format` | Plain semantic descriptions. |
 | `powerroller/client` | Instance-owned room controller and an explicit Convex transport. |
-| `powerroller/three` | Optional original tray, fonts, preview/physics utilities and isolated planners. |
+| `powerroller/three` | Optional original tray, fonts, physics utilities and isolated planners. |
 | `powerroller/react` | The original interface as a mountable `PowerRoller` component. |
 | `powerroller/styles.css` | Explicit opt-in styles for that interface. |
 | `powerroller/convex.config.js` | Isolated backend component installation. |
@@ -146,8 +154,9 @@ views and roll records do not disclose private credentials.
 
 ## Headless CLI
 
-The CLI uses the same controller and app endpoints. Node 24 executes its TypeScript
-source directly; no separate runner or browser is required.
+Run the CLI from the repository checkout. It uses the same controller and app
+endpoints. Node 24 executes its TypeScript source directly; no separate runner or
+browser is required.
 
 ```sh
 pnpm cli create --backend https://YOUR.convex.cloud --session /tmp/my-roller.json --name River

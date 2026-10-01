@@ -39,3 +39,14 @@ it('isolated planners dispose only their own worker and pending requests', async
     vi.unstubAllGlobals();
   }
 });
+it('accepts a host-owned worker factory without creating an ambient worker', async () => {
+  const worker = { postMessage: vi.fn(), terminate: vi.fn(), onmessage: undefined as ((event: any) => void) | undefined, onerror: undefined };
+  const factory = vi.fn(() => worker as unknown as Worker);
+  const planner = createThrowPlanner({ workerFactory: factory });
+  const pending = planner.warmThrows();
+  expect(factory).toHaveBeenCalledTimes(1);
+  worker.onmessage!({ data: { id: worker.postMessage.mock.calls[0]![0].id } });
+  await pending;
+  planner.dispose();
+  expect(worker.terminate).toHaveBeenCalledTimes(1);
+});

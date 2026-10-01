@@ -5,6 +5,7 @@ import {
   demoRoll,
   demoParticipantStyle as demoStyle,
   demoReceipt,
+  demoMotion,
 } from "./diceDemoTables";
 export const diceConfiguration = v.object({
   kind: v.union(v.literal("power"), v.literal("dice")),
@@ -57,7 +58,13 @@ export const participantRoll = v.object({
     }),
   ),
 });
+const { motion: _motion, ...semanticFields } = participantRoll.fields;
+export const semanticRoll = v.object(semanticFields);
 export const diceDemoV2Tables = {
+  diceDemoV2Presentations: defineTable({
+    key: v.string(), viewer: v.string(), id: v.string(),
+    motion: demoMotion, expiresAt: v.number(),
+  }).index("by_request",["key","viewer","id"]).index("by_expiry",["expiresAt"]),
   diceDemoV2Sessions: defineTable({
     key: v.string(),
     viewer: v.string(),
@@ -78,7 +85,7 @@ export const diceDemoV2Tables = {
     expiresAt: v.number(),
     roomExpiresAt: v.number(),
     fingerprint: v.optional(v.string()),
-    roll: v.optional(participantRoll),
+    roll: v.optional(semanticRoll),
     sequence: v.optional(v.number()),
   })
     .index("by_request", ["key", "viewer", "id"])

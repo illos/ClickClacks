@@ -29,6 +29,8 @@ export type ThrowScene = {
   dice?: DiceConfig;
 };
 export type Motion = {
+  /** Absent means legacy v1; unsupported versions use semantic/text fallback. */
+  version?: number;
   seed: number;
   stepMs: number;
   samples: number[];

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { afterEach, expect, test, vi } from "vitest";
-import { backend } from "./fixtures/table";
+import { backend, componentBackend } from "./fixtures/table";
 import { demoV2 } from "../../web/dice-demo-v2/api";
 import { demo } from "../../web/dice-demo/api";
 import { internal } from "../../convex/_generated/api";
@@ -214,4 +214,57 @@ test("leaving removes only caller presence and track; room cursor and pending re
   const events = await t.query(demoV2.events,{key,viewer:peer,credential:other,after:0});
   expect(events.rolls.map(r=>r.id)).toEqual([args.id]);
   await expect(t.mutation(demoV2.clearTray,{key,viewer,credential})).rejects.toThrow("credential");
+});
+
+
+test("semantic receipts never store motion; versioned presentation survives clear and unknown replay falls back to text", async () => {
+  vi.useFakeTimers();
+  const t=componentBackend();
+  await t.mutation(demoV2.join,{key,viewer,credential,name:"Hypatia",style,ready:true,uncertainty:10});
+  const dice:DiceConfiguration={kind:"dice",sides:6,count:1};
+  const args={key,viewer,credential,id:id(500),dice};
+  const faces=await t.action(demo.sampleFaces,args);
+  const motion={version:1,seed:1,stepMs:1000/60,samples:[0,0,0,0,0,0,1,0,0,0,0,0,0,1],offsets:[0,0,0,1]};
+  const roll=await t.mutation(demoV2.throwDice,{...args,faces,motion});
+  const persisted=await t.run(async ctx=>({
+    receipt:await ctx.db.query("diceDemoV2Requests").withIndex("by_request",q=>q.eq("key",key).eq("viewer",viewer).eq("id",args.id)).unique(),
+    presentation:await ctx.db.query("diceDemoV2Presentations").withIndex("by_request",q=>q.eq("key",key).eq("viewer",viewer).eq("id",args.id)).unique(),
+  }));
+  expect(persisted.receipt!.roll).not.toHaveProperty("motion");
+  expect(persisted.presentation!.motion.version).toBe(1);
+  expect((await t.query(demoV2.events,{key,viewer,credential,after:0})).rolls[0]).not.toHaveProperty("motion");
+  await t.mutation(demoV2.clearTray,{key,viewer,credential});
+  // Cosmetic retry arguments do not reinterpret an accepted logical roll.
+  expect(await t.mutation(demoV2.throwDice,{...args,faces,motion:{...motion,version:99}})).toEqual(roll);
+  await t.run(ctx=>ctx.db.patch(persisted.presentation!._id,{motion:{...motion,version:99}}));
+  const fallback=await t.mutation(demoV2.throwDice,{...args,faces});
+  expect(fallback).not.toHaveProperty("motion");
+  expect([fallback.id,fallback.faces,fallback.total,fallback.revealAt]).toEqual([roll.id,roll.faces,roll.total,roll.revealAt]);
+  vi.advanceTimersByTime(300);
+  const next={...args,id:id(501)};
+  const nextFaces=await t.action(demo.sampleFaces,next);
+  await expect(t.mutation(demoV2.throwDice,{...next,faces:nextFaces,motion:{...motion,version:99}})).rejects.toThrow("Unsupported recorded motion version");
+  expect((await t.query(demoV2.view,{key})).cursor).toBe(1);
+  await t.mutation(demoV2.throwDice,{...next,faces:nextFaces,motion:{...motion,version:undefined}});
+  const legacyTrack=await t.query(demoV2.track,{key,viewer});
+  expect(legacyTrack!.roll.motion!.version).toBe(1);
+  vi.advanceTimersByTime(3_600_001);
+  await t.mutation(internal.cleanup.expired,{});
+  expect(await t.run(ctx=>ctx.db.query("diceDemoV2Presentations").collect())).toEqual([]);
+  const tombstones=await t.run(ctx=>ctx.db.query("diceDemoV2Requests").collect());
+  expect(tombstones.every(receipt=>!receipt.roll && !receipt.faces.length)).toBe(true);
+});
+
+
+test("permanent authority errors expose stable codes while retaining friendly messages", async()=>{
+  vi.useFakeTimers();
+  const t=await joined();
+  const args={key,viewer,credential,id:id(600)};
+  await t.action(demo.sampleFaces,args);
+  vi.advanceTimersByTime(3_600_001);
+  await t.mutation(demoV2.join,{key,viewer,credential,name:"Hypatia",style,ready:true,uncertainty:10});
+  const expired=await t.action(demo.sampleFaces,args).catch(error=>error);
+  expect(expired.data).toEqual({code:"REQUEST_EXPIRED",message:"Request expired. Start a new roll with a new ID."});
+  const unauthorized=await t.mutation(demoV2.customize,{key,viewer,credential:other,name:"Intruder",style}).catch(error=>error);
+  expect(unauthorized.data).toEqual({code:"UNAUTHORIZED",message:"Invalid private session credential."});
 });

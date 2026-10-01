@@ -263,16 +263,17 @@ export function createDie(style: Style, config: DiceConfig | undefined, index = 
       const family = style.font
         ? `"${dieFontFamilies[style.font]}", Georgia, serif`
         : 'Georgia, serif';
-      ctx.font = `${style.font ? dieFontWeights[style.font] : 600} ${model.vertexRead ? 42 : f.value >= 10 ? 64 : 78}px ${family}`;
+      ctx.font = `${style.font ? dieFontWeights[style.font] : 600} ${model.vertexRead ? 64 : f.value >= 10 ? 64 : 78}px ${family}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       if (model.vertexRead) {
+        // Larger corner numerals sit farther inside the triangular face to avoid clipping.
         f.points.forEach((p, j) => {
           const value = model.vertices.findIndex(vertex => vertex.distanceTo(p) < 1e-5) + 1;
           ctx.fillText(
             String(value),
-            128 + (coords[j]![0]! / span) * 180,
-            128 - (coords[j]![1]! / span) * 180,
+            128 + (coords[j]![0]! / span) * 132,
+            128 - (coords[j]![1]! / span) * 132,
           );
         });
       } else {

@@ -192,3 +192,12 @@ focus. Updated swatch/color/history checks passed after the tabs change.
 Dedicated-dev two-viewer acceptance passed animated d20+1d4 and d10+1d4,
 text-only d6+1d4 with +2, toggled-off d6, persisted face bounds/totals/motion,
 and four cached results after reload. No physical Safari claim is made.
+
+## D4 numeral legibility
+
+D4 corner numerals grow from 42px to 64px in the 256px face texture, with labels
+inset further from the vertices. This applies to standalone and bonus d4 dice.
+A focused Chromium raster check confirmed all numeral pixels fit inside every
+triangular face for Original, Serif, Modern, Rune and Gothic. The texture sheet
+and a 430×932 rendered phone roll were visually inspected. Production build
+passed. Geometry, vertex result mapping and physical motion are unchanged.

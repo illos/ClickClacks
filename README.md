@@ -1,4 +1,7 @@
-# Power Roller
+# Click Clacks
+
+Click Clacks is the standalone dice roller published from `illos/powerroller`.
+The approved High Voltage branding changes the site name; package, API and browser-storage identifiers remain compatible.
 
 A free realtime dice roller for Draw Steel, with a reusable TypeScript library,
 optional React/Three presentation and an isolated Convex backend.

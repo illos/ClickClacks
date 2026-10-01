@@ -1070,3 +1070,10 @@
 .clear-tray { right: 60px; }
 .sound-toggle[aria-pressed="true"] { color: #70dac3; }
 }
+
+/* Approved High Voltage wordmark; keep the existing header controls in place. */
+.v2 .power-title { min-width: 0; line-height: 0; }
+.v2 .click-clacks-logo { display: block; width: 128px; max-width: 100%; height: auto; }
+@media (max-width: 650px) {
+  .v2 .click-clacks-logo { width: 110px; }
+}

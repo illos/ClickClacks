@@ -44,7 +44,7 @@ export function createTrayPopout() {
       if (version !== generation) { target.close(); return; }
       mini = target;
       target.powerrollerTraySession = session;
-      target.document.title = 'Power Roller tray';
+      target.document.title = 'Click Clacks tray';
       const style = target.document.createElement('style');
       style.textContent = 'html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#111415;color:#e8e5df;font:14px system-ui,sans-serif}iframe{display:block;width:100%;height:100%;border:0}.pip-loading{position:absolute;inset:0;margin:0;padding:24px;background:#111415}.pip-loading[hidden]{display:none}';
       target.document.head.append(style);

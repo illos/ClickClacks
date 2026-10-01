@@ -13,6 +13,7 @@ import {
 } from 'react';
 import { Check, Copy, X, Users, Eraser, Volume2, VolumeX, PictureInPicture2, Link as LinkIcon } from 'lucide-react';
 import { createPortal } from 'react-dom';
+import clickClacksLogo from '../branding/click-clacks.svg';
 import { makeFunctionReference } from 'convex/server';
 import { createController, type Identity, type Profile, type DeliveredRoll } from '../../lib/client';
 import { displayError, redactError } from '../../lib/errors';
@@ -1085,7 +1086,7 @@ function DiceRoom() {
     <main onPointerDown={unlockSound} onPointerUp={unlockSound} onKeyDown={unlockSound} className={`lab v2${preferences.highContrast ? ' high-contrast' : ''}`}>
       <div className="roll-area">
         <header className="lab-header">
-          <h1 className="power-title">Power Roller</h1>
+          <h1 className="power-title"><img className="click-clacks-logo" src={clickClacksLogo} alt="Click Clacks" width="640" height="280" /></h1>
           {options.onPopout && <button type="button" className="customize-trigger"
             aria-label={options.popoutActive ? 'Focus dice tray' : 'Pop out dice tray'}
             title={options.popoutActive ? 'Focus dice tray' : 'Pop out dice tray'}

@@ -17,6 +17,7 @@ export type DiceConfig = {
   kind: 'power' | 'dice';
   sides: DiceSides;
   count: number;
+  bonusD4?: boolean;
 };
 export type RestingDie = {
   position: number[];

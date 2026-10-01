@@ -3,6 +3,7 @@ export type DiceConfiguration = {
   kind: "power" | "dice";
   sides: 4 | 6 | 8 | 10 | 12 | 20;
   count: number;
+  bonusD4?: boolean;
 };
 export const defaultDice: DiceConfiguration = {
   kind: "power",
@@ -18,6 +19,8 @@ export function validateDiceConfiguration(
     !Number.isInteger(value.count) ||
     value.count < 1 ||
     value.count > 20 ||
+    (value.bonusD4 !== undefined && typeof value.bonusD4 !== "boolean") ||
+    (value.bonusD4 === true && (value.kind !== "dice" || value.sides === 4)) ||
     (value.kind === "power" && (value.sides !== 10 || value.count !== 2))
   )
     throw new Error(
@@ -35,4 +38,21 @@ export function genericModifierValue(stage: GenericModifierStage): number {
 }
 export function genericModifier(edges: number, banes: number): number {
   return genericModifierValue(edges as GenericModifierStage) - genericModifierValue(banes as GenericModifierStage);
+}
+
+
+/** Base pool first, followed by the optional bonus d4. count denotes base dice only. */
+export function dicePoolSides(dice: DiceConfiguration): number[] {
+  validateDiceConfiguration(dice);
+  return [...Array.from({length:dice.count},()=>dice.sides),...(dice.bonusD4?[4]:[])];
+}
+export function dicePoolCount(dice: DiceConfiguration): number {
+  validateDiceConfiguration(dice);
+  return dice.count + (dice.bonusD4 ? 1 : 0);
+}
+
+export function dieSides(dice: DiceConfiguration, index: number): number {
+  if (!Number.isInteger(index) || index < 0 || index >= dicePoolCount(dice))
+    throw new Error('Choose an index within the configured dice pool.');
+  return dice.bonusD4 && index === dice.count ? 4 : dice.sides;
 }

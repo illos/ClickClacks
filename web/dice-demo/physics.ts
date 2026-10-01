@@ -83,7 +83,8 @@ export function simulateThrow(seed: number, results: number[], scene: ThrowScene
   staticBox(new Vec3(5.15, 2.5, 0.1), new Vec3(0, 2.4, -3.3));
   staticBox(new Vec3(5.15, 2.5, 0.1), new Vec3(0, 2.4, 3.3));
   const scale = scene.scale ?? 0.5;
-  const model = dieModel(scene.dice);
+  const models = results.map((_, index) => dieModel(scene.dice, index));
+  const model = models[0]!;
   const vertices = model.vertices,
     faces = model.faces;
   const hullVertices = vertices.map(p => new Vec3(p.x * scale, p.y * scale, p.z * scale));
@@ -119,22 +120,36 @@ export function simulateThrow(seed: number, results: number[], scene: ThrowScene
     world.addBody(body);
   }
   const side = random() < 0.5 ? -1 : 1;
-  const columns = Math.min(5, results.length);
+  // The optional21st die uses six columns inside the same seven-unit entry span.
+  const columns = Math.min(results.length > 20 ? 6 : 5, results.length);
+  const columnSpacing = columns > 5 ? 7 / (columns - 1) : 1.75;
   const rows = Math.ceil(results.length / columns);
   const bodies = Array.from({ length: results.length }, (_, i) => {
     const startSide = side;
     const x =
         results.length <= 2
           ? startSide * between(10.8, 11.6)
-          : ((i % columns) - (columns - 1) / 2) * 1.75 + between(-0.05, 0.05),
+          : ((i % columns) - (columns - 1) / 2) * columnSpacing + between(-0.05, 0.05),
       z =
         results.length <= 2
           ? (i ? 1 : -1) * between(0.7, 1.5)
           : (Math.floor(i / columns) - (rows - 1) / 2) * 1.35 + between(-0.05, 0.05);
+    const ownModel = models[i]!;
+    const ownShape =
+      ownModel.faces === model.faces
+        ? shape
+        : new ConvexPolyhedron({
+            vertices: ownModel.vertices.map(p => new Vec3(p.x * scale, p.y * scale, p.z * scale)),
+            faces: ownModel.faces.map(face =>
+              face.points.map(p =>
+                ownModel.vertices.findIndex(v => v.distanceToSquared(p) < 1e-10),
+              ),
+            ),
+          });
     const body = new Body({
       mass: 1,
       material: dieMaterial,
-      shape,
+      shape: ownShape,
       position: new Vec3(x, between(3.2, 3.8), z),
       // Enter through the side guard, then enable it once the entire hull is inside.
       collisionFilterMask: results.length <= 2 ? 1 : -1,
@@ -156,7 +171,7 @@ export function simulateThrow(seed: number, results: number[], scene: ThrowScene
   });
   const samples: number[] = [];
   const capture = () => {
-    for (const body of bodies) {
+    for (const [index, body] of bodies.entries()) {
       // Store the original 0.5-scale contact convention; V2's renderer restores its visual lift.
       const q = new THREE.Quaternion(
         body.quaternion.x,
@@ -165,7 +180,9 @@ export function simulateThrow(seed: number, results: number[], scene: ThrowScene
         body.quaternion.w,
       );
       const support =
-        scale === 0.5 ? 0 : Math.min(...vertices.map(v => v.clone().applyQuaternion(q).y));
+        scale === 0.5
+          ? 0
+          : Math.min(...models[index]!.vertices.map(v => v.clone().applyQuaternion(q).y));
       samples.push(
         body.position.x,
         body.position.y + support * (scale - 0.5),

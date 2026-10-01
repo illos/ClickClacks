@@ -9,6 +9,7 @@ import {
   vertices as powerVertices,
   faceForResult,
 } from './d10';
+import { dieSides } from '../../shared/dice';
 import type { DiceConfig, DiceSides, Style } from './model';
 export type DieFace = {
   points: THREE.Vector3[];
@@ -126,7 +127,16 @@ function trapezohedron(): DieModel {
   return { faces, vertices: unique(faces.flatMap(f => f.points)) };
 }
 const genericModels = new Map<DiceSides, DieModel>();
-export function dieModel(config?: DiceConfig): DieModel {
+/** A resting obstacle owns one hull; the optional bonus occupies the final pool slot. */
+export function dieConfigForIndex(
+  config: DiceConfig | undefined,
+  index: number,
+): DiceConfig | undefined {
+  if (!config || config.kind === 'power') return config;
+  return { kind: 'dice', sides: dieSides(config, index) as DiceSides, count: 1 };
+}
+export function dieModel(config?: DiceConfig, index = 0): DieModel {
+  config = dieConfigForIndex(config, index);
   if (!config || config.kind === 'power') return { faces: powerFaces, vertices: powerVertices };
   let model = genericModels.get(config.sides);
   if (model) return model;
@@ -180,7 +190,7 @@ export function modelNumberingOrientation(
   index: number,
   config?: DiceConfig,
 ) {
-  const model = dieModel(config);
+  const model = dieModel(config, index);
   if (model.vertexRead) {
     const target = [...model.vertices].sort(
         (a, b) => b.clone().applyQuaternion(body).y - a.clone().applyQuaternion(body).y,
@@ -227,7 +237,7 @@ export function modelNumberingOrientation(
 }
 export function createDie(style: Style, config: DiceConfig | undefined, index = 0): THREE.Group {
   if (!config || config.kind === 'power') return createD10(style, index);
-  const model = dieModel(config),
+  const model = dieModel(config, index),
     group = new THREE.Group();
   group.scale.setScalar(0.5);
   for (const f of model.faces) {

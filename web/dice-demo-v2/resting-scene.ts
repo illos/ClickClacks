@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { Quaternion, Vector3 } from 'three';
-import { dieModel } from '../dice-demo/dice-models';
+import { dieModel, dieConfigForIndex } from '../dice-demo/dice-models';
 import { unpackMotion } from '../dice-demo/motion-codec';
 import { trayOpacity, type Participant, type ParticipantRoll } from './model';
 import type { ThrowScene } from '../dice-demo/model';
@@ -25,8 +25,8 @@ export function restingScene(
       continue;
     const motion = unpackMotion(roll.motion);
     const final = motion.samples.slice(-roll.faces.length * 7);
-    const vertices = dieModel(roll.dice).vertices;
     for (let die = 0; die < roll.faces.length; die++) {
+      const vertices = dieModel(roll.dice, die).vertices;
       const rotation = new Quaternion()
         .fromArray(final, die * 7 + 3)
         .normalize()
@@ -37,7 +37,7 @@ export function restingScene(
       obstacles.push({
         position: position.toArray(),
         rotation: rotation.toArray(),
-        ...(roll.dice ? { dice: roll.dice } : {}),
+        ...(roll.dice ? { dice: dieConfigForIndex(roll.dice, die) } : {}),
       });
     }
   }

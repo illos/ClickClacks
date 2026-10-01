@@ -9,7 +9,7 @@ Source: Salient `23cf9035b6e55d3e2e3a8198cba8c2320e7d205b` (approved V272 visual
 - P3: logical pools/mixed groups, modifiers, keep/drop, percentiles and cited Draw Steel presets; d3/d4/d6/d10/d100 animated models and custom model providers. Trusted custom result interpretation uses `acceptResolved` with validated dice envelopes.
 - P4: HTML results/details, local motion/text/contrast preferences, serial announcements, focus-preserving native dialogs and announcement delivery inside active modals. Header CSS scope and short-view clipping were fixed from browser evidence.
 - P5: versioned preferences/session credentials, bounded backend/table-partitioned IndexedDB history, memory fallback, reload reconciliation, independent default names and Pages workflow. Clean/default appearance metadata was fixed after browser validation exposed the strict backend rejection.
-- P6: GitHub repository, README adaptation/setup guide, non-React consumer, shared CLI/API routes and dedicated Convex backend. Pages publication is the remaining publication step.
+- P6: GitHub repository, README adaptation/setup guide, non-React consumer, shared CLI/API routes and dedicated Convex backend. GitHub Pages publication completed.
 
 ## Recorded validation
 
@@ -31,6 +31,8 @@ Source: Salient `23cf9035b6e55d3e2e3a8198cba8c2320e7d205b` (approved V272 visual
 - `f03beaa`: Convex deployment/codegen passed at `dev:nautical-partridge-636`, https://nautical-partridge-636.convex.cloud. Initial `96194c0` deploy was rejected before publication because components cannot run Node actions; secure sampling moved to the app wrapper.
 - `805bb22`: custom trusted interpretation update deployed; codegen, CLI TypeScript and schema validation passed. Accepted focused results reused rather than rerunning suites for deployment.
 - User enabled Pages Source → GitHub Actions after token's Pages creation permission returned403. Public backend URL set as repository Actions variable. Deployment key stays outside source/frontend/Actions variables.
+- `de958be`: merged/pushed main and published https://illos.github.io/powerroller/. [Pages run36815329398](https://github.com/illos/powerroller/actions/runs/36815329398) succeeded (build and deployment); public HTML returned HTTP200 and references assets under `/powerroller/`.
+- Final focused mixed-pool/fade browser check passed1/1 in14.7s (15.4s total); no production edits after the accepted typecheck/build. Documentation-only closeout is excluded from automatic Pages rebuilds.
 
 ## Explicitly pending evidence
 

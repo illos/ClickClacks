@@ -6,6 +6,13 @@ vi.mock('../web/dice-demo-v2/recorded-clacks', () => ({
   preloadClacks: vi.fn(async () => []),
   loadRecordedClacks: vi.fn(async () => [{ getChannelData: () => new Float32Array([0, 0.9, 0]) }]),
 }));
+vi.mock('../web/dice-demo-v2/recorded-results', () => ({
+  preloadResults: vi.fn(async () => []),
+  loadRecordedResults: vi.fn(async (context: AudioContext) => [
+    context.createBuffer(1, Math.ceil(context.sampleRate * .768), context.sampleRate),
+    context.createBuffer(1, Math.ceil(context.sampleRate * 1.3), context.sampleRate),
+  ]),
+}));
 function motion(heights: number[][]) {
   return { seed: 1, stepMs: 20, offsets: [], samples: heights.flatMap(frame => frame.flatMap(y => [0, y, 0, 0, 0, 0, 1])) };
 }
@@ -113,7 +120,7 @@ it('plays one crit accent at reveal, preserves clacks, skips ordinary/pool/histo
   expect(sources[1].connect.mock.calls[0][0].gain.value).toBe(0.7);
   audio.setCriticalVolume(0.35);
   expect(sources[1].connect.mock.calls[0][0].gain.value).toBe(0.35);
-  expect(buffers).toHaveLength(1);
+  expect(buffers).toHaveLength(2); // Both accepted result recordings preload on audio activation.
   audio.play(power,100,false); expect(sources).toHaveLength(2);
   audio.cancel('someone-else'); expect(sources[1].stop).not.toHaveBeenCalled();
   audio.cancel('me'); expect(sources[0].stop).toHaveBeenCalledOnce(); expect(sources[1].stop).toHaveBeenCalledOnce();

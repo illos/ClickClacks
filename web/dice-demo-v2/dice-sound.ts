@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 import { acquireIosAudioSession } from './ios-audio-session';
 import { loadRecordedClacks, preloadClacks } from './recorded-clacks';
+import { loadRecordedResults, preloadResults } from './recorded-results';
 import { criticalResult, type CriticalResult } from '../../lib/critical';
-import { criticalCue } from './critical-cue';
+import type { criticalCue } from './critical-cue';
 import type { Motion } from '../dice-demo/model';
 import { revealDelay, type ParticipantRoll } from './model';
 
@@ -32,7 +33,7 @@ export function diceImpacts(motion: Motion | undefined, count: number): DiceImpa
 }
 
 /** Recorded landing clacks, scheduled against the tray's recorded physics. */
-export function createDiceSound(makeCriticalCue: typeof criticalCue = criticalCue) {
+export function createDiceSound(makeCriticalCue?: typeof criticalCue) {
   let context: AudioContext | undefined, enabled = false, disposed = false;
   let criticalVolume = 0.7;
   let noises: AudioBuffer[] = [];
@@ -54,7 +55,7 @@ export function createDiceSound(makeCriticalCue: typeof criticalCue = criticalCu
   function setEnabled(value: boolean) {
     enabled = value;
     if (!value) releaseContext();
-    else void preloadClacks().catch(() => {});
+    else void Promise.all([preloadClacks(), makeCriticalCue ? undefined : preloadResults()]).catch(() => {});
   }
   function setCriticalVolume(value: number) {
     if (!Number.isFinite(value)) return;
@@ -73,10 +74,16 @@ export function createDiceSound(makeCriticalCue: typeof criticalCue = criticalCu
       // Safari uses 'interrupted' after app/tab switching or screen locking.
       // Resume every recoverable non-running state on the current user gesture.
       if (context.state !== 'running') await context.resume();
-      if (!noises.length && context && !disposed && enabled && !document.hidden) {
+      if ((!noises.length || (!makeCriticalCue && cues.size < 2)) && context && !disposed && enabled && !document.hidden) {
         const target = context;
-        loading ??= loadRecordedClacks(target).then(buffers => {
-          if (context === target) noises = buffers;
+        loading ??= Promise.all([
+          loadRecordedClacks(target),
+          makeCriticalCue ? [] : loadRecordedResults(target).catch(() => []),
+        ]).then(([buffers, results]) => {
+          if (context !== target) return;
+          noises = buffers;
+          if (results[0]) cues.set('success', results[0]);
+          if (results[1]) cues.set('failure', results[1]);
         }).finally(() => { if (context === target) loading = undefined; });
         await loading;
       }
@@ -100,6 +107,8 @@ export function createDiceSound(makeCriticalCue: typeof criticalCue = criticalCu
     if (!context) return;
     let buffer = cues.get(result);
     if (!buffer) {
+      // Missing cosmetic audio must not block landing clacks or substitute another cue.
+      if (!makeCriticalCue) return;
       const samples = makeCriticalCue(context.sampleRate, result);
       buffer = context.createBuffer(1, samples.length, context.sampleRate);
       buffer.getChannelData(0).set(samples);

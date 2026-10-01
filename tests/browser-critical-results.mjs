@@ -64,7 +64,8 @@ try {
   if(name==='Power 19'||name==='Power fail')await page.screenshot({path:`/tmp/powerroller-${failure?'fail':'crit'}-flash.png`});
  }
  expect(await page.evaluate(()=>window.cueStarts.length)).toBe(4);
- expect(await page.evaluate(()=>window.cueStarts.every(c=>c.rms>.04&&Math.abs(c.duration-.33)<.001))).toBe(true);
+ expect(await page.evaluate(()=>window.cueStarts.every(c=>c.rms>.08))).toBe(true);
+ expect(await page.evaluate(()=>window.cueStarts.map(c=>Number(c.duration.toFixed(3))))).toEqual([.768,1.3,.768,1.3]);
  await page.evaluate(()=>{window.fixtureAudio.dispose();window.fixtureTray.dispose();window.fixturePlanner.dispose();});expect(errors).toEqual([]);
  console.log('PASS: cached history crit colors/labels survive reload; natural values ignore modifiers; bonus d4 and multi-d20 exclusions; semantic descriptions; 320px history containment; real planner/renderer success/fail flashes and ordinary-flash reset; four real AudioContext reveal cues with non-silent buffers; no page errors.');
 }finally{await browser.close();}

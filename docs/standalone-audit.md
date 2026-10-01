@@ -478,3 +478,21 @@ alternating forced natural success/failure played distinct non-silent buffers,
 volume and mute worked, and preferences stayed unchanged. The regression journey
 is `tests/browser-critical-sound-preview.mjs`. Production output was checked to
 exclude the demo HTML.
+
+## Approved result sounds
+
+The owner approved the exact CPhT Fluke sword-draw recording and the original
+dark-impact fail from the private audition for production on 2026-10-01.
+Both are now WAV assets in the normal site's audio player; source/provenance is
+recorded in `web/dice-demo-v2/audio/README.md`. The fail waveform matches the
+approved synthesis within 16-bit PCM quantization. The separate result sounds
+retain reveal timing, gain 0.7, mute, owned cancellation and no history playback.
+Encoded bytes are cached, while each audio session decodes independent copies
+to preserve Safari interruption recovery. A missing result clip leaves the
+recorded landing clacks working and retries on a later activation.
+
+Typecheck, normal site build and isolated listening build passed. Thirteen focused
+audio/session/asset tests passed, including detaching decode buffers and fetch
+retry. The built listening demo now exercises the default production player;
+Chromium confirmed the actual .768s sword and 1.3s fail buffers at reveal, volume,
+mute, unchanged preferences and no startup errors. No backend change is needed.

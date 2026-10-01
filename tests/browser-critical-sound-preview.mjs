@@ -49,5 +49,5 @@ try {
   expect(await page.evaluate(() => window.demoCues.length)).toBe(2);
   expect(await page.evaluate(() => Object.fromEntries(Object.entries(localStorage)))).toEqual(before);
   expect(errors).toEqual([]);
-  console.log('PASS: built Tailscale HTTPS demo loads; alternating natural crit/fail use recorded sword-draw/dark-impact buffers; volume/mute work; preferences unchanged; no startup errors.');
+  console.log('PASS: built listening demo loads; alternating natural crit/fail use recorded sword-draw/dark-impact buffers; volume/mute work; preferences unchanged; no startup errors.');
 } finally { await browser.close(); }

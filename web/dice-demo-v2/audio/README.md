@@ -23,3 +23,21 @@ browser resampling. No synthesis or tonal filtering is applied.
 | clack-4.wav | 13.412750 s | 13.475 s | 62.25 ms |
 
 The original video and full uploaded screen recording are not distributed.
+
+# Result cues
+
+`crit-sword-draw.wav` is **Sword Draw Sound Effect** by **CPhT Fluke**:
+https://www.youtube.com/watch?v=BQV5rbBMjCQ. The owner selected this exact clip
+and explicitly requested production use on 2026-10-01 after auditioning it.
+The creator's description identifies its use in the student game *Iron* but
+does not state a reuse license. The recording retains the creator's rights;
+it is not covered by the application's MIT license. It is converted to mono
+48 kHz / 16-bit PCM without changing timing or pitch (0.768 seconds).
+
+`crit-fail.wav` is the application's original synthesized dark impact and
+descending metallic groan, approved in the same audition. It is rendered from
+`web/site/cinematic-critical-cue.ts` at 48 kHz / 16-bit PCM (1.3 seconds) and
+is covered by the application's MIT license. Its peak is 0.78.
+
+Both cues use the existing result-reveal timing, volume gain and sound preference.
+They are loaded only when sounds are enabled, and never replayed from history.

@@ -11,14 +11,8 @@ The page is `/web/site/critical-sounds.html`. Preview binds to loopback port 960
 expose it through a dedicated Tailscale Serve endpoint for private listening.
 The normal site build does not include this entry or its generated files.
 
-The current crit audition uses the exact user-selected [Sword Draw Sound Effect
-by CPhT Fluke](https://www.youtube.com/watch?v=BQV5rbBMjCQ), converted to mono
-48 kHz PCM WAV without changing its timing or pitch. Place the recording at
-`.preview/critical-sounds/assets/crit-sword-draw.wav` after building. The recording
-is kept outside Git and the public site; the source description does not state
-reuse terms. The demo credits and links the creator.
-
-The crit fail remains the original synthesized low impact and descending dissonant
-resonance in `web/site/cinematic-critical-cue.ts`. Both are injected only by this
-demo. The live site's existing result accents and recorded landing clacks remain
-unchanged while these sounds are being auditioned.
+The owner approved both audition sounds for production on 2026-10-01. This demo
+now uses the same audio loader, result WAVs, reveal timing and volume as the live
+site: CPhT Fluke's selected sword draw and the application's original dark impact
+and descending metallic groan. See `web/dice-demo-v2/audio/README.md` for provenance.
+The demo itself remains private and does not join tables or write preferences.

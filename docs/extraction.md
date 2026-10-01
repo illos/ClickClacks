@@ -1,5 +1,8 @@
 # Direct extraction
 
+This records the clean baseline release `f8587f7`. Later owner-authorized
+extensions and their verification are recorded in [the standalone audit](standalone-audit.md).
+
 Source: Salient `23cf9035b6e55d3e2e3a8198cba8c2320e7d205b` (approved V272).
 The owner discarded the first extraction and its attempted parity rewrite. All of
 that application code was removed before copying the original project files.

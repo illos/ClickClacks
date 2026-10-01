@@ -169,7 +169,7 @@ export function createController(options:{transport:Transport;key:string;identit
       if(!Number.isInteger(edges)||!Number.isInteger(banes)||edges<0||edges>2||banes<0||banes>2)throw new Error('Modifier counts must be integers from 0 to 2.');
       const id=input.id??(options.requestId??(()=>crypto.randomUUID()))();
       if(!id||id.length>128)throw new Error('Request ID must contain 1–128 characters.');
-      const fingerprint=JSON.stringify([dice.kind,dice.sides,dice.count,edges,banes]);
+      const fingerprint=JSON.stringify([dice.kind,dice.sides,dice.count,Boolean(dice.bonusD4),edges,banes]);
       let request=requests.get(id);
       if(request&&request.fingerprint!==fingerprint)throw new Error('REQUEST_CONFLICT: reuse an ID only for the same dice and modifiers.');
       if(request?.accepted){receive(request.accepted);return request.accepted;}

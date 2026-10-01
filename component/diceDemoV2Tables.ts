@@ -18,6 +18,7 @@ export const diceConfiguration = v.object({
     v.literal(20),
   ),
   count: v.number(),
+  bonusD4: v.optional(v.boolean()),
 });
 export const roomPolicy = v.object({
   capacity: v.number(),

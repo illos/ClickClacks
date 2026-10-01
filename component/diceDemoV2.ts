@@ -17,6 +17,8 @@ import {
 import { resolveEdgeBane, tierOf } from "../shared/resolve/index";
 import {
   defaultDice,
+  dicePoolSides,
+  dicePoolCount,
   genericModifier,
   validateDiceConfiguration,
   type DiceConfiguration,
@@ -119,7 +121,7 @@ const defaultPolicy = {
 function config(dice?: DiceConfiguration) {
   try {
     const checked = validateDiceConfiguration(dice ?? defaultDice);
-    return { kind: checked.kind, sides: checked.sides, count: checked.count };
+    return { kind: checked.kind, sides: checked.sides, count: checked.count, ...(checked.bonusD4?{bonusD4:true}:{}) };
   } catch (e) {
     throw authorityError("INVALID_REQUEST",(e as Error).message);
   }
@@ -356,7 +358,8 @@ async function requestReceipt(
     if (
       receipt.dice.kind !== dice.kind ||
       receipt.dice.sides !== dice.sides ||
-      receipt.dice.count !== dice.count
+      receipt.dice.count !== dice.count ||
+      Boolean(receipt.dice.bonusD4) !== Boolean(dice.bonusD4)
     )
       throw authorityError("CONFLICT","Throw ID already used for another throw.");
     if (receipt.expiresAt <= Date.now() || !receipt.faces.length)
@@ -397,8 +400,8 @@ export const recordSample = mutation({
         "This room reached its roll limit. Open a new room.",
       );
     if (
-      args.faces.length !== dice.count ||
-      args.faces.some((n) => !Number.isInteger(n) || n < 1 || n > dice.sides)
+      args.faces.length !== dicePoolCount(dice) ||
+      args.faces.some((n,index) => !Number.isInteger(n) || n < 1 || n > dicePoolSides(dice)[index]!)
     )
       throw authorityError("INVALID_REQUEST","Invalid server-generated dice.");
     if ((found.requestCount ?? 0) >= selected.maxRolls)
@@ -490,11 +493,11 @@ async function acceptThrow(
   if (previous && previous.roll.startsAt + previous.roll.duration > Date.now())
     throw new ConvexError("Your dice are still rolling.");
   if (
-    args.faces.length !== dice.count ||
-    args.faces.some((n) => !Number.isInteger(n) || n < 1 || n > dice.sides)
+    args.faces.length !== dicePoolCount(dice) ||
+    args.faces.some((n,index) => !Number.isInteger(n) || n < 1 || n > dicePoolSides(dice)[index]!)
   )
     throw authorityError("INVALID_REQUEST","Choose valid dice results for this pool.");
-  const duration = args.motion ? validateMotion(args.motion, dice.count) : 2200;
+  const duration = args.motion ? validateMotion(args.motion, dicePoolCount(dice)) : 2200;
   const lead = Math.min(
     500,
     Math.max(
@@ -534,7 +537,7 @@ async function acceptThrow(
     source: supplied ? ("supplied" as const) : ("generated" as const),
     sequence,
     ...(power ? { power } : {}),
-    styles: Array.from({ length: dice.count }, () => owner.style),
+    styles: Array.from({ length: dicePoolCount(dice) }, () => owner.style),
     ...(args.motion ? { motion: {...args.motion,version:1} } : {}),
     startsAt,
     duration,

@@ -13,7 +13,7 @@ import {
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { api } from "./_generated/api";
 import { diceConfiguration } from "./diceDemoV2Tables";
-import { defaultDice, validateDiceConfiguration } from "../shared/dice";
+import { defaultDice, validateDiceConfiguration, dicePoolSides } from "../shared/dice";
 import { generate } from "./lib/dice";
 const validKey = (key: string) => {
   if (!/^[a-f0-9-]{36}$/.test(key)) throw new ConvexError("Invalid demo room.");
@@ -74,10 +74,7 @@ export const sampleFaces = action({
     const faces = generate(
       crypto.getRandomValues(new Uint8Array(32)),
       0,
-      Array.from({ length: dice.count }, (_, index) => ({
-        id: `die-${index}`,
-        sides: dice.sides,
-      })),
+      dicePoolSides(dice).map((sides,index)=>({id:`die-${index}`,sides})),
     ).dice.map((die) => die.value);
     return session
       ? ctx.runMutation(api.diceDemoV2.recordSample, { ...session, faces })

@@ -67,3 +67,18 @@ describe('independent authority and delivery controller',()=>{
  });
 
 });
+
+
+it('bonus d4 participates in stable controller fingerprints while false and omitted are equivalent',async()=>{
+  const f=fake();
+  const controller=createController({transport:f.transport,key:'room',identity,profile});
+  await controller.join();
+  const dice={kind:'dice' as const,sides:20 as const,count:1,bonusD4:true};
+  await controller.roll({id:'bonus',dice});
+  const sampling=f.call.mock.calls.find(([method])=>method==='diceDemo:sampleFaces');
+  expect(sampling![1].dice).toEqual(dice);
+  await expect(controller.roll({id:'bonus',dice:{...dice,bonusD4:false}})).rejects.toThrow('REQUEST_CONFLICT');
+  await controller.roll({id:'normal',dice:{kind:'dice',sides:20,count:1}});
+  await expect(controller.roll({id:'normal',dice:{kind:'dice',sides:20,count:1,bonusD4:false}})).resolves.toBeDefined();
+  await controller.dispose();
+});

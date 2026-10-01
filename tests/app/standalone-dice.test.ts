@@ -290,3 +290,50 @@ test("generic modifier stages persist zero, two and five with cancellation and s
     vi.advanceTimersByTime(3000);
   }
 });
+
+
+test("bonus d4 faces are durably bound after the base pool and included in the authoritative total", async()=>{
+  const t=await joined();
+  const dice:DiceConfiguration={kind:"dice",sides:20,count:2,bonusD4:true};
+  const args={key,viewer,credential,id:id(800),dice};
+  const faces=await t.action(demo.sampleFaces,args);
+  expect(faces).toHaveLength(3);
+  expect(faces.slice(0,2).every(face=>face>=1&&face<=20)).toBe(true);
+  expect(faces[2]).toBeGreaterThanOrEqual(1);
+  expect(faces[2]).toBeLessThanOrEqual(4);
+  await expect(t.action(demo.sampleFaces,{...args,dice:{...dice,bonusD4:false}})).rejects.toThrow("already used");
+  const roll=await t.mutation(demoV2.throwDice,{...args,faces,edges:2});
+  expect(roll.dice).toEqual(dice);
+  expect(roll.total).toBe(faces.reduce((a,b)=>a+b,0)+5);
+  expect(roll.styles).toHaveLength(3);
+  expect(roll.power).toBeUndefined();
+  expect((await t.query(demoV2.track,{key,viewer}))!.roll).toEqual(roll);
+  await t.mutation(demoV2.clearTray,{key,viewer,credential});
+  expect(await t.mutation(demoV2.throwDice,{...args,faces,edges:2})).toEqual(roll);
+  const archive=await t.query(demoV2.events,{key,viewer,credential,after:0});
+  expect(archive.rolls[0]!.faces).toEqual(faces);
+  expect(archive.rolls[0]!.total).toBe(roll.total);
+  await expect(t.mutation(demoV2.throwDice,{...args,dice:{...dice,bonusD4:false},faces,edges:2})).rejects.toThrow("already used");
+});
+test("bonus d4 rejects ineligible configurations and out-of-range supplied bonus faces", async()=>{
+  const t=await joined();
+  for(const dice of [{kind:"power",sides:10,count:2,bonusD4:true},{kind:"dice",sides:4,count:1,bonusD4:true}] as const)
+    await expect(t.action(demo.sampleFaces,{key,viewer,credential,id:id(801),dice})).rejects.toThrow("Choose a power roll");
+  await expect(t.mutation(internal.diceDemoV2.acceptSupplied,{
+    key,viewer,credential,id:id(802),dice:{kind:"dice",sides:20,count:1,bonusD4:true},faces:[20,5],
+  })).rejects.toThrow("valid dice results");
+});
+test("twenty base dice plus a bonus d4 preserve all 481 recorded frames with the mixed-pool stride", async()=>{
+  const t=await joined();
+  const dice:DiceConfiguration={kind:"dice",sides:20,count:20,bonusD4:true};
+  const args={key,viewer,credential,id:id(803),dice};
+  const faces=await t.action(demo.sampleFaces,args);
+  const frame=Array.from({length:21},()=>[0,1,0,0,0,0,1]).flat();
+  const motion={version:1,seed:1,stepMs:1000/60,samples:[],packed:new Float64Array(Array.from({length:481},()=>frame).flat()).buffer,offsets:Array.from({length:21},()=>[0,0,0,1]).flat()};
+  const roll=await t.mutation(demoV2.throwDice,{...args,faces,motion});
+  expect(roll.duration).toBeCloseTo(8000,8);
+  const track=await t.query(demoV2.track,{key,viewer});
+  expect(track!.roll.faces).toHaveLength(21);
+  expect(track!.roll.motion!.packed!.byteLength).toBe(565656);
+  expect(track!.roll.motion!.offsets).toHaveLength(84);
+});

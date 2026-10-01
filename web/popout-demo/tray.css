@@ -9,14 +9,35 @@ body.mini-tray { margin: 0; }
   .v2 .dice-card .stage { flex: 1; height: auto; min-height: 150px; margin: 0; border-radius: 16px; }
   .v2 .dice-card .controls { flex: none; display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; margin: 0; gap: 8px; }
   .v2 .dice-card .power-modifiers { flex: 0 1 auto; }
-  .v2 .stage-label { top: 12px; left: 14px; }
+  .v2 .stage-label { top: 24px; left: 12px; right: 148px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .v2 .mini-settings-trigger {
+    position: absolute; top: 12px; right: 12px; z-index: 3;
+    width: 36px; height: 36px; padding: 7px; border-radius: 999px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .v2 .mini-settings-trigger svg { width: 18px; height: 18px; }
+  .v2 .sound-toggle { right: 56px; }
+  .v2 .clear-tray { right: 100px; }
+  .v2 .mini-settings {
+    box-sizing: border-box; width: calc(100vw - 16px); max-width: 460px;
+    max-height: calc(100dvh - 16px); padding: 16px;
+  }
+  .v2 .mini-settings > header { top: -16px; margin-bottom: 4px; }
+  .v2 .mini-settings-tabs {
+    position: sticky; top: 48px; z-index: 3; background: #1b2223;
+    display: flex; gap: 8px; padding: 8px 0 12px; margin-bottom: 8px;
+  }
+  .v2 .mini-settings-tabs button { flex: 1; min-height: 40px; border-radius: 10px; font-weight: 650; }
+  .v2 .mini-settings-tabs button[aria-selected='true'] { color: #10251f; background: #70dac3; border-color: #70dac3; }
+  .v2 .mini-settings-dice { width: auto; padding: 0; }
+  .v2 .mini-settings [role='tabpanel'][hidden] { display: none; }
   .v2 .tray-history {
     position: absolute;
     z-index: 1;
-    top: 52px;
+    top: 60px;
     left: 14px;
     right: 14px;
-    height: min(252px, calc(100% - 64px));
+    height: min(252px, calc(100% - 72px));
     display: grid;
     grid-template-rows: repeat(6, minmax(0, 1fr));
     pointer-events: none;
@@ -55,7 +76,7 @@ body.mini-tray { margin: 0; }
   .v2 .canvas-host { z-index: 2; }
   .v2 .stage-label, .v2 .sound-toggle, .v2 .clear-tray, .v2 .fallback { z-index: 3; }
   @media (max-height: 350px) {
-    .v2 .tray-history { top: 44px; height: calc(100% - 50px); }
+    .v2 .tray-history { top: 56px; height: calc(100% - 62px); }
     .v2 .tray-history .roll-log-entry { padding: 0; }
     .v2 .tray-history .roll-log-entry header { display: none; }
   }

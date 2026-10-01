@@ -798,6 +798,23 @@
   justify-content: center;
   padding-inline: 10px 6px;
 }
+.v2 .dice-card .controls .roll-button-group > .dice-selection-trigger {
+  position: relative;
+  background: rgb(0 0 0 / 12%);
+  border-radius: 999px 0 0 999px;
+}
+.dice-selection-trigger::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 22%;
+  bottom: 22%;
+  width: 1px;
+  border-radius: 1px;
+  background: currentColor;
+  opacity: 0.3;
+  pointer-events: none;
+}
 .dice-selection-trigger svg {
   width: 21px;
   height: 21px;
@@ -882,5 +899,21 @@
 @media (forced-colors: active) {
   button, input, select, .roll-log-entry, dialog { border: 1px solid ButtonText; }
   button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid Highlight; }
+}
+/* Approved short-height reflow: keep the tray and controls in normal document flow. */
+@media (max-height: 450px) {
+  .lab.v2 {
+    height: auto;
+    min-height: 100dvh;
+    display: block;
+    overflow: visible;
+  }
+  .v2 .roll-area { display: block; }
+  .v2 .lab-header { margin-bottom: 16px; }
+  .v2 .dice-card { display: block; margin: 16px 0; }
+  .v2 .dice-card .stage { height: 180px; min-height: 180px; flex: none; }
+  .v2 .dice-card .controls { flex-wrap: wrap; justify-content: flex-start; }
+  .v2 .dice-card .power-modifiers { flex: 0 0 auto; }
+  .v2 .track-results { margin-top: 16px; max-height: none; }
 }
 }

@@ -65,8 +65,7 @@ or physics modules. Name/style/preferences restored; Arrow/Escape menu handling
 and dialog focus return passed. Two mounted rollers retained host styling and
 independent selections without duplicate IDs or graphics loading.
 
-A 320×225 viewport exposes the copied layout's short-height clipping. A concrete
-vertical-wrap preview is prepared; applying it awaits the owner's decision.
+A 320×225 viewport exposes the copied layout's short-height clipping. The owner approved the concrete vertical-wrap preview; the short-height fix is now implemented.
 Normal 390×844 and 640×450 layouts have no horizontal overflow and reachable Roll.
 Real assistive technology and physical devices remain pending, not simulated.
 
@@ -89,8 +88,7 @@ No other tables were reset. Accepted test results were reused for publication.
 The separately installed package consumer's actual Convex codegen also passed,
 without deploying that consumer. Both component installation and public package
 entry imports are now proven independently of this repository's app fixture.
-Broader collaborative modes remain queued by the owner. The short-height visual
-fix remains a pending owner decision; it has not been silently applied.
+Broader collaborative modes remain queued by the owner. The owner subsequently approved the short-height visual fix; see the follow-up below.
 
 Release closeout corrected saved-room recovery and quota fallback. Focused browser
 readback proved an invalid saved code recovers a new joinable room, while an
@@ -98,3 +96,17 @@ explicit invite takes precedence; no visible errors. Controlled host preference
 changes mounted/disposed the canvas as requested. Storage tests: 8 passed,
 including quota-limited writes with readable storage. Typecheck and production
 build passed. The site entry now consumes the public package exports directly.
+
+
+## Approved short-height and picker treatment
+
+The owner approved short-height scrolling and requested a slightly darker dice
+selection segment with a small divider. At viewport heights up to 450px, the
+existing page flows vertically with a 180px tray and wrapped controls. Taller
+viewports retain the original grid arrangement. The selection segment has a 12%
+black overlay and an inset 1px divider; Roll retains its chosen background.
+
+Focused Chromium checks passed at 320×225 and 640×450: modifier, picker and dice
+count controls are reachable by vertical scrolling, count changes work and no
+horizontal page overflow occurs. At 390×844 and 1280×900 the original grid remains.
+The picker styling was verified at all four sizes. Production build passed.

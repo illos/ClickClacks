@@ -146,3 +146,12 @@ number colors retain separate values and the existing profile/preview pipeline.
 The d6 icon is now a cube with three visible faces and pips. Focused Chromium
 checks passed for touch selection, keyboard hue changes, separate color targets,
 black/white endpoints and the cube icon. Typecheck and production build passed.
+
+## Current designs in history avatars
+
+History avatars now use the viewer's current local profile or the roller's
+current room profile, falling back to the recorded design for absent members.
+This updates avatar color, ink and font immediately without altering roll
+receipts or results. A focused two-viewer Chromium journey passed: an existing
+entry updates in settings and on the peer, retains its result, and shows the
+current design after reloading cached history. Typecheck and build passed.

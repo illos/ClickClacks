@@ -145,12 +145,12 @@ function DiceAvatar({ style, className = '' }: { style?: Style; className?: stri
   );
 }
 
-function RollEntry({ roll, viewer }: { roll: LogRoll; viewer: string }) {
+function RollEntry({ roll, viewer, avatarStyle }: { roll: LogRoll; viewer: string; avatarStyle?: Style }) {
   return (
     <article className="roll-log-entry">
       <header>
         <strong className="roll-author">
-          <DiceAvatar style={roll.styles[0]} className="roll-avatar" />
+          <DiceAvatar style={avatarStyle ?? roll.styles[0]} className="roll-avatar" />
           <span className="roll-author-name">
             {roll.name}
             {roll.roller === viewer ? ' · you' : ''}
@@ -1130,7 +1130,12 @@ function DiceRoom() {
       <section className="track-results" aria-label="Roll log" tabIndex={0}>
         {rollLog.length ? (
           rollLog.map(roll => (
-            <RollEntry key={`${roll.roller}:${roll.id}`} roll={roll} viewer={viewer} />
+            <RollEntry
+              key={`${roll.roller}:${roll.id}`}
+              roll={roll}
+              viewer={viewer}
+              avatarStyle={roll.roller === viewer ? profile.style : room?.participants.find(member => member.id === roll.roller)?.style}
+            />
           ))
         ) : (
           <p className="empty-log">Throw dice to start the log.</p>

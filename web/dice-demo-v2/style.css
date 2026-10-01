@@ -887,6 +887,7 @@
 }
 .dice-selection-trigger svg:has(text) {
   width: 32px;
+  height: 26px;
 }
 .bonus-d4-toggle[aria-pressed='true'] {
   background: #354043;

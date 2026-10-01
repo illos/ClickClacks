@@ -311,12 +311,25 @@ const diceChoices: ReadonlyArray<{ value: SelectedDice; label: string }> = [
   ...([20, 12, 10, 8, 6, 4] as const).map(value => ({ value, label: `d${value}` })),
 ];
 function RollDieIcon({ dice }: { dice: SelectedDice }) {
+  const overlapMask = useId();
   if (dice === 'power') return (
-    <svg aria-hidden="true" viewBox="0 0 36 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round">
-      {[0, 16].map(x => <g key={x} transform={`translate(${x} 0)`}>
-        <path d="M10 2 18 7v10l-8 5-8-5V7Z" />
-        <text x="10" y="15.5" textAnchor="middle" fill="currentColor" stroke="none" fontFamily="sans-serif" fontSize="9" fontWeight="700">10</text>
-      </g>)}
+    <svg aria-hidden="true" viewBox="0 0 34 30" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round">
+      <defs>
+        <mask id={overlapMask} maskUnits="userSpaceOnUse" x="0" y="0" width="34" height="30">
+          <rect width="34" height="30" fill="white" stroke="none" />
+          <path d="M12 7 21 12v10l-9 5-9-5V12Z" transform="rotate(-12 12 17)" fill="black" stroke="black" strokeWidth="2.8" />
+        </mask>
+      </defs>
+      <g mask={`url(#${overlapMask})`}>
+        <g transform="rotate(16 23 11)">
+          <path d="M23 2 31 6.5v9l-8 4.5-8-4.5v-9Z" />
+          <text x="25" y="12" textAnchor="middle" fill="currentColor" stroke="none" fontFamily="sans-serif" fontSize="8" fontWeight="700">10</text>
+        </g>
+      </g>
+      <g transform="rotate(-12 12 17)">
+        <path d="M12 7 21 12v10l-9 5-9-5V12Z" />
+        <text x="12" y="20.5" textAnchor="middle" fill="currentColor" stroke="none" fontFamily="sans-serif" fontSize="10" fontWeight="700">10</text>
+      </g>
     </svg>
   );
   const sides = dice;

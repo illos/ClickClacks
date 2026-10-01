@@ -318,3 +318,26 @@ Six focused contact/lifecycle tests, typecheck and build passed. Chromium verifi
 live-roll scheduling, generated waveform, mute, reload, simulated tab return,
 interruption recovery, historical silence and existing controls. Physical sound
 character still needs the owner's listening check.
+
+## Owner-supplied recorded clacks
+
+Owner supplied a screen recording of Gliz Caldo's “Dice Roll Sound Effects”
+(YouTube F4Kxnv3Hzmk), confirmed free use, and authorized clipping or synthesis.
+The creator's description independently permits using the sounds without credit.
+Four isolated initial contacts replace synthetic playback. Provenance and exact
+cuts are in web/dice-demo-v2/audio/README.md; no full video is distributed.
+Trimming, short boundary fades, DC removal and peak normalization preserve the
+recorded sound. Each impact randomly chooses a clip with the existing small pitch
+variation, gain and simultaneous-pool attenuation. Tonal filtering is removed.
+
+Encoded clips cache across context recreation. Decode receives copies, preserving
+bytes against browser input detachment; resampling overshoot is normalized to the
+existing 0.9 source peak ceiling. Failed asset loads can retry. Playback waits for
+buffers without marking a roll played prematurely; unlock rechecks current tracks.
+The existing iOS Safari session recovery and recorded physics timing remain.
+
+Accepted checks: typecheck, production build, 11 focused loader/session/impact
+lifecycle tests and Chromium audio acceptance passed. Browser checks exercised
+actual WAV decoding and a non-silent bounded waveform, saved toggle, mute,
+historical silence, interrupted-context resume and fresh decoding after simulated
+tab return. Physical iPhone playback and subjective listening remain user checks.

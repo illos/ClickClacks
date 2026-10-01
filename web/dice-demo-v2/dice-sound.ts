@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { acquireIosAudioSession } from './ios-audio-session';
-import { diceClack } from './dice-clack';
+import { loadRecordedClacks, preloadClacks } from './recorded-clacks';
 import type { Motion } from '../dice-demo/model';
 import { revealDelay, type ParticipantRoll } from './model';
 
@@ -29,11 +29,11 @@ export function diceImpacts(motion: Motion | undefined, count: number): DiceImpa
   return impacts.sort((a, b) => a.at - b.at);
 }
 
-/** Procedural dice-on-dice clacks: a short filtered noise strike and damped
- * resonances. No downloaded recording, network request, or third-party audio asset. */
+/** Recorded landing clacks, scheduled against the tray's recorded physics. */
 export function createDiceSound() {
   let context: AudioContext | undefined, enabled = false, disposed = false;
   let noises: AudioBuffer[] = [];
+  let loading: Promise<void> | undefined;
   let restoreSession: (() => void) | undefined;
   const played = new Set<string>();
   const voices = new Map<AudioBufferSourceNode, string>();
@@ -45,7 +45,11 @@ export function createDiceSound() {
       voices.delete(source);
     }
   }
-  function setEnabled(value: boolean) { enabled = value; if (!value) releaseContext(); }
+  function setEnabled(value: boolean) {
+    enabled = value;
+    if (!value) releaseContext();
+    else void preloadClacks().catch(() => {});
+  }
   async function unlock() {
     if (!enabled || disposed || document.hidden) return;
     try {
@@ -58,33 +62,31 @@ export function createDiceSound() {
       // Safari uses 'interrupted' after app/tab switching or screen locking.
       // Resume every recoverable non-running state on the current user gesture.
       if (context.state !== 'running') await context.resume();
+      if (!noises.length && context && !disposed && enabled && !document.hidden) {
+        const target = context;
+        loading ??= loadRecordedClacks(target).then(buffers => {
+          if (context === target) noises = buffers;
+        }).finally(() => { if (context === target) loading = undefined; });
+        await loading;
+      }
     } catch {
       if (!context || context.state === 'closed') { restoreSession?.(); restoreSession = undefined; }
       /* Audio is cosmetic; unsupported/blocked devices can still roll. */
     }
   }
-  function strike(at: number, strength: number, die: number, owner: string, density: number) {
-    if (!context) return;
-    if (!noises.length) {
-      for (let variant = 0; variant < 4; variant++) {
-        const samples = diceClack(context.sampleRate, variant);
-        const buffer = context.createBuffer(1, samples.length, context.sampleRate);
-        buffer.getChannelData(0).set(samples);
-        noises.push(buffer);
-      }
-    }
-    const source = context.createBufferSource(), filter = context.createBiquadFilter(), gain = context.createGain();
-    source.buffer = noises[die % noises.length]!;
+  function strike(at: number, strength: number, owner: string, density: number) {
+    if (!context || !noises.length) return;
+    const source = context.createBufferSource(), gain = context.createGain();
+    source.buffer = noises[Math.floor(Math.random() * noises.length)]!;
     source.playbackRate.value = 0.96 + Math.random() * 0.08;
-    filter.type = 'lowpass'; filter.frequency.value = 11000;
     gain.gain.value = (0.12 + strength * 0.26) / Math.sqrt(density);
-    source.connect(filter).connect(gain).connect(context.destination);
+    source.connect(gain).connect(context.destination);
     voices.set(source, owner);
-    source.onended = () => { voices.delete(source); source.disconnect(); filter.disconnect(); gain.disconnect(); };
+    source.onended = () => { voices.delete(source); source.disconnect(); gain.disconnect(); };
     source.start(at);
   }
   function play(roll: ParticipantRoll, offset: number, reduced: boolean) {
-    if (!enabled || disposed || document.hidden || context?.state !== 'running') return;
+    if (!enabled || disposed || document.hidden || context?.state !== 'running' || !noises.length) return;
     const key = JSON.stringify([roll.roller, roll.id]);
     if (played.has(key)) return;
     played.add(key);
@@ -98,7 +100,7 @@ export function createDiceSound() {
       // Never replay old history, missed impacts, or catch-up audio after backgrounding.
       if (delay < 0 || delay > 10000) continue;
       const density = impacts.filter(other => Math.abs(other.at - impact.at) < 35).length;
-      strike(context.currentTime + delay / 1000, impact.strength, impact.die, roll.roller, density);
+      strike(context.currentTime + delay / 1000, impact.strength, roll.roller, density);
     }
   }
   function releaseContext() {
@@ -106,6 +108,7 @@ export function createDiceSound() {
     const retired = context;
     context = undefined;
     noises = [];
+    loading = undefined;
     restoreSession?.(); restoreSession = undefined;
     // Some Safari contexts stay silent after interruption despite reporting running.
     // Retire them while hidden; the next gesture creates a fresh audio session.

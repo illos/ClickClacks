@@ -1,4 +1,21 @@
-# Wood impact reference
+# Dice sound references
+
+## Current recorded sound
+
+The owner supplied a screen recording of [Dice Roll Sound Effects by Gliz Caldo](https://www.youtube.com/watch?v=F4Kxnv3Hzmk)
+and requested direct clips or synthesis, whichever was easier. Playback now uses
+four isolated recorded landing contacts. The source description permits using
+the sounds without credit; provenance, cut times and processing are recorded in
+`web/dice-demo-v2/audio/README.md`. Previous synthesized sounds below are history.
+
+Encoded WAV bytes are cached, with separate decoded buffers per AudioContext.
+Decoding copies the bytes because browsers can detach decode inputs; returning
+from a Safari tab can therefore rebuild the context without empty audio data.
+The existing physics impact times, volume/pool attenuation, saved sound toggle,
+mute cancellation and iOS Safari session recovery remain. No full recorded roll
+is layered over each bounce. Source audio is used without a tonal filter.
+
+## Earlier wood impact reference
 
 Owner requested waveform analysis of Owlbear Rodeo's dice audio, then chose wood
 only for this pass. Dice-on-dice mixing remains a later option.

@@ -2,6 +2,10 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { diceImpacts, createDiceSound } from '../web/dice-demo-v2/dice-sound';
 import type { ParticipantRoll } from '../web/dice-demo-v2/model';
+vi.mock('../web/dice-demo-v2/recorded-clacks', () => ({
+  preloadClacks: vi.fn(async () => []),
+  loadRecordedClacks: vi.fn(async () => [{ getChannelData: () => new Float32Array([0, 0.9, 0]) }]),
+}));
 function motion(heights: number[][]) {
   return { seed: 1, stepMs: 20, offsets: [], samples: heights.flatMap(frame => frame.flatMap(y => [0, y, 0, 0, 0, 0, 1])) };
 }

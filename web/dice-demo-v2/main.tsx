@@ -5,6 +5,7 @@ import {
   useId,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -62,6 +63,8 @@ export type PowerRollerOptions = {
   roomLink?: (code: string) => string;
   loadHistory?: (code: string) => Promise<CachedRoll[]>;
   onRoll?: (code: string, roll: ParticipantRoll) => void | Promise<void>;
+  /** Show the six latest revealed rolls beneath the dice inside the tray. */
+  trayHistory?: boolean;
 };
 const RollerContext = createContext<PowerRollerOptions | null>(null);
 function useRoller() { const value = useContext(RollerContext); if (!value) throw new Error('Mount inside PowerRoller.'); return value; }
@@ -213,6 +216,36 @@ function RollEntry({ roll, viewer, avatarStyle }: { roll: LogRoll; viewer: strin
       <span className="visually-hidden">{describeRoll(roll as ParticipantRoll).detailed}</span>
     </article>
   );
+}
+
+function TrayHistory({ rolls, viewer }: { rolls: LogRoll[]; viewer: string }) {
+  const host = useRef<HTMLDivElement>(null);
+  const positions = useRef(new Map<string, number>());
+  useLayoutEffect(() => {
+    const next = new Map<string, number>();
+    for (const row of host.current!.querySelectorAll<HTMLElement>('[data-history-key]')) {
+      const key = row.dataset.historyKey!;
+      const top = row.offsetTop;
+      next.set(key, top);
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        const previous = positions.current.get(key);
+        if (previous !== top) {
+          row.getAnimations().forEach(animation => animation.cancel());
+          row.animate([
+            { transform: `translateY(${previous === undefined ? -24 : previous - top}px)` },
+            { transform: 'translateY(0)' },
+          ], { duration: 360, easing: 'cubic-bezier(.2,.7,.2,1)' });
+        }
+      }
+    }
+    positions.current = next;
+  }, [rolls]);
+  return <div className="tray-history" ref={host} role="region" aria-label="Recent tray rolls">
+    {rolls.slice(0, 6).map(roll => <div className="tray-history-row"
+      key={`${roll.roller}:${roll.id}`} data-history-key={`${roll.roller}:${roll.id}`}>
+      <RollEntry roll={roll} viewer={viewer} />
+    </div>)}
+  </div>;
 }
 
 function DicePreview({ style, preferences }: { style: Style; preferences?: SitePreferences }) {
@@ -782,7 +815,7 @@ function DiceRoom() {
               setFallback(true);
             },
             (roll, timing, uncertainty) => report(roll, uncertainty, timing),
-            preferencesRef.current,
+            { ...preferencesRef.current, transparent: options.trayHistory },
           );
           tray.current = current;
           setGraphics(true);
@@ -801,7 +834,7 @@ function DiceRoom() {
       if (planner.current === currentPlanner) planner.current = null;
       makeRestingScene.current = null;
     };
-  }, [report, preferences.hidden]);
+  }, [report, preferences.hidden, options.trayHistory]);
   useEffect(() => {
     tray.current?.setPreferences(preferences);
   }, [preferences.motion, preferences.highContrast, graphics]);
@@ -1059,6 +1092,7 @@ function DiceRoom() {
         </header>
         <div className="dice-card">
           <section className="stage" aria-label="Shared 3D dice tray">
+            {options.trayHistory && <TrayHistory rolls={rollLog} viewer={viewer} />}
             <div className="canvas-host" ref={host} />
             <div className="stage-label">
               <span className="dot" />

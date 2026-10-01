@@ -3,7 +3,7 @@ import type { ParticipantRoll } from '../web/dice-demo-v2/model';
 export function describeRoll(roll: ParticipantRoll) {
   const total = roll.total ?? roll.power?.total ?? roll.faces.reduce((sum,face)=>sum+face,0);
   const modifier = roll.modifier ?? (roll.power ? (roll.power.edges-roll.power.banes===1 ? 2 : roll.power.edges-roll.power.banes===-1 ? -2 : 0) : 0);
-  const dice = roll.dice?.kind==='dice' ? `${roll.faces.length}d${roll.dice.sides}` : 'power roll';
+  const dice = roll.dice?.kind==='dice' ? `${roll.dice.count}d${roll.dice.sides}${roll.dice.bonusD4 ? ' + 1d4' : ''}` : 'power roll';
   const meaning = roll.power ? `, tier ${roll.power.tier}` : '';
   const edge = roll.power?.edges ? `, ${roll.power.edges===2 ? 'double edge' : 'one edge'}` : '';
   const bane = roll.power?.banes ? `, ${roll.power.banes===2 ? 'double bane' : 'one bane'}` : '';

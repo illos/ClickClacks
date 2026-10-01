@@ -312,7 +312,15 @@ const diceChoices: ReadonlyArray<{ value: SelectedDice; label: string }> = [
   ...([20, 12, 10, 8, 6, 4] as const).map(value => ({ value, label: `d${value}` })),
 ];
 function RollDieIcon({ dice }: { dice: SelectedDice }) {
-  const sides = dice === 'power' ? 20 : dice;
+  if (dice === 'power') return (
+    <svg aria-hidden="true" viewBox="0 0 36 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round">
+      {[0, 16].map(x => <g key={x} transform={`translate(${x} 0)`}>
+        <path d="M10 2 18 7v10l-8 5-8-5V7Z" />
+        <text x="10" y="15.5" textAnchor="middle" fill="currentColor" stroke="none" fontFamily="sans-serif" fontSize="9" fontWeight="700">10</text>
+      </g>)}
+    </svg>
+  );
+  const sides = dice;
   const outline =
     sides === 4
       ? 'M12 2 23 21H1Z'
@@ -392,6 +400,8 @@ function DiceRoom() {
   const connection = useConvexConnectionState();
   const [presenceError, setPresenceError] = useState('');
   const [selectedDice, setSelectedDice] = useState<SelectedDice>('power');
+  const [bonusD4, setBonusD4] = useState(false);
+  const [pointerPicker, setPointerPicker] = useState(false);
   const [diceCount, setDiceCount] = useState(1),
     [choosingDice, setChoosingDice] = useState(false);
   const rollControls = useRef<HTMLDivElement>(null),
@@ -401,8 +411,8 @@ function DiceRoom() {
     () =>
       selectedDice === 'power'
         ? { kind: 'power' as const, sides: 10 as const, count: 2 }
-        : { kind: 'dice' as const, sides: selectedDice, count: diceCount },
-    [selectedDice, diceCount],
+        : { kind: 'dice' as const, sides: selectedDice, count: diceCount, ...(bonusD4 && selectedDice !== 4 ? { bonusD4: true } : {}) },
+    [selectedDice, diceCount, bonusD4],
   );
   useEffect(() => {
     if (!choosingDice) return;
@@ -791,7 +801,7 @@ function DiceRoom() {
   async function perform() {
     setPending(true);
     setError('');
-    const request = retryThrow.current ?? {
+    const request: NonNullable<typeof retryThrow.current> = retryThrow.current ?? {
       id: crypto.randomUUID(),
       dice: diceConfig,
       edges,
@@ -938,6 +948,10 @@ function DiceRoom() {
           </section>
           <section className="controls">
             <div className="power-modifiers" role="group" aria-label="Modifiers for next roll">
+              {selectedDice !== 'power' && selectedDice !== 4 && (
+                <button type="button" className="bonus-d4-toggle" aria-pressed={bonusD4}
+                  disabled={clearing || busy} onClick={() => setBonusD4(value => !value)}>+1d4</button>
+              )}
               {[
                 {
                   name: 'edge',
@@ -1031,6 +1045,9 @@ function DiceRoom() {
                 type="button"
                 className="dice-selection-trigger"
                 aria-label="Select dice"
+                data-pointer-focus={pointerPicker || undefined}
+                onPointerDown={() => setPointerPicker(true)}
+                onKeyDown={() => setPointerPicker(false)}
                 title={diceChoices.find(choice => choice.value === selectedDice)!.label}
                 aria-haspopup="menu"
                 aria-expanded={choosingDice}
@@ -1065,7 +1082,9 @@ function DiceRoom() {
                   className="dice-selection-menu"
                   role="menu"
                   aria-label="Dice to roll"
+                  onPointerDown={() => setPointerPicker(true)}
                   onKeyDown={event => {
+                    setPointerPicker(false);
                     if (event.key === 'Escape') {
                       event.preventDefault();
                       setChoosingDice(false);
@@ -1102,6 +1121,7 @@ function DiceRoom() {
                       key={choice.value}
                       onClick={() => {
                         setSelectedDice(choice.value);
+                        if (choice.value === 'power' || choice.value === 4) setBonusD4(false);
                         setChoosingDice(false);
                         dicePicker.current?.focus();
                       }}

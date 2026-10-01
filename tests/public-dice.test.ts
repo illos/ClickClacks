@@ -69,3 +69,8 @@ test('legacy power and generic formatted results disclose tier and numeric modif
   expect(describeRoll({...base,power:{edges:2,banes:0,total:12,tier:3}}).concise).toBe('Hypatia rolled 12, tier 3, double edge.');
   expect(describeRoll({...base,dice:{kind:'dice',sides:6,count:2},total:16,modifier:4,edges:2}).detailed).toContain('modifier +4; total 16');
 });
+
+test('bonus d4 announcement identifies both die types and includes the extra face', () => {
+  const text = describeRoll({id:'bonus',roller:'viewer',name:'Hypatia',faces:[20,12,4],startsAt:0,duration:2200,styles:[],dice:{kind:'dice',sides:20,count:2,bonusD4:true},modifier:5,total:41});
+  expect(text.detailed).toBe('Hypatia: 2d20 + 1d4; dice 20, 12, 4; natural total 36; modifier +5; total 41.');
+});

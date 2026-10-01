@@ -7,10 +7,12 @@ try {
   await expect(page.getByRole('button', { name: 'Roll', exact: true })).toBeEnabled({ timeout: 30000 });
   const picker = page.getByRole('button', { name: 'Select dice', exact: true });
   const icon = () => picker.locator('svg path').evaluateAll(paths => paths.map(path => path.getAttribute('d')));
+  await expect(picker.locator('svg text')).toHaveText(['10', '10']);
   const powerIcon = await icon();
   await picker.click();
   await page.getByRole('menuitemradio', { name: 'd20', exact: true }).click();
-  expect(await icon()).toEqual(powerIcon);
+  expect(await icon()).not.toEqual(powerIcon);
+  await expect(picker.locator('svg text')).toHaveCount(0);
   for (const [name, paths, circles] of [['d6', 2, 6], ['d12', 2, 0], ['d4', 2, 0]]) {
     await picker.click();
     await page.getByRole('menuitemradio', { name, exact: true }).click();
@@ -39,5 +41,5 @@ try {
   await expect(edge).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Remove edge', exact: true })).toBeVisible();
   await page.screenshot({ path: '/tmp/powerroller-modifier-cycle.png', fullPage: true });
-  console.log('PASS: signed 0/2/5 cycles, preserved power controls, d20 power icon, full-height divider');
+  console.log('PASS: signed 0/2/5 cycles, preserved power controls, double-10 power icon, full-height divider');
 } finally { await browser.close(); }

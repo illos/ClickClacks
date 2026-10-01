@@ -873,6 +873,17 @@
   background: rgb(0 0 0 / 12%);
   border-radius: 999px 0 0 999px;
 }
+.v2 .dice-selection-trigger[data-pointer-focus]:focus {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.dice-selection-trigger svg:has(text) {
+  width: 32px;
+}
+.bonus-d4-toggle[aria-pressed='true'] {
+  background: #354043;
+  border-color: #aeb8b8;
+}
 .dice-selection-trigger::after {
   content: '';
   position: absolute;

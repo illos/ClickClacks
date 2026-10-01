@@ -55,20 +55,27 @@ export function createDiceSound() {
     if (!noise) {
       noise = context.createBuffer(1, Math.ceil(context.sampleRate * 0.07), context.sampleRate);
       const data = noise.getChannelData(0);
-      // A dry, broadband edge strike over a low wooden body. Short, inharmonic
-      // modes avoid the pitched "toke" of the earlier 920/1760 Hz sine pair.
-      let bodyNoise = 0, peak = 0;
+      // A fuller plastic crack: sustain the low/mid strike for several ms,
+      // rather than letting a sub-2ms high-frequency tick dominate the sound.
+      let bodyNoise = 0, edgeNoise = 0, peak = 0;
       for (let i = 0; i < data.length; i++) {
         const t = i / context.sampleRate, white = Math.random() * 2 - 1;
-        bodyNoise = bodyNoise * 0.78 + white * 0.22;
-        const attack = Math.min(1, t / 0.0002);
+        bodyNoise = bodyNoise * 0.85 + white * 0.15;
+        edgeNoise = edgeNoise * 0.35 + white * 0.65;
+        const mid = edgeNoise - bodyNoise;
+        const attack = Math.min(1, t / 0.00035);
         const tail = Math.min(1, (data.length - 1 - i) / (context.sampleRate * 0.004));
-        const snap = white * Math.exp(-t * 650) * 0.8;
-        const wood = bodyNoise * Math.exp(-t * 125) * 0.55;
-        const modes = Math.sin(t * Math.PI * 2 * 230) * Math.exp(-t * 120) * 0.36
-          + Math.sin(t * Math.PI * 2 * 415) * Math.exp(-t * 165) * 0.24
-          + Math.sin(t * Math.PI * 2 * 735) * Math.exp(-t * 230) * 0.13;
-        data[i] = (snap + wood + modes) * attack * tail;
+        const snap = white * Math.exp(-t * 500) * 0.2;
+        const crack = mid * Math.exp(-t * 135) * 1.15;
+        // A tiny second contact thickens the edge strike without a separate echo.
+        const contactAge = t - 0.003;
+        const contact = contactAge > 0
+          ? mid * Math.min(1, contactAge / 0.0003) * Math.exp(-contactAge * 210) * 0.5 : 0;
+        const wood = bodyNoise * Math.exp(-t * 95) * 0.8;
+        const modes = Math.sin(t * Math.PI * 2 * 310) * Math.exp(-t * 100) * 0.26
+          + Math.sin(t * Math.PI * 2 * 790) * Math.exp(-t * 145) * 0.18
+          + Math.sin(t * Math.PI * 2 * 1435) * Math.exp(-t * 205) * 0.12;
+        data[i] = (snap + crack + contact + wood + modes) * attack * tail;
         peak = Math.max(peak, Math.abs(data[i]!));
       }
       // Keep stronger transients within headroom, without increasing roll volume.
@@ -77,7 +84,7 @@ export function createDiceSound() {
     const source = context.createBufferSource(), filter = context.createBiquadFilter(), gain = context.createGain();
     source.buffer = noise;
     source.playbackRate.value = 0.88 + (die % 7) * 0.045 + Math.random() * 0.06;
-    filter.type = 'lowpass'; filter.frequency.value = 7200;
+    filter.type = 'lowpass'; filter.frequency.value = 5800;
     gain.gain.value = (0.12 + strength * 0.26) / Math.sqrt(density);
     source.connect(filter).connect(gain).connect(context.destination);
     voices.set(source, owner);

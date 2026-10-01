@@ -250,3 +250,9 @@ inharmonic 230/415/735 Hz body resonances and low noise. A stronger broadband
 snap and higher filter cutoff sharpen the strike, while a shorter tail keeps
 it dry. Peak normalization retains headroom. The three focused sound tests,
 typecheck, and production build passed; subjective iPhone listening is pending.
+
+Further clack tuning after owner listening: reduce the isolated treble tick and
+sustain a broader midrange crack, with a 3ms secondary contact and more low-body
+noise. The impact retains a fast attack, peak headroom and pool attenuation.
+Three focused sound tests, typecheck and production build passed. Sound character
+still relies on owner listening on the target device.

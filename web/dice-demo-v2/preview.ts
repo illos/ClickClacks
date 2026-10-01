@@ -1,10 +1,20 @@
 // SPDX-License-Identifier: MIT
 import * as THREE from 'three';
 import { createD10, disposeGroup } from '../dice-demo/d10';
+import type { TrayPreferences } from './renderer';
 import type { Style } from '../dice-demo/model';
 
 /** Cosmetic preview only: reuse the actual die mesh; no physics or dice-result generation. */
-export function createDicePreview(host: HTMLElement, onFailure: () => void) {
+export function createDicePreview(
+  host: HTMLElement,
+  onFailure: () => void,
+  options: TrayPreferences = {},
+) {
+  let preferences = {
+    motion: options.motion ?? 'device',
+    highContrast: options.highContrast ?? false,
+  };
+  let appearance: Style | null = null;
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     alpha: true,
@@ -28,6 +38,8 @@ export function createDicePreview(host: HTMLElement, onFailure: () => void) {
   fill.position.set(4, 3, -4);
   scene.add(fill);
   const preference = matchMedia('(prefers-reduced-motion: reduce)');
+  const reduced = () =>
+    preferences.motion === 'reduce' || (preferences.motion === 'device' && preference.matches);
   let die: THREE.Group | null = null;
   let pending: Style | null = null,
     styleKey = '';
@@ -52,7 +64,7 @@ export function createDicePreview(host: HTMLElement, onFailure: () => void) {
     if (stopped || document.hidden) return;
     const elapsed = Math.min(50, Math.max(0, now - lastTick));
     lastTick = now;
-    if (!dragging && !preference.matches) {
+    if (!dragging && !reduced()) {
       rotate((0.00018 + velocityX) * elapsed, velocityY * elapsed);
       const decay = Math.exp(-elapsed / 450);
       velocityX *= decay;
@@ -86,7 +98,7 @@ export function createDicePreview(host: HTMLElement, onFailure: () => void) {
       renderer.render(scene, camera);
       lastDraw = now;
     }
-    if (!preference.matches) frame = requestAnimationFrame(tick);
+    if (!reduced()) frame = requestAnimationFrame(tick);
   }
   function wake() {
     if (!frame && !stopped && !document.hidden) frame = requestAnimationFrame(tick);
@@ -149,7 +161,7 @@ export function createDicePreview(host: HTMLElement, onFailure: () => void) {
   };
   const up = (event: PointerEvent) => {
     if (!dragging || event.pointerId !== dragging.id) return;
-    if (event.type !== 'pointerup' || performance.now() - dragging.time > 100 || preference.matches)
+    if (event.type !== 'pointerup' || performance.now() - dragging.time > 100 || reduced())
       velocityX = velocityY = 0;
     dragging = null;
     if (host.hasPointerCapture(event.pointerId)) host.releasePointerCapture(event.pointerId);
@@ -162,7 +174,7 @@ export function createDicePreview(host: HTMLElement, onFailure: () => void) {
     const x = Math.max(-100, Math.min(100, event.deltaX * scale)) * 0.006;
     const y = Math.max(-100, Math.min(100, event.deltaY * scale)) * 0.006;
     rotate(x, y);
-    if (!preference.matches) {
+    if (!reduced()) {
       velocityX = x / 30;
       velocityY = y / 30;
     }
@@ -179,8 +191,19 @@ export function createDicePreview(host: HTMLElement, onFailure: () => void) {
   preference.addEventListener('change', motion);
   renderer.domElement.addEventListener('webglcontextlost', lost);
   return {
+    setPreferences(value: TrayPreferences) {
+      preferences = { ...preferences, ...value };
+      if (appearance)
+        pending = preferences.highContrast
+          ? { ...appearance, color: '#ffffff', ink: '#000000', pattern: 'solid' }
+          : appearance;
+      motion();
+    },
     style(value: Style) {
-      pending = value;
+      appearance = value;
+      pending = preferences.highContrast
+        ? { ...value, color: '#ffffff', ink: '#000000', pattern: 'solid' }
+        : value;
       wake();
     },
     dispose() {

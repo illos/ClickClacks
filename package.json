@@ -12,7 +12,8 @@
     "dev": "vite --host 127.0.0.1 --port 9591 --strictPort",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "cli": "node scripts/cli.ts"
   },
   "dependencies": {
     "cannon-es": "0.20.0",
@@ -33,5 +34,16 @@
     "vitest": "4.1.11",
     "convex-test": "0.0.57",
     "@playwright/test": "1.63.0"
+  },
+  "exports": {
+    "./dice": "./lib/dice.ts",
+    "./draw-steel": "./lib/draw-steel.ts",
+    "./client": "./lib/client.ts",
+    "./format": "./lib/format.ts",
+    "./three": "./lib/three.ts",
+    "./react": "./lib/react.ts",
+    "./styles.css": "./lib/styles.css",
+    "./convex.config.js": "./component/convex.config.ts",
+    "./_generated/component.js": "./component/_generated/component.ts"
   }
 }

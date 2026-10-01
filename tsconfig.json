@@ -23,6 +23,8 @@
     "web",
     "shared",
     "convex",
+    "component",
+    "lib",
     "scripts",
     "tests",
     "vite.config.ts"

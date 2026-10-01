@@ -1,5 +1,6 @@
+@scope (.powerroller) {
 /* SPDX-License-Identifier: MIT */
-:root {
+:scope {
   color-scheme: dark;
   font-family: system-ui, sans-serif;
   background: #111415;
@@ -9,7 +10,7 @@
 * {
   box-sizing: border-box;
 }
-body {
+ :scope {
   margin: 0;
 }
 button,
@@ -309,4 +310,6 @@ fieldset select {
     left: 16px;
     font-size: 11px;
   }
+}
+
 }

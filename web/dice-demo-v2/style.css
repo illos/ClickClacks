@@ -1,3 +1,4 @@
+@scope (.powerroller) {
 .v2 .stage {
   height: clamp(240px, 38vh, 440px);
   margin-top: 24px;
@@ -772,4 +773,114 @@
 .connected-player-you {
   font-size: 11px;
   color: #aeb8b8;
+}
+
+/* The dice picker shares the accepted Roll button's pill; both actions are native buttons. */
+.roll-button-group {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: 999px;
+}
+.v2 .dice-card .controls .roll-button-group > button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  border-radius: 999px;
+}
+.v2 .dice-card .controls .roll-button-group > .primary {
+  min-width: 64px;
+  padding-inline: 12px 20px;
+}
+.v2 .dice-card .controls .dice-selection-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 10px 6px;
+}
+.dice-selection-trigger svg {
+  width: 21px;
+  height: 21px;
+}
+.dice-selection-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 3;
+  min-width: 190px;
+  padding: 6px;
+  border: 1px solid #3b4548;
+  border-radius: 14px;
+  background: #1b2223;
+  color: #e8e5df;
+  box-shadow: 0 8px 24px #0008;
+}
+.v2 .dice-card .controls .dice-selection-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 36px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  white-space: nowrap;
+}
+.dice-selection-menu button[aria-checked='true'],
+.dice-selection-menu button:hover {
+  background: #354043 !important;
+}
+.dice-selection-menu svg {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+}
+.dice-selection-menu span {
+  flex: 1;
+}
+.dice-quantity {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.dice-quantity output {
+  min-width: 1.5em;
+  text-align: center;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.v2 .dice-card .controls .dice-quantity button {
+  min-width: 28px;
+  padding-inline: 8px;
+}
+/* Native top-layer presentation avoids clipping inside the original rounded dice card. */
+.dice-selection-menu[popover] {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  width: 190px;
+  max-height: calc(100dvh - 16px);
+  overflow: auto;
+}
+
+
+/* Local opt-in readability; decorative profile values stay untouched. */
+.high-contrast { color: #fff; --roll-edge: #9cffe4; --roll-bane: #ffc6ca; }
+.high-contrast .roll-log-entry time,
+.high-contrast .empty-log,
+.high-contrast .throw-note,
+.high-contrast .roll-author-name,
+.high-contrast label { color: #fff; opacity: 1; }
+.high-contrast button, .high-contrast input, .high-contrast select { border-color: #c5d2d4; }
+.high-contrast :focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.accessibility-options { margin-top: 20px; }
+.accessibility-options summary { cursor: pointer; }
+.accessibility-options label { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0; }
+.accessibility-options input[type='checkbox'] { width: auto; }
+@media (forced-colors: active) {
+  button, input, select, .roll-log-entry, dialog { border: 1px solid ButtonText; }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid Highlight; }
+}
 }

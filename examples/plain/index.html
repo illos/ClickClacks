@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Plain Powerroller consumer</title>
+<style>body{font:16px system-ui;margin:24px}#tray{width:100%;height:360px;background:#151a1b}#log{max-height:240px;overflow:auto}button{font:inherit;padding:10px 20px}</style>
+<h1>Plain Powerroller consumer</h1>
+<p>This example requires your backend URL and room credentials. Its host supplies configuration.</p>
+<div id="tray"></div>
+<button id="roll" type="button">Roll</button>
+<section id="log" aria-label="Roll log"></section>
+<script type="module">
+import {mountPlainRoller} from './main.ts';
+// Replace these explicit values with your host's configuration and private session provider.
+const backend=new URLSearchParams(location.search).get('backend');
+const key=new URLSearchParams(location.search).get('room');
+if(backend&&key){
+ const identity={viewer:crypto.randomUUID(),credential:crypto.randomUUID()+crypto.randomUUID()};
+ const demo=await mountPlainRoller({backend,key,identity,profile:{name:'Example player',style:{color:'#70dac3',ink:'#fff4e5',pattern:'solid',font:'serif'}},host:document.getElementById('tray'),log:document.getElementById('log'),rollButton:document.getElementById('roll')});
+ window.addEventListener('pagehide',()=>void demo.dispose(),{once:true});
+}else document.getElementById('roll').disabled=true;
+</script>
+</html>

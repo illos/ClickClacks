@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 import * as THREE from 'three';
-import { createD10, disposeGroup, vertices } from '../dice-demo/d10';
+import { disposeGroup } from '../dice-demo/d10';
+import { createDie, dieModel } from '../dice-demo/dice-models';
+import { unpackRoll } from '../dice-demo/motion-codec';
+import type { Style } from '../dice-demo/model';
 import { progress } from '../dice-demo/model';
 import { revealDelay, trayOpacity, type Participant, type ParticipantRoll } from './model';
 import type { Timing } from '../dice-demo/renderer';
@@ -9,6 +12,7 @@ type Lane = {
   dice: THREE.Group[];
   shadows: THREE.Mesh[];
   styleKey: string;
+  appearance: Style;
   materials: THREE.Material[];
   result: HTMLDivElement;
   resultWidth: number;
@@ -22,13 +26,22 @@ type Lane = {
   frames: number;
   maxFrameGap: number;
 };
+export type TrayPreferences = { motion?: 'device' | 'reduce' | 'full'; highContrast?: boolean };
 /** One WebGL context with independent playback tracks; no per-viewer physics simulation. */
 export function createRoomTray(
   host: HTMLElement,
   onFailure: () => void,
   onReveal: (roll: ParticipantRoll, timing: Timing, uncertainty: number) => void,
+  options: TrayPreferences = {},
 ) {
-  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'low-power' });
+  let preferences = {
+    motion: options.motion ?? 'device',
+    highContrast: options.highContrast ?? false,
+  };
+  const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    powerPreference: 'low-power',
+  });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.setClearColor('#151a1b');
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -58,7 +71,9 @@ export function createRoomTray(
   let fadeTimer: ReturnType<typeof setTimeout> | undefined;
   let frame = 0,
     stopped = false,
-    reduced = matchMedia('(prefers-reduced-motion: reduce)').matches,
+    reduced =
+      preferences.motion === 'reduce' ||
+      (preferences.motion === 'device' && matchMedia('(prefers-reduced-motion: reduce)').matches),
     lastDraw = -Infinity;
   let width = host.clientWidth,
     height = host.clientHeight;
@@ -75,14 +90,48 @@ export function createRoomTray(
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld();
   }
+  function shadow(group: THREE.Group) {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 64;
+    const ctx = canvas.getContext('2d')!,
+      g = ctx.createRadialGradient(32, 32, 2, 32, 32, 32);
+    g.addColorStop(0, 'rgba(0,0,0,.5)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 64, 64);
+    const mesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.5, 1.5),
+      new THREE.MeshBasicMaterial({
+        map: new THREE.CanvasTexture(canvas),
+        transparent: true,
+        depthWrite: false,
+      }),
+    );
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.visible = false;
+    group.add(mesh);
+    return mesh;
+  }
   function style(lane: Lane, member: Participant) {
-    const key = JSON.stringify(member.style);
+    lane.appearance = member.style;
+    const appearance: Style = preferences.highContrast
+      ? { ...member.style, color: '#ffffff', ink: '#000000', pattern: 'solid' }
+      : member.style;
+    const key = JSON.stringify([appearance, lane.roll?.dice]);
     if (lane.styleKey !== key) {
       for (const die of lane.dice) {
         lane.group.remove(die);
         disposeGroup(die);
       }
-      lane.dice = [0, 1].map(index => createD10(member.style, index));
+      lane.dice = Array.from({ length: lane.roll?.faces.length ?? 2 }, (_, index) =>
+        createDie(appearance, lane.roll?.dice, index),
+      );
+      while (lane.shadows.length < lane.dice.length) lane.shadows.push(shadow(lane.group));
+      while (lane.shadows.length > lane.dice.length) {
+        const old = lane.shadows.pop()!;
+        lane.group.remove(old);
+        disposeGroup(old);
+      }
       lane.dice.forEach(d => {
         d.scale.multiplyScalar(1.3);
         d.visible = false;
@@ -107,15 +156,17 @@ export function createRoomTray(
   function pose(lane: Lane, t: number) {
     const roll = lane.roll!;
     const motion = roll.motion!;
-    for (let i = 0; i < 2; i++) {
+    const stride = roll.faces.length * 7;
+    const vertices = dieModel(roll.dice).vertices;
+    for (let i = 0; i < roll.faces.length; i++) {
       const die = lane.dice[i]!;
-      const last = motion.samples.length / 14 - 1;
+      const last = motion.samples.length / stride - 1;
       const cursor = (reduced ? 1 : t) * last;
       const from = Math.floor(cursor),
         to = Math.min(last, from + 1),
         blend = cursor - from;
-      const a = from * 14 + i * 7,
-        b = to * 14 + i * 7;
+      const a = from * stride + i * 7,
+        b = to * stride + i * 7;
       die.position.set(
         THREE.MathUtils.lerp(motion.samples[a]!, motion.samples[b]!, blend),
         THREE.MathUtils.lerp(motion.samples[a + 1]!, motion.samples[b + 1]!, blend),
@@ -144,7 +195,7 @@ export function createRoomTray(
       right = -Infinity,
       bottom = -Infinity;
     for (const die of lane.dice)
-      for (const vertex of vertices) {
+      for (const vertex of dieModel(lane.roll?.dice).vertices) {
         projected.copy(vertex).applyMatrix4(die.matrixWorld).project(camera);
         const x = ((projected.x + 1) * width) / 2,
           y = ((1 - projected.y) * height) / 2;
@@ -249,7 +300,9 @@ export function createRoomTray(
   document.addEventListener('visibilitychange', visibility);
   const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
   const motionChanged = () => {
-    reduced = motionPreference.matches;
+    reduced =
+      preferences.motion === 'reduce' ||
+      (preferences.motion === 'device' && motionPreference.matches);
     wake();
   };
   motionPreference.addEventListener('change', motionChanged);
@@ -262,6 +315,12 @@ export function createRoomTray(
   };
   renderer.domElement.addEventListener('webglcontextlost', lost);
   return {
+    setPreferences(value: TrayPreferences) {
+      preferences = { ...preferences, ...value };
+      motionChanged();
+      for (const lane of lanes.values()) style(lane, { style: lane.appearance } as Participant);
+      wake();
+    },
     participants(members: Participant[]) {
       // Presence/clock refreshes do not change the scene or wake settled playback.
       const appearance = JSON.stringify(
@@ -282,28 +341,7 @@ export function createRoomTray(
           const group = new THREE.Group();
           group.scale.setScalar(0.62);
           scene.add(group);
-          const shadows = Array.from({ length: 2 }, () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = canvas.height = 64;
-            const ctx = canvas.getContext('2d')!,
-              g = ctx.createRadialGradient(32, 32, 2, 32, 32, 32);
-            g.addColorStop(0, 'rgba(0,0,0,.5)');
-            g.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = g;
-            ctx.fillRect(0, 0, 64, 64);
-            const mesh = new THREE.Mesh(
-              new THREE.PlaneGeometry(1.5, 1.5),
-              new THREE.MeshBasicMaterial({
-                map: new THREE.CanvasTexture(canvas),
-                transparent: true,
-                depthWrite: false,
-              }),
-            );
-            mesh.rotation.x = -Math.PI / 2;
-            mesh.visible = false;
-            group.add(mesh);
-            return mesh;
-          });
+          const shadows = Array.from({ length: 2 }, () => shadow(group));
           const result = document.createElement('div');
           result.className = 'tray-roll-result';
           result.setAttribute('aria-hidden', 'true');
@@ -316,6 +354,7 @@ export function createRoomTray(
             dice: [],
             shadows,
             styleKey: '',
+            appearance: member.style,
             materials: [],
             offset: 0,
             uncertainty: 0,
@@ -363,10 +402,12 @@ export function createRoomTray(
         }
         return;
       }
+      roll = unpackRoll(roll);
       lane.roll = roll;
+      style(lane, { style: lane.appearance } as Participant);
       const total = document.createElement('strong');
       total.textContent = String(
-        roll.power?.total ?? roll.faces.reduce((sum, face) => sum + face, 0),
+        roll.total ?? roll.power?.total ?? roll.faces.reduce((sum, face) => sum + face, 0),
       );
       lane.result.replaceChildren(total);
       if (roll.power) {
@@ -382,6 +423,13 @@ export function createRoomTray(
         tier.className = `tray-result-tier tier-${roll.power.tier}`;
         tier.textContent = `Tier ${roll.power.tier}`;
         lane.result.appendChild(tier);
+      }
+      if (!roll.power && roll.modifier) {
+        const modifier = document.createElement('span');
+        modifier.className = 'tray-result-modifier';
+        modifier.textContent =
+          roll.modifier > 0 ? `+${roll.modifier}` : `−${Math.abs(roll.modifier)}`;
+        lane.result.appendChild(modifier);
       }
       lane.resultWidth = 0;
       lane.result.hidden = true;

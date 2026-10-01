@@ -1,7 +1,17 @@
 // SPDX-License-Identifier: MIT
-import { Body, Box, ContactMaterial, ConvexPolyhedron, Material, Vec3, World } from 'cannon-es';
+import {
+  Body,
+  Box,
+  ContactMaterial,
+  ConvexPolyhedron,
+  GSSolver,
+  Material,
+  Vec3,
+  World,
+} from 'cannon-es';
 import * as THREE from 'three';
 import { faceForResult, faces, vertices } from './d10';
+import { dieModel, modelNumberingOrientation } from './dice-models';
 import type { Motion, ThrowScene } from './model';
 
 /** Seeded cosmetic parameters only. Results never come from the physics world. */
@@ -41,13 +51,20 @@ export function simulateThrow(seed: number, results: number[], scene: ThrowScene
   const random = generator(seed),
     between = (a: number, b: number) => a + random() * (b - a);
   const world = new World({ gravity: new Vec3(0, -18, 0), allowSleep: true });
+  if (results.length > 2 && world.solver instanceof GSSolver) world.solver.iterations = 30;
   const dieMaterial = new Material('die'),
     trayMaterial = new Material('tray');
   world.addContactMaterial(
-    new ContactMaterial(dieMaterial, trayMaterial, { friction: 0.32, restitution: 0.52 }),
+    new ContactMaterial(dieMaterial, trayMaterial, {
+      friction: 0.32,
+      restitution: 0.52,
+    }),
   );
   world.addContactMaterial(
-    new ContactMaterial(dieMaterial, dieMaterial, { friction: 0.16, restitution: 0.48 }),
+    new ContactMaterial(dieMaterial, dieMaterial, {
+      friction: 0.16,
+      restitution: 0.48,
+    }),
   );
   const staticBox = (half: Vec3, position: Vec3, entryWall = false) => {
     const body = new Body({
@@ -66,29 +83,61 @@ export function simulateThrow(seed: number, results: number[], scene: ThrowScene
   staticBox(new Vec3(5.15, 2.5, 0.1), new Vec3(0, 2.4, -3.3));
   staticBox(new Vec3(5.15, 2.5, 0.1), new Vec3(0, 2.4, 3.3));
   const scale = scene.scale ?? 0.5;
+  const model = dieModel(scene.dice);
+  const vertices = model.vertices,
+    faces = model.faces;
   const hullVertices = vertices.map(p => new Vec3(p.x * scale, p.y * scale, p.z * scale));
   const hullFaces = faces.map(face =>
     face.points.map(p => vertices.findIndex(v => v.distanceToSquared(p) < 1e-10)),
   );
-  const shape = new ConvexPolyhedron({ vertices: hullVertices, faces: hullFaces });
+  const shape = new ConvexPolyhedron({
+    vertices: hullVertices,
+    faces: hullFaces,
+  });
   for (const obstacle of scene.obstacles ?? []) {
-    const body = new Body({ mass: 0, material: dieMaterial, shape });
+    const obstacleModel = dieModel(obstacle.dice);
+    const obstacleShape =
+      !obstacle.dice && (!scene.dice || scene.dice.kind === 'power')
+        ? shape
+        : new ConvexPolyhedron({
+            vertices: obstacleModel.vertices.map(
+              p => new Vec3(p.x * scale, p.y * scale, p.z * scale),
+            ),
+            faces: obstacleModel.faces.map(face =>
+              face.points.map(p =>
+                obstacleModel.vertices.findIndex(v => v.distanceToSquared(p) < 1e-10),
+              ),
+            ),
+          });
+    const body = new Body({
+      mass: 0,
+      material: dieMaterial,
+      shape: obstacleShape,
+    });
     body.position.set(obstacle.position[0]!, obstacle.position[1]!, obstacle.position[2]!);
     body.quaternion.set(...(obstacle.rotation as [number, number, number, number]));
     world.addBody(body);
   }
   const side = random() < 0.5 ? -1 : 1;
-  const bodies = Array.from({ length: 2 }, (_, i) => {
+  const columns = Math.min(5, results.length);
+  const rows = Math.ceil(results.length / columns);
+  const bodies = Array.from({ length: results.length }, (_, i) => {
     const startSide = side;
-    const x = startSide * between(10.8, 11.6),
-      z = (i ? 1 : -1) * between(0.7, 1.5);
+    const x =
+        results.length <= 2
+          ? startSide * between(10.8, 11.6)
+          : ((i % columns) - (columns - 1) / 2) * 1.75 + between(-0.05, 0.05),
+      z =
+        results.length <= 2
+          ? (i ? 1 : -1) * between(0.7, 1.5)
+          : (Math.floor(i / columns) - (rows - 1) / 2) * 1.35 + between(-0.05, 0.05);
     const body = new Body({
       mass: 1,
       material: dieMaterial,
       shape,
       position: new Vec3(x, between(3.2, 3.8), z),
       // Enter through the side guard, then enable it once the entire hull is inside.
-      collisionFilterMask: 1,
+      collisionFilterMask: results.length <= 2 ? 1 : -1,
       linearDamping: 0.22,
       angularDamping: 0.22,
       allowSleep: true,
@@ -97,9 +146,9 @@ export function simulateThrow(seed: number, results: number[], scene: ThrowScene
     });
     body.quaternion.setFromEuler(between(0, 6.28), between(0, 6.28), between(0, 6.28));
     body.velocity.set(
-      -startSide * between(14, 16),
+      results.length <= 2 ? -startSide * between(14, 16) : between(-1.5, 1.5),
       between(0.3, 1.2),
-      -z * between(1, 2.2) + between(-1.8, 1.8),
+      results.length <= 2 ? -z * between(1, 2.2) + between(-1.8, 1.8) : between(-1.5, 1.5),
     );
     body.angularVelocity.set(between(-18, 18), between(-10, 10), between(-18, 18));
     world.addBody(body);
@@ -130,6 +179,7 @@ export function simulateThrow(seed: number, results: number[], scene: ThrowScene
   };
   capture();
   let settled = false;
+  let quietSteps = 0;
   // Bounded 120 Hz solve, recorded at 60 Hz. Only the thrower's worker runs it, before scheduling.
   for (let step = 1; step <= 960; step++) {
     for (const body of bodies) {
@@ -138,14 +188,30 @@ export function simulateThrow(seed: number, results: number[], scene: ThrowScene
     }
     world.step(1 / 120);
     if (step % 2 === 0) capture();
-    if (step >= 240 && step % 2 === 0 && bodies.every(body => body.sleepState === Body.SLEEPING)) {
+    // Dense generic pools can repeatedly wake sleeping neighbors through resting contacts.
+    // Require the same Cannon sleep speed/time for the whole pool, without changing pair playback.
+    if (results.length > 2) {
+      const quiet = bodies.every(
+        body =>
+          body.velocity.lengthSquared() + body.angularVelocity.lengthSquared() <
+          body.sleepSpeedLimit ** 2,
+      );
+      quietSteps = quiet ? quietSteps + 1 : 0;
+    }
+    if (
+      step >= 240 &&
+      step % 2 === 0 &&
+      (bodies.every(body => body.sleepState === Body.SLEEPING) || quietSteps >= 36)
+    ) {
       settled = true;
       break;
     }
   }
   if (!settled) throw new Error('This throw did not settle. Try another throw.');
+  const orient =
+    !scene.dice || scene.dice.kind === 'power' ? numberingOrientation : modelNumberingOrientation;
   const offsets = bodies.flatMap((body, i) =>
-    numberingOrientation(
+    orient(
       new THREE.Quaternion(
         body.quaternion.x,
         body.quaternion.y,
@@ -154,16 +220,18 @@ export function simulateThrow(seed: number, results: number[], scene: ThrowScene
       ),
       results[i]!,
       i,
+      scene.dice,
     ).toArray(),
   );
   // Remove invisible approach time, preserving one fully offscreen frame before entry.
   // Use the widest demo view; narrower views receive exactly the same recorded trajectory.
   const halfWidth = (7.2 * (1140 / 440)) / 2;
   const cameraHeight = 7.2 / (2 * Math.tan((19 * Math.PI) / 180));
+  const stride = results.length * 7;
   let entry = 0;
-  for (let frame = 1; frame < samples.length / 14; frame++) {
-    const outside = [0, 1].every(index => {
-      const start = frame * 14 + index * 7;
+  for (let frame = 1; frame < samples.length / stride; frame++) {
+    const outside = bodies.every((_, index) => {
+      const start = frame * stride + index * 7;
       const x = Math.abs(samples[start]!);
       const y = samples[start + 1]!;
       // Bounding sphere is conservative for every hull orientation.
@@ -175,7 +243,7 @@ export function simulateThrow(seed: number, results: number[], scene: ThrowScene
   return {
     seed,
     stepMs: 1000 / 60,
-    samples: samples.slice(entry * 14).map(n => Math.round(n * 100000) / 100000),
+    samples: samples.slice(entry * stride).map(n => Math.round(n * 100000) / 100000),
     offsets,
   };
 }

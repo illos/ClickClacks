@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
-import { expect, test } from 'vitest';
-import { backend } from './fixtures/table';
-import { demoV2 } from '../../web/dice-demo-v2/api';
-const key = '12345678-1234-1234-1234-123456789010';
-const a = '12345678-1234-1234-1234-123456789011';
-const b = '12345678-1234-1234-1234-123456789012';
-const style = { color: '#a63a3a', ink: '#fff0dc', pattern: 'marble' as const };
+import { expect, test } from "vitest";
+import { internal } from "../../convex/_generated/api";
+import { backend } from "./fixtures/table";
+import { demoV2 } from "../../web/dice-demo-v2/api";
+const key = "12345678-1234-1234-1234-123456789010";
+const a = "12345678-1234-1234-1234-123456789011";
+const b = "12345678-1234-1234-1234-123456789012";
+const credential = "private-session-credential-for-tests-123456";
+const style = { color: "#a63a3a", ink: "#fff0dc", pattern: "marble" as const };
 // Two recorded positions with identity rotations suffice to exercise storage, not physics.
 const frame = [0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1];
 const motion = {
@@ -14,50 +16,73 @@ const motion = {
   samples: [...frame, ...frame],
   offsets: [0, 0, 0, 1, 0, 0, 0, 1],
 };
-test('independent participants throw concurrently and retain separate attributed results', async () => {
+test("independent participants throw concurrently and retain separate attributed results", async () => {
   const t = backend();
   await t.mutation(demoV2.join, {
     key,
+    credential,
     viewer: a,
-    name: 'Amber Otter',
+    name: "Amber Otter",
     style,
     ready: true,
     uncertainty: 10,
   });
   await t.mutation(demoV2.join, {
     key,
+    credential,
     viewer: b,
-    name: 'Silver Fox',
-    style: { ...style, color: '#3344aa' },
+    name: "Silver Fox",
+    style: { ...style, color: "#3344aa" },
     ready: true,
     uncertainty: 10,
   });
   const first = {
     key,
+    credential,
     viewer: a,
-    id: '12345678-1234-1234-1234-123456789013',
+    id: "12345678-1234-1234-1234-123456789013",
     faces: [1, 10],
     motion,
   };
-  const second = { ...first, viewer: b, id: '12345678-1234-1234-1234-123456789014', faces: [3, 4] };
-  await Promise.all([t.mutation(demoV2.throwDice, first), t.mutation(demoV2.throwDice, second)]);
+  const second = {
+    ...first,
+    viewer: b,
+    id: "12345678-1234-1234-1234-123456789014",
+    faces: [3, 4],
+  };
+  for (const request of [first, second])
+    await t.mutation(internal.diceDemoV2.recordSample, {
+      key,
+      viewer: request.viewer,
+      credential,
+      id: request.id,
+      faces: request.faces,
+    });
+  await Promise.all([
+    t.mutation(demoV2.throwDice, first),
+    t.mutation(demoV2.throwDice, second),
+  ]);
   const one = await t.query(demoV2.track, { key, viewer: a });
   const two = await t.query(demoV2.track, { key, viewer: b });
   expect(one?.roll.faces).toEqual([1, 10]);
-  expect(one?.roll.name).toBe('Amber Otter');
+  expect(one?.roll.name).toBe("Amber Otter");
   expect(two?.roll.faces).toEqual([3, 4]);
-  expect(two?.roll.name).toBe('Silver Fox');
+  expect(two?.roll.name).toBe("Silver Fox");
   expect(one?.roll.styles).toEqual([style, style]);
   expect(two?.roll.styles[0]).toEqual(two?.roll.styles[1]);
   expect(await t.mutation(demoV2.throwDice, first)).toEqual(one?.roll);
-  await expect(t.mutation(demoV2.throwDice, { ...first, faces: [2, 10] })).rejects.toThrow(
-    'already used',
-  );
   await expect(
-    t.mutation(demoV2.throwDice, { ...first, id: '12345678-1234-1234-1234-123456789015' }),
-  ).rejects.toThrow('still rolling');
+    t.mutation(demoV2.throwDice, { ...first, faces: [2, 10] }),
+  ).rejects.toThrow("already used");
+  await expect(
+    t.mutation(demoV2.throwDice, {
+      ...first,
+      id: "12345678-1234-1234-1234-123456789015",
+    }),
+  ).rejects.toThrow("Sample server-generated");
   await t.mutation(demoV2.receipt, {
     key,
+    credential,
     roller: a,
     sample: {
       viewer: b,
@@ -69,24 +94,37 @@ test('independent participants throw concurrently and retain separate attributed
       maxFrameGap: 17,
     },
   });
-  expect((await t.query(demoV2.track, { key, viewer: a }))?.receipts).toHaveLength(1);
-  expect((await t.query(demoV2.track, { key, viewer: b }))?.receipts).toHaveLength(0);
+  expect(
+    (await t.query(demoV2.track, { key, viewer: a }))?.receipts,
+  ).toHaveLength(1);
+  expect(
+    (await t.query(demoV2.track, { key, viewer: b }))?.receipts,
+  ).toHaveLength(0);
 });
-test('heartbeats retain customization and slots; room capacity and input bounds are enforced', async () => {
+test("heartbeats retain customization and slots; room capacity and input bounds are enforced", async () => {
   const t = backend();
-  const join = { key, viewer: a, name: 'Amber Otter', style, ready: true, uncertainty: 10 };
+  const join = {
+    key,
+    credential,
+    viewer: a,
+    name: "Amber Otter",
+    style,
+    ready: true,
+    uncertainty: 10,
+  };
   await t.mutation(demoV2.join, join);
   await t.mutation(demoV2.customize, {
     key,
+    credential,
     viewer: a,
-    name: 'My dice',
-    style: { ...style, color: '#aabbcc' },
+    name: "My dice",
+    style: { ...style, color: "#aabbcc" },
   });
   await t.mutation(demoV2.join, join);
   const state = await t.query(demoV2.view, { key });
   expect(state.participants[0]).toMatchObject({
-    name: 'My dice',
-    style: { ...style, color: '#aabbcc' },
+    name: "My dice",
+    style: { ...style, color: "#aabbcc" },
     slot: 0,
   });
   for (let i = 1; i < 8; i++)
@@ -94,20 +132,39 @@ test('heartbeats retain customization and slots; room capacity and input bounds 
       ...join,
       viewer: `12345678-1234-1234-1234-1234567890${20 + i}`,
     });
-  await expect(t.mutation(demoV2.join, { ...join, viewer: b })).rejects.toThrow('eight');
+  await expect(t.mutation(demoV2.join, { ...join, viewer: b })).rejects.toThrow(
+    "eight",
+  );
   await expect(
-    t.mutation(demoV2.customize, { key, viewer: b, name: 'Absent', style }),
-  ).rejects.toThrow('Reconnect');
+    t.mutation(demoV2.customize, {
+      key,
+      credential,
+      viewer: b,
+      name: "Absent",
+      style,
+    }),
+  ).rejects.toThrow("private session credential");
   expect(
-    await t.query(demoV2.track, { key: '12345678-1234-1234-1234-123456789099', viewer: a }),
+    await t.query(demoV2.track, {
+      key: "12345678-1234-1234-1234-123456789099",
+      viewer: a,
+    }),
   ).toBeNull();
+  await t.mutation(internal.diceDemoV2.recordSample, {
+    key,
+    viewer: a,
+    credential,
+    id: b,
+    faces: [1, 10],
+  });
   await expect(
     t.mutation(demoV2.throwDice, {
       key,
+      credential,
       viewer: a,
       id: b,
       faces: [1, 10],
       motion: { ...motion, stepMs: NaN },
     }),
-  ).rejects.toThrow('Invalid recorded motion');
+  ).rejects.toThrow("Invalid recorded motion");
 });

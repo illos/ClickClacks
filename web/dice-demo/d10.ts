@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 import * as THREE from 'three';
 import type { Style } from './model';
+import { dieFontFamilies, dieFontWeights, type DieFont } from './font-style';
+export { dieFonts, dieFontFamilies, dieFontWeights, type DieFont } from './font-style';
 
 // Logical d10: an icosahedron with twenty triangular faces, each digit 0–9 twice.
 // This shape/labeling is the user's cosmetic direction; supplied results remain 1–10.
@@ -49,20 +51,6 @@ export function finalOrientation(value: number, index: number) {
   const yaw = Math.atan2(direction.x, direction.z) + Math.PI + (index ? 0.18 : -0.16);
   return new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -yaw).multiply(q);
 }
-export const dieFonts = ['serif', 'modern', 'rune', 'gothic'] as const;
-export type DieFont = (typeof dieFonts)[number];
-export const dieFontFamilies: Record<DieFont, string> = {
-  serif: 'Dice Eczar',
-  modern: 'Dice Sora',
-  rune: 'Dice Caesar Dressing',
-  gothic: 'Dice New Rocker',
-};
-export const dieFontWeights: Record<DieFont, number> = {
-  serif: 600,
-  modern: 600,
-  rune: 400,
-  gothic: 400,
-};
 export type DieStyle = Style;
 function paintNumbers(ctx: CanvasRenderingContext2D, value: number, index: number, font?: DieFont) {
   const family = font ? `"${dieFontFamilies[font]}", Georgia, serif` : 'Georgia, serif';
@@ -73,7 +61,7 @@ function paintNumbers(ctx: CanvasRenderingContext2D, value: number, index: numbe
   if (value === 6 || value === 9)
     ctx.fillRect(index === 1 ? 96 : 108, 174, index === 1 ? 64 : 40, 3);
 }
-function texture(style: DieStyle, value: number, index: number) {
+function texture(style: DieStyle, value: number, index: number, painter?: NumeralPainter) {
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = 256;
   const ctx = canvas.getContext('2d')!;
@@ -108,7 +96,8 @@ function texture(style: DieStyle, value: number, index: number) {
   }
   ctx.globalAlpha = 1;
   ctx.fillStyle = style.ink;
-  paintNumbers(ctx, value, index, style.font);
+  if (painter) painter(ctx, style);
+  else paintNumbers(ctx, value, index, style.font);
   if (style.pattern.startsWith('frosted')) {
     // Pack body-vs-ink coverage into texture alpha; the shader sets body/ink opacity separately.
     const mask = document.createElement('canvas');
@@ -117,7 +106,8 @@ function texture(style: DieStyle, value: number, index: number) {
     maskCtx.fillStyle = '#ffffff';
     maskCtx.fillRect(0, 0, 256, 256);
     maskCtx.fillStyle = '#000000';
-    paintNumbers(maskCtx, value, index, style.font);
+    if (painter) painter(maskCtx, style);
+    else paintNumbers(maskCtx, value, index, style.font);
     const pixels = ctx.getImageData(0, 0, 256, 256);
     const coverage = maskCtx.getImageData(0, 0, 256, 256).data;
     // Keep alpha >= 0.5: Canvas premultiplication would erase RGB at zero alpha.
@@ -128,6 +118,40 @@ function texture(style: DieStyle, value: number, index: number) {
   const map = new THREE.CanvasTexture(canvas);
   map.colorSpace = THREE.SRGBColorSpace;
   return map;
+}
+/** New models reuse the exact existing decoration, alpha coverage and Fresnel finish. */
+export type NumeralPainter = (ctx: CanvasRenderingContext2D, style: DieStyle) => void;
+export function createDieMaterial(
+  style: DieStyle,
+  value: number,
+  index = 0,
+  painter?: NumeralPainter,
+) {
+  const material = new THREE.MeshStandardMaterial({
+    map: texture(style, value, index, painter),
+    roughness: style.pattern.startsWith('frosted') ? 0.88 : 0.34,
+    metalness: style.pattern.startsWith('frosted') ? 0 : 0.12,
+    transparent: style.pattern.startsWith('frosted'),
+    depthWrite: !style.pattern.startsWith('frosted'),
+  });
+  if (style.pattern.startsWith('frosted')) {
+    material.onBeforeCompile = shader => {
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <opaque_fragment>',
+        `
+              float frostFacing = clamp(dot(normal, geometryViewDir), 0.0, 1.0);
+              // Read coverage separately from the final 85% body opacity.
+              float frostBody = clamp((diffuseColor.a / max(opacity, 0.0001) * 255.0 - 128.0) / 127.0, 0.0, 1.0);
+              float frostGlow = (1.0 - frostFacing) * (1.0 - frostFacing);
+              outgoingLight = mix(outgoingLight, vec3(1.8), frostGlow * 0.85 * frostBody);
+              diffuseColor.a = mix(1.0, 0.85, frostBody) * opacity;
+              #include <opaque_fragment>
+            `,
+      );
+    };
+    material.customProgramCacheKey = () => 'dice-frosted-fresnel-85-v1';
+  }
+  return material;
 }
 export function createD10(style: DieStyle, index = 0) {
   const group = new THREE.Group();
@@ -153,30 +177,7 @@ export function createD10(style: DieStyle, index = 0) {
     geometry.computeVertexNormals();
     let material = materials.get(face.value);
     if (!material) {
-      material = new THREE.MeshStandardMaterial({
-        map: texture(style, face.value, index),
-        roughness: style.pattern.startsWith('frosted') ? 0.88 : 0.34,
-        metalness: style.pattern.startsWith('frosted') ? 0 : 0.12,
-        transparent: style.pattern.startsWith('frosted'),
-        depthWrite: !style.pattern.startsWith('frosted'),
-      });
-      if (style.pattern.startsWith('frosted')) {
-        material.onBeforeCompile = shader => {
-          shader.fragmentShader = shader.fragmentShader.replace(
-            '#include <opaque_fragment>',
-            `
-              float frostFacing = clamp(dot(normal, geometryViewDir), 0.0, 1.0);
-              // Read coverage separately from the final 85% body opacity.
-              float frostBody = clamp((diffuseColor.a / max(opacity, 0.0001) * 255.0 - 128.0) / 127.0, 0.0, 1.0);
-              float frostGlow = (1.0 - frostFacing) * (1.0 - frostFacing);
-              outgoingLight = mix(outgoingLight, vec3(1.8), frostGlow * 0.85 * frostBody);
-              diffuseColor.a = mix(1.0, 0.85, frostBody) * opacity;
-              #include <opaque_fragment>
-            `,
-          );
-        };
-        material.customProgramCacheKey = () => 'dice-frosted-fresnel-85-v1';
-      }
+      material = createDieMaterial(style, face.value, index);
       materials.set(face.value, material);
     }
     group.add(new THREE.Mesh(geometry, material));

@@ -1,23 +1,57 @@
 // SPDX-License-Identifier: MIT
-import { makeFunctionReference } from 'convex/server';
-import type { Motion, Receipt, Roll, Room, LegacyStyle as Style } from './model';
+import { makeFunctionReference } from "convex/server";
+import type { DiceConfiguration } from "../../shared/dice";
+import type {
+  Motion,
+  Receipt,
+  Roll,
+  Room,
+  LegacyStyle as Style,
+} from "./model";
 export const demo = {
-  sampleFaces: makeFunctionReference<'action', Record<string, never>, number[]>(
-    'diceDemo:sampleFaces',
+  sampleFaces: makeFunctionReference<
+    "action",
+    {
+      key?: string;
+      viewer?: string;
+      credential?: string;
+      id?: string;
+      dice?: DiceConfiguration;
+    },
+    number[]
+  >("diceDemo:sampleFaces"),
+  clock: makeFunctionReference<"action", Record<string, never>, number>(
+    "diceDemo:clock",
   ),
-  clock: makeFunctionReference<'action', Record<string, never>, number>('diceDemo:clock'),
-  view: makeFunctionReference<'query', { key: string }, Room | null>('diceDemo:view'),
+  view: makeFunctionReference<"query", { key: string }, Room | null>(
+    "diceDemo:view",
+  ),
   join: makeFunctionReference<
-    'mutation',
-    { key: string; viewer: string; name: string; ready: boolean; uncertainty: number },
+    "mutation",
+    {
+      key: string;
+      viewer: string;
+      name: string;
+      ready: boolean;
+      uncertainty: number;
+    },
     null
-  >('diceDemo:join'),
+  >("diceDemo:join"),
   throwDice: makeFunctionReference<
-    'mutation',
-    { key: string; viewer: string; id: string; faces: number[]; styles: Style[]; motion?: Motion },
+    "mutation",
+    {
+      key: string;
+      viewer: string;
+      id: string;
+      faces: number[];
+      styles: Style[];
+      motion?: Motion;
+    },
     Roll
-  >('diceDemo:throwDice'),
-  receipt: makeFunctionReference<'mutation', { key: string; sample: Receipt }, null>(
-    'diceDemo:receipt',
-  ),
+  >("diceDemo:throwDice"),
+  receipt: makeFunctionReference<
+    "mutation",
+    { key: string; sample: Receipt },
+    null
+  >("diceDemo:receipt"),
 };

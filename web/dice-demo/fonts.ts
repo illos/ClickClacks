@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import { dieFonts, dieFontFamilies, dieFontWeights, type DieFont } from './d10';
+import { dieFonts, dieFontFamilies, dieFontWeights, type DieFont } from './font-style';
 import serif from './fonts/serif.woff2?url';
 import modern from './fonts/modern.woff2?url';
 import rune from './fonts/rune.woff2?url';

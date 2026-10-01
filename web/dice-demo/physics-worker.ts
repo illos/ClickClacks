@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { Quaternion } from 'three';
 import { numberingOrientation, simulateThrow } from './physics';
+import { modelNumberingOrientation } from './dice-models';
 import type { Motion, ThrowScene } from './model';
 
 let prepared: Motion | undefined;
@@ -10,7 +11,11 @@ function prepare(scene: ThrowScene) {
   if (key !== preparedKey) prepared = undefined;
   preparedKey = key;
   // Cosmetic motion is independent of supplied results. Each throw gets a fresh seed.
-  prepared ??= simulateThrow(crypto.getRandomValues(new Uint32Array(1))[0]!, [10, 10], scene);
+  prepared ??= simulateThrow(
+    crypto.getRandomValues(new Uint32Array(1))[0]!,
+    scene.dice?.kind === 'dice' ? Array(scene.dice.count).fill(scene.dice.sides) : [10, 10],
+    scene,
+  );
 }
 self.onmessage = (event: MessageEvent<{ id: number; faces?: number[]; scene?: ThrowScene }>) => {
   const { id, faces, scene = {} } = event.data;
@@ -22,9 +27,11 @@ self.onmessage = (event: MessageEvent<{ id: number; faces?: number[]; scene?: Th
       return;
     }
     const motion = prepared!;
-    const final = motion.samples.slice(-14);
+    const final = motion.samples.slice(-faces.length * 7);
+    const orient =
+      !scene.dice || scene.dice.kind === 'power' ? numberingOrientation : modelNumberingOrientation;
     motion.offsets = faces.flatMap((face, index) =>
-      numberingOrientation(new Quaternion().fromArray(final, index * 7 + 3), face, index).toArray(),
+      orient(new Quaternion().fromArray(final, index * 7 + 3), face, index, scene.dice).toArray(),
     );
     prepared = undefined;
     self.postMessage({ id, motion, planningMs: performance.now() - began });

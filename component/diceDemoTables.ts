@@ -23,6 +23,7 @@ export const demoMotion = v.object({
   seed: v.number(),
   stepMs: v.number(),
   samples: v.array(v.number()),
+  packed: v.optional(v.bytes()),
   offsets: v.array(v.number()),
 });
 export const demoRoll = v.object({

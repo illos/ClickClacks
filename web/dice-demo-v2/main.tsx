@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 import {
-  StrictMode,
+  createContext,
+  useContext,
+  useId,
   useCallback,
   useEffect,
   useMemo,
@@ -9,7 +11,11 @@ import {
   type PointerEvent,
 } from 'react';
 import { Check, Copy, X, Users, Eraser, Link as LinkIcon } from 'lucide-react';
-import { createRoot } from 'react-dom/client';
+import { createPortal } from 'react-dom';
+import { makeFunctionReference } from 'convex/server';
+import { createController, type Identity, type Profile, type DeliveredRoll } from '../../lib/client';
+import { displayError } from '../../lib/errors';
+import { describeRoll } from '../../lib/format';
 import {
   ConvexProvider,
   ConvexReactClient,
@@ -19,39 +25,48 @@ import {
   useConvexConnectionState,
 } from 'convex/react';
 import { demo } from '../dice-demo/api';
-import { prepareThrow, warmThrows } from '../dice-demo/prepare-throw';
-import { type Style } from '../dice-demo/model';
-import { loadDiceFonts } from '../dice-demo/fonts';
-import { dieFontFamilies, dieFontWeights } from '../dice-demo/d10';
+import type { createThrowPlanner } from '../dice-demo/prepare-throw';
+import type { restingScene } from './resting-scene';
+import { packMotion, unpackTrack } from '../dice-demo/motion-codec';
+import { type Style, type Motion, type DiceConfig } from '../dice-demo/model';
+import type { SitePreferences, CachedRoll } from '../site/storage';
+import { dieFontFamilies, dieFontWeights } from '../dice-demo/font-style';
 import { demoV2 } from './api';
 import {
   parseRoomKey,
   randomProfile,
-  restingScene,
   revealDelay,
   trayOpacity,
   type Participant,
   type ParticipantRoll,
 } from './model';
-import { createRoomTray } from './renderer';
-import { createDicePreview } from './preview';
+import type { createRoomTray } from './renderer';
+import type { createDicePreview } from './preview';
+import { AccessibilityControls } from './accessibility-controls';
 import { ColorControls } from './color-controls';
 import { startClockSync } from './clock-sync';
-import '../dice-demo/style.css';
-import '../components/game-values.css';
-import './style.css';
-
-const params = new URLSearchParams(location.search);
-const supplied = params.get('room');
-const roomKey = parseRoomKey(supplied ?? '') ?? crypto.randomUUID();
-params.set('room', roomKey);
-history.replaceState(null, '', `${location.pathname}?${params}`);
-const client = new ConvexReactClient(
-  import.meta.env.VITE_LOCAL_PROXY === 'true'
-    ? `${location.origin}/convex-api`
-    : import.meta.env.VITE_CONVEX_URL,
-  { skipConvexDeploymentUrlCheck: true },
-);
+export type PowerRollerOptions = {
+  client: ConvexReactClient;
+  roomKey: string;
+  identity?: Identity;
+  profile?: Profile;
+  preferences?: SitePreferences;
+  onPreferences?: (preferences: SitePreferences) => void;
+  onProfile?: (profile: Profile) => void;
+  onRoom?: (code: string) => void;
+  onJoin?: (key: string) => void;
+  roomLink?: (code: string) => string;
+  loadHistory?: (code: string) => Promise<CachedRoll[]>;
+  onRoll?: (code: string, roll: ParticipantRoll) => void | Promise<void>;
+};
+const RollerContext = createContext<PowerRollerOptions | null>(null);
+function useRoller() { const value = useContext(RollerContext); if (!value) throw new Error('Mount inside PowerRoller.'); return value; }
+export function PowerRoller(options: PowerRollerOptions) {
+  const [activeRoom, setActiveRoom] = useState(options.roomKey);
+  useEffect(() => setActiveRoom(options.roomKey), [options.roomKey]);
+  const value = { ...options, roomKey: activeRoom, onJoin: (key: string) => { setActiveRoom(key); options.onJoin?.(key); } };
+  return <div className="powerroller"><ConvexProvider client={options.client}><RollerContext.Provider value={value}><DiceRoom key={activeRoom} /></RollerContext.Provider></ConvexProvider></div>;
+}
 type Clock = { offset: number; uncertainty: number };
 type Tray = ReturnType<typeof createRoomTray>;
 
@@ -70,39 +85,30 @@ function TrackCard({
   onReveal: (roll: ParticipantRoll, uncertainty: number) => void;
   onTrack: (owner: string, roll: ParticipantRoll | null) => void;
 }) {
-  const track = useQuery(demoV2.track, { key: roomKey, viewer: member.id });
+  const { roomKey } = useRoller();
+  const encodedTrack = useQuery(demoV2.track, { key: roomKey, viewer: member.id });
+  const track = useMemo(
+    () => (encodedTrack ? unpackTrack(encodedTrack) : encodedTrack),
+    [encodedTrack],
+  );
   const roll = track?.roll;
   useEffect(() => {
     onTrack(member.id, roll ?? null);
     return () => onTrack(member.id, null);
   }, [member.id, roll, onTrack]);
-  const completed = useRef<string | null>(null);
   useEffect(() => {
     if (!roll) {
       tray.current?.clear(member.id);
       return;
     }
-    if (!clock) return;
-    if (graphics && tray.current) {
-      tray.current.play(roll, clock);
-      return;
-    }
-    if (completed.current === roll.id) return;
-    const timer = setTimeout(
-      () => {
-        completed.current = roll.id;
-        onReveal(roll, clock.uncertainty);
-      },
-      Math.max(0, roll.startsAt + revealDelay(roll) - (performance.now() + clock.offset)),
-    );
-    return () => clearTimeout(timer);
-  }, [roll, clock, graphics, tray, onReveal, member.id]);
+    if (clock && graphics && tray.current) tray.current.play(roll, clock);
+  }, [roll, clock, graphics, tray, member.id]);
   return null;
 }
 
 type LogRoll = Pick<
   ParticipantRoll,
-  'id' | 'roller' | 'name' | 'faces' | 'power' | 'styles' | 'startsAt'
+  'id' | 'roller' | 'name' | 'faces' | 'power' | 'styles' | 'startsAt' | 'dice' | 'modifier' | 'total' | 'edges' | 'banes' | 'source'
 >;
 function DiceAvatar({ style, className = '' }: { style?: Style; className?: string }) {
   return (
@@ -154,14 +160,18 @@ function RollEntry({ roll, viewer }: { roll: LogRoll; viewer: string }) {
       </header>
       <div className="roll-result-line">
         <span className="roll-equation">
-          {roll.faces[0]} + {roll.faces[1]}
+          {roll.faces.join(' + ')}
           {roll.power && roll.power.edges - roll.power.banes === 1 && ' + 2'}
           {roll.power && roll.power.edges - roll.power.banes === -1 && ' − 2'}
+          {!roll.power &&
+            !!roll.modifier &&
+            `${roll.modifier > 0 ? ' + ' : ' − '}${Math.abs(roll.modifier)}`}
         </span>
         <span className="roll-outcome">
           <span>=</span>
           <strong className="roll-total">
-            {roll.power?.total ?? roll.faces[0]! + roll.faces[1]!}
+            {roll.total ?? roll.power?.total ??
+              roll.faces.reduce((total, face) => total + face, 0) + (roll.modifier ?? 0)}
           </strong>
           {roll.power && (
             <strong className={`tier tier-${roll.power.tier}`}>Tier {roll.power.tier}</strong>
@@ -174,35 +184,55 @@ function RollEntry({ roll, viewer }: { roll: LogRoll; viewer: string }) {
           <span className="bane">↓ {roll.power.banes === 2 ? 'Double bane' : 'Bane'}</span>
         )}
       </div>
+      <span className="visually-hidden">{describeRoll(roll as ParticipantRoll).detailed}</span>
     </article>
   );
 }
 
-function DicePreview({ style }: { style: Style }) {
+function DicePreview({ style, preferences }: { style: Style; preferences?: SitePreferences }) {
   const host = useRef<HTMLDivElement>(null);
   const preview = useRef<ReturnType<typeof createDicePreview> | null>(null);
+  const latest = useRef({ style, preferences });
+  latest.current = { style, preferences };
   const [failed, setFailed] = useState(false);
   useEffect(() => {
-    if (!host.current) return;
+    if (!host.current || preferences?.hidden) return;
     let active = true;
-    try {
-      preview.current = createDicePreview(host.current, () => {
+    void Promise.all([import('./preview'), import('../dice-demo/fonts')])
+      .then(async ([graphics, fonts]) => {
+        const failedFonts = await fonts.loadDiceFonts();
+        if (!active) return;
+        if (failedFonts.length) {
+          setFailed(true);
+          return;
+        }
+        try {
+          preview.current = graphics.createDicePreview(
+            host.current!,
+            () => {
+              if (active) setFailed(true);
+            },
+            latest.current.preferences,
+          );
+          preview.current.style(latest.current.style);
+        } catch {
+          if (active) setFailed(true);
+        }
+      })
+      .catch(() => {
         if (active) setFailed(true);
       });
-    } catch {
-      queueMicrotask(() => {
-        if (active) setFailed(true);
-      });
-    }
     return () => {
       active = false;
       preview.current?.dispose();
       preview.current = null;
     };
-  }, []);
+  }, [preferences?.hidden]);
   useEffect(() => {
+    preview.current?.setPreferences(preferences ?? {});
     preview.current?.style(style);
-  }, [style]);
+  }, [style, preferences]);
+  if (preferences?.hidden) return null;
   return (
     <div
       className="dice-preview"
@@ -228,10 +258,15 @@ function isBackdropPointer(event: PointerEvent<HTMLDialogElement>) {
   );
 }
 
+let menuLockCount = 0;
+let restoreMenuScroll: (() => void) | undefined;
+function releaseMenuScroll() { if (--menuLockCount === 0) { restoreMenuScroll?.(); restoreMenuScroll = undefined; } }
+
 /** Fixed-body lock also prevents Safari rubber-banding behind native dialogs. */
 function useMenuScrollLock(open: boolean) {
   useEffect(() => {
     if (!open) return;
+    if (++menuLockCount > 1) return releaseMenuScroll;
     const x = window.scrollX,
       y = window.scrollY;
     const body = document.body.style,
@@ -252,7 +287,7 @@ function useMenuScrollLock(open: boolean) {
       priority: style.getPropertyPriority(property),
     }));
     for (const [style, property, value] of patches) style.setProperty(property, value);
-    return () => {
+    restoreMenuScroll = () => {
       for (const { style, property, value, priority } of saved) {
         if (value) style.setProperty(property, value, priority);
         else style.removeProperty(property);
@@ -264,13 +299,63 @@ function useMenuScrollLock(open: boolean) {
       if (behavior) root.setProperty('scroll-behavior', behavior, priority);
       else root.removeProperty('scroll-behavior');
     };
+    return releaseMenuScroll;
   }, [open]);
 }
 
+type SelectedDice = 'power' | 4 | 6 | 8 | 10 | 12 | 20;
+const diceChoices: ReadonlyArray<{ value: SelectedDice; label: string }> = [
+  { value: 'power', label: 'Power roll (2d10)' },
+  ...([20, 12, 10, 8, 6, 4] as const).map(value => ({ value, label: `d${value}` })),
+];
+function RollDieIcon({ dice }: { dice: SelectedDice }) {
+  const sides = dice === 'power' ? 10 : dice;
+  const outline =
+    sides === 4
+      ? 'M12 2 23 21H1Z'
+      : sides === 6
+        ? 'M3 3H21V21H3Z'
+        : sides === 8 || sides === 10
+          ? 'M12 1 22 12 12 23 2 12Z'
+          : sides === 12
+            ? 'M12 1 23 9 19 22H5L1 9Z'
+            : 'M12 2 21 7v10l-9 5-9-5V7Z';
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+    >
+      <path d={outline} />
+      {sides === 20 && <path d="m12 2-5 13h10Zm-9 5 4 8-4 2m18-10-4 8 4 2M7 15l5 7 5-7" />}
+      {sides === 10 && <path d="m12 1-5 11 5 11 5-11ZM2 12h20" />}
+      {sides === 8 && <path d="M2 12h20M12 1v22" />}
+    </svg>
+  );
+}
+
 function DiceRoom() {
-  const [viewer] = useState(() => crypto.randomUUID());
-  const [initial, setInitial] = useState(randomProfile);
-  const [nameReady, setNameReady] = useState(false);
+  const instanceId = useId();
+  const options = useRoller();
+  const { roomKey, client } = options;
+  const [preferences, setSavedPreferences] = useState<SitePreferences>(() => options.preferences ?? { motion: 'device', hidden: false, highContrast: false, announcements: 'all' });
+  const preferencesRef = useRef(preferences);
+  preferencesRef.current = preferences;
+  const planner = useRef<ReturnType<typeof createThrowPlanner> | null>(null);
+  const makeRestingScene = useRef<typeof restingScene | null>(null);
+  function changePreferences(next: SitePreferences) {
+    setSavedPreferences(next);
+    options.onPreferences?.(next);
+  }
+  const [identity] = useState(() => options.identity ?? { viewer: crypto.randomUUID(), credential: crypto.randomUUID() + crypto.randomUUID() });
+  const { viewer, credential } = identity;
+  const identityReady = true;
+  const [savedProfile] = useState(() => options.profile);
+  const [initial, setInitial] = useState(() => savedProfile ?? randomProfile());
+  const [nameReady, setNameReady] = useState(!!savedProfile?.name);
   const [joinInput, setJoinInput] = useState('');
   const socialDialog = useRef<HTMLDialogElement>(null);
   const [joinError, setJoinError] = useState('');
@@ -296,6 +381,43 @@ function DiceRoom() {
   }, [profile]);
   const connection = useConvexConnectionState();
   const [presenceError, setPresenceError] = useState('');
+  const [selectedDice, setSelectedDice] = useState<SelectedDice>('power');
+  const [diceCount, setDiceCount] = useState(1),
+    [choosingDice, setChoosingDice] = useState(false);
+  const rollControls = useRef<HTMLDivElement>(null),
+    dicePicker = useRef<HTMLButtonElement>(null),
+    diceMenu = useRef<HTMLDivElement>(null);
+  const diceConfig = useMemo(
+    () =>
+      selectedDice === 'power'
+        ? { kind: 'power' as const, sides: 10 as const, count: 2 }
+        : { kind: 'dice' as const, sides: selectedDice, count: diceCount },
+    [selectedDice, diceCount],
+  );
+  useEffect(() => {
+    if (!choosingDice) return;
+    const menu = diceMenu.current;
+    if (menu && dicePicker.current) {
+      menu.showPopover();
+      const rect = dicePicker.current.getBoundingClientRect();
+      menu.style.left = `${Math.max(8, Math.min(rect.right - 190, innerWidth - 198))}px`;
+      menu.style.top = `${Math.max(8, rect.top - menu.offsetHeight - 8)}px`;
+    }
+    rollControls.current?.querySelector<HTMLButtonElement>('[aria-checked="true"]')?.focus();
+    const close = (event: globalThis.PointerEvent) => {
+      if (!rollControls.current?.contains(event.target as Node)) setChoosingDice(false);
+    };
+    document.addEventListener('pointerdown', close);
+    return () => document.removeEventListener('pointerdown', close);
+  }, [choosingDice]);
+  const retryThrow = useRef<{
+    id: string;
+    dice: DiceConfig;
+    edges: number;
+    banes: number;
+    faces?: number[];
+    motion?: Motion;
+  } | null>(null);
   const [edges, setEdges] = useState(0);
   const [banes, setBanes] = useState(0);
   const [clock, setClock] = useState<Clock | null>(null);
@@ -316,9 +438,33 @@ function DiceRoom() {
     [error, setError] = useState(''),
     [copied, setCopied] = useState<'code' | 'link' | null>(null);
   const [rollLog, setRollLog] = useState<LogRoll[]>([]);
+  const delivered = useRef(new Set<string>());
+  const optionsRef = useRef(options); optionsRef.current = options;
+  const codeRef = useRef<string | null>(null);
+  const [historyReady, setHistoryReady] = useState(!options.loadHistory);
+  const [announcements, setAnnouncements] = useState<string[]>([]);
+  const [announcement, setAnnouncement] = useState('');
+  useEffect(() => {
+    if (!announcements.length) return;
+    setAnnouncement('');
+    const speak = setTimeout(() => setAnnouncement(announcements[0]!), 50);
+    const next = setTimeout(() => { setAnnouncement(''); setAnnouncements(queue => queue.slice(1)); }, 950);
+    return () => { clearTimeout(speak); clearTimeout(next); };
+  }, [announcements]);
   const host = useRef<HTMLDivElement>(null),
     tray = useRef<Tray | null>(null);
   const room = useQuery(demoV2.view, { key: roomKey });
+  codeRef.current = room?.code ?? null;
+  useEffect(() => {
+    if (!room?.code || !options.loadHistory) return;
+    let active = true;
+    void options.loadHistory(room.code).then(history => {
+      if (!active) return;
+      for (const roll of history) delivered.current.add(`${roll.roller}:${roll.id}`);
+      setRollLog(current => [...current, ...history.filter(roll => !current.some(value => value.id === roll.id && value.roller === roll.roller))].sort((a,b) => b.startsAt-a.startsAt).slice(0,100));
+    }).catch(() => {}).finally(() => { if (active) setHistoryReady(true); });
+    return () => { active = false; };
+  }, [room?.code]);
   const tracks = useRef(new Map<string, ParticipantRoll>());
   const [trayRolls, setTrayRolls] = useState<
     Record<string, Pick<ParticipantRoll, 'id' | 'startsAt' | 'duration'>>
@@ -334,7 +480,11 @@ function DiceRoom() {
       return next;
     });
   }, []);
-  const ownTrack = useQuery(demoV2.track, { key: roomKey, viewer });
+  const encodedOwnTrack = useQuery(demoV2.track, { key: roomKey, viewer });
+  const ownTrack = useMemo(
+    () => (encodedOwnTrack ? unpackTrack(encodedOwnTrack) : encodedOwnTrack),
+    [encodedOwnTrack],
+  );
   const ping = useAction(demo.clock),
     sampleFaces = useAction(demo.sampleFaces);
   const chooseName = useMutation(demoV2.randomName);
@@ -344,8 +494,9 @@ function DiceRoom() {
     throwDice = useMutation(demoV2.throwDice),
     record = useMutation(demoV2.receipt);
   const ready =
-    nameReady && clockReady && connection.isWebSocketConnected && (graphics || fallback) && visible;
+    identityReady && nameReady && clockReady && connection.isWebSocketConnected && visible;
   useEffect(() => {
+    if (nameReady) return;
     let cancelled = false;
     void chooseName({})
       .then(name => {
@@ -355,21 +506,20 @@ function DiceRoom() {
         setNameReady(true);
       })
       .catch(e => {
-        if (!cancelled) setError(String(e));
+        if (!cancelled) setError(displayError(e, credential));
       });
     return () => {
       cancelled = true;
     };
-  }, [chooseName]);
+  }, [chooseName, nameReady]);
+  useEffect(() => {
+    if (nameReady) options.onProfile?.(profile);
+  }, [profile, nameReady]);
   useEffect(() => {
     if (!room?.code) return;
-    const address = new URL(location.href);
-    address.searchParams.set('room', room.code);
-    history.replaceState(null, '', address);
+    options.onRoom?.(room.code);
   }, [room?.code]);
-  const roomAddress = new URL(location.href);
-  if (room?.code) roomAddress.searchParams.set('room', room.code);
-  const roomLink = room?.code ? roomAddress.href : '';
+  const roomLink = room?.code ? options.roomLink?.(room.code) ?? room.code : '';
   async function copyRoom(kind: 'code' | 'link') {
     if (!room?.code) return;
     try {
@@ -381,22 +531,6 @@ function DiceRoom() {
       setShareError('Select and copy the code or link below.');
     }
   }
-  useEffect(() => {
-    let cancelled = false;
-    void warmThrows({ scale: 0.65, obstacles: [] })
-      .then(() => {
-        if (!cancelled) setPhysicsReady(true);
-      })
-      .catch(e => {
-        if (!cancelled) {
-          setError(String(e));
-          setPhysicsReady(true);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
   useEffect(() => {
     const stop = startClockSync(
       () => ping({}),
@@ -423,11 +557,13 @@ function DiceRoom() {
   useEffect(() => {
     let cancelled = false;
     async function heartbeat() {
-      if (!nameReady || document.hidden || !connection.isWebSocketConnected) return;
+      if (!identityReady || !nameReady || document.hidden || !connection.isWebSocketConnected)
+        return;
       try {
         await join({
           key: roomKey,
           viewer,
+          credential,
           ...profileRef.current,
           ready,
           uncertainty: clockRef.current?.uncertainty ?? 10000,
@@ -435,7 +571,7 @@ function DiceRoom() {
         if (!cancelled) setPresenceError('');
       } catch (e) {
         if (!cancelled && !document.hidden && client.connectionState().isWebSocketConnected)
-          setPresenceError(String(e));
+          setPresenceError(displayError(e, credential));
       }
     }
     void heartbeat();
@@ -444,23 +580,33 @@ function DiceRoom() {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [join, viewer, ready, nameReady, connection.isWebSocketConnected]);
+  }, [join, viewer, credential, identityReady, ready, nameReady, connection.isWebSocketConnected]);
   const report = useCallback(
     (
       roll: ParticipantRoll,
       uncertainty: number,
       timing?: { firstFrame: number; revealFrame: number; frames: number; maxFrameGap: number },
     ) => {
+      const rollKey = `${roll.roller}:${roll.id}`;
+      if (!delivered.current.has(rollKey)) {
+        delivered.current.add(rollKey);
+        if (delivered.current.size > 5000) delivered.current.delete(delivered.current.values().next().value!);
+        if (codeRef.current) void optionsRef.current.onRoll?.(codeRef.current, roll);
+        const prefs = preferencesRef.current;
+        if (!(roll as DeliveredRoll).historical && (prefs.announcements === 'all' || prefs.announcements === 'mine' && roll.roller === viewer)) setAnnouncements(queue => [...queue, describeRoll(roll).concise]);
+      }
       setRollLog(old => {
         if (old.some(entry => entry.id === roll.id && entry.roller === roll.roller)) return old;
-        const { id, roller, name, faces, power, styles, startsAt } = roll;
-        return [{ id, roller, name, faces, power, styles, startsAt }, ...old]
+        const { id, roller, name, faces, power, styles, startsAt, dice, modifier, total, edges, banes, source } = roll;
+        return [{ id, roller, name, faces, power, styles, startsAt, dice, modifier, total, edges, banes, source }, ...old]
           .sort((a, b) => b.startsAt - a.startsAt)
           .slice(0, 100);
       });
+      if ((roll as DeliveredRoll).historical && !timing) return;
       const time = performance.now() + (clockRef.current?.offset ?? 0);
       void record({
         key: roomKey,
+        credential,
         roller: roll.roller,
         sample: {
           viewer,
@@ -468,42 +614,92 @@ function DiceRoom() {
           uncertainty,
           ...(timing ?? { firstFrame: time, revealFrame: time, frames: 0, maxFrameGap: 0 }),
         },
-      }).catch(e => setError(String(e)));
+      }).catch(e => setError(displayError(e, credential)));
     },
-    [record, viewer],
+    [record, viewer, credential],
   );
+  const joinedForDelivery = room?.participants.some(member => member.id === viewer);
+  useEffect(() => {
+    if (!joinedForDelivery || !historyReady || !clockReady) return;
+    const controller = createController({ key: roomKey, identity, profile: profileRef.current, clock: () => performance.now(), transport: {
+      call: (method, args) => method === 'diceDemo:clock' || method === 'diceDemo:sampleFaces' ? client.action(makeFunctionReference<'action'>(method), args) : ['diceDemoV2:view', 'diceDemoV2:track', 'diceDemoV2:events'].includes(method) ? client.query(makeFunctionReference<'query'>(method), args) : client.mutation(makeFunctionReference<'mutation'>(method), args),
+      watch: (method, args, next, fail) => { const watch = client.watchQuery(makeFunctionReference<'query'>(method), args); const stop = watch.onUpdate(() => { try { const value = watch.localQueryResult(); if (value !== undefined) next(value); } catch (error) { fail(error instanceof Error ? error : new Error(String(error))); } }); const value = watch.localQueryResult(); if (value !== undefined) next(value); return stop; },
+    }});
+    controller.on('available', roll => report(roll, controller.clockEstimate().uncertainty));
+    controller.on('error', error => setError(displayError(error, credential)));
+    void controller.observe().catch(error => setError(displayError(error, credential)));
+    return () => { void controller.dispose(); };
+  }, [joinedForDelivery, historyReady, clockReady, roomKey, viewer, credential, client, report]);
   useEffect(() => {
     let cancelled = false;
     let current: Tray | null = null;
-    void loadDiceFonts().then(failed => {
-      if (cancelled) return;
-      if (failed.length) {
-        setError('Dice fonts could not load. Rolls remain available as text; reload to retry 3D.');
-        setFallback(true);
-        return;
-      }
-      setFontsReady(true);
-      try {
-        current = createRoomTray(
-          host.current!,
-          () => {
-            setGraphics(false);
-            setFallback(true);
-          },
-          (roll, timing, uncertainty) => report(roll, uncertainty, timing),
-        );
-        tray.current = current;
-        setGraphics(true);
-      } catch {
-        setFallback(true);
-      }
-    });
+    let currentPlanner: ReturnType<typeof createThrowPlanner> | null = null;
+    setGraphics(false);
+    setFallback(false);
+    if (preferences.hidden) {
+      setPhysicsReady(true);
+      return;
+    }
+    void Promise.all([
+      import('../dice-demo/fonts'),
+      import('./renderer'),
+      import('../dice-demo/prepare-throw'),
+      import('./resting-scene'),
+    ])
+      .then(async ([fonts, graphicsModule, physics, resting]) => {
+        if (cancelled) return;
+        currentPlanner = physics.createThrowPlanner();
+        planner.current = currentPlanner;
+        makeRestingScene.current = resting.restingScene;
+        void currentPlanner
+          .warmThrows({ scale: 0.65, obstacles: [] })
+          .then(() => {
+            if (!cancelled) setPhysicsReady(true);
+          })
+          .catch(() => {
+            if (!cancelled) setPhysicsReady(true);
+          });
+        const failed = await fonts.loadDiceFonts();
+        if (cancelled) return;
+        if (failed.length) {
+          setError(
+            'Dice fonts could not load. Rolls remain available as text; reload to retry 3D.',
+          );
+          setFallback(true);
+          return;
+        }
+        setFontsReady(true);
+        try {
+          current = graphicsModule.createRoomTray(
+            host.current!,
+            () => {
+              setGraphics(false);
+              setFallback(true);
+            },
+            (roll, timing, uncertainty) => report(roll, uncertainty, timing),
+            preferencesRef.current,
+          );
+          tray.current = current;
+          setGraphics(true);
+        } catch {
+          setFallback(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setFallback(true);
+      });
     return () => {
       cancelled = true;
       current?.dispose();
+      currentPlanner?.dispose();
       if (tray.current === current) tray.current = null;
+      if (planner.current === currentPlanner) planner.current = null;
+      makeRestingScene.current = null;
     };
-  }, [report]);
+  }, [report, preferences.hidden]);
+  useEffect(() => {
+    tray.current?.setPreferences(preferences);
+  }, [preferences.motion, preferences.highContrast, graphics]);
   const members = useMemo(
     () =>
       (room?.participants ?? [])
@@ -515,12 +711,24 @@ function DiceRoom() {
     tray.current?.participants(members);
   }, [members, graphics]);
   useEffect(() => {
-    if (!clock || !physicsReady) return;
-    const scene = restingScene(tracks.current.values(), members, viewer, now + clock.offset);
-    void warmThrows(scene).catch(() => {
+    if (
+      !clock ||
+      !physicsReady ||
+      preferences.hidden ||
+      !planner.current ||
+      !makeRestingScene.current
+    )
+      return;
+    const scene = makeRestingScene.current(
+      tracks.current.values(),
+      members,
+      viewer,
+      now + clock.offset,
+    );
+    void planner.current.warmThrows({ ...scene, dice: diceConfig }).catch(() => {
       /* Throw preparation retries on click. */
     });
-  }, [members, viewer, now, clock, physicsReady]);
+  }, [members, viewer, now, clock, physicsReady, diceConfig, preferences.hidden]);
   const hasDice =
     !clearing &&
     !!clock &&
@@ -542,12 +750,16 @@ function DiceRoom() {
   useEffect(() => {
     if (!joined || profile === initial || !profile.name.trim()) return;
     const timer = setTimeout(() => {
-      void customize({ key: roomKey, viewer, name: profile.name, style: profile.style }).catch(e =>
-        setError(String(e)),
-      );
+      void customize({
+        key: roomKey,
+        viewer,
+        credential,
+        name: profile.name,
+        style: profile.style,
+      }).catch(e => setError(displayError(e, credential)));
     }, 300);
     return () => clearTimeout(timer);
-  }, [profile, initial, joined, viewer, customize]);
+  }, [profile, initial, joined, viewer, credential, customize]);
   const ownRoll = ownTrack?.roll;
   const busy =
     pending || !!(ownRoll && clock && now + clock.offset < ownRoll.startsAt + ownRoll.duration);
@@ -556,11 +768,11 @@ function DiceRoom() {
     setError('');
     for (const id of tracks.current.keys()) tray.current?.clear(id);
     try {
-      await clearSharedTray({ key: roomKey, viewer });
+      await clearSharedTray({ key: roomKey, viewer, credential });
     } catch (e) {
       if (clockRef.current)
         for (const roll of tracks.current.values()) tray.current?.play(roll, clockRef.current);
-      setError(String(e));
+      setError(displayError(e, credential));
     } finally {
       setClearing(false);
     }
@@ -568,42 +780,82 @@ function DiceRoom() {
   async function perform() {
     setPending(true);
     setError('');
-
+    const request = retryThrow.current ?? {
+      id: crypto.randomUUID(),
+      dice: diceConfig,
+      edges,
+      banes,
+    };
+    retryThrow.current = request;
     try {
-      await customize({ key: roomKey, viewer, name: profile.name, style: profile.style });
-      const faces = await sampleFaces({});
-      const scene = restingScene(
-        tracks.current.values(),
-        members,
+      await customize({
+        key: roomKey,
         viewer,
-        performance.now() + (clockRef.current?.offset ?? 0),
-      );
-      const { motion } = await prepareThrow(faces, scene);
+        credential,
+        name: profile.name,
+        style: profile.style,
+      });
+      if (!request.faces)
+        request.faces = await sampleFaces({
+          key: roomKey,
+          viewer,
+          credential,
+          id: request.id,
+          dice: request.dice,
+        });
+      if (
+        !request.motion &&
+        graphics &&
+        !preferences.hidden &&
+        planner.current &&
+        makeRestingScene.current
+      ) {
+        const scene = makeRestingScene.current(
+          tracks.current.values(),
+          members,
+          viewer,
+          performance.now() + (clockRef.current?.offset ?? 0),
+        );
+        try {
+          request.motion = (
+            await planner.current.prepareThrow(request.faces, { ...scene, dice: request.dice })
+          ).motion;
+        } catch {
+          /* Logical acceptance does not require cosmetic physics. */
+        }
+      }
       await throwDice({
         key: roomKey,
         viewer,
-        id: crypto.randomUUID(),
-        faces,
-        motion,
-        edges,
-        banes,
+        credential,
+        id: request.id,
+        dice: request.dice,
+        faces: request.faces,
+        ...(request.motion ? { motion: packMotion(request.motion) } : {}),
+        edges: request.edges,
+        banes: request.banes,
       });
+      retryThrow.current = null;
       setEdges(0);
       setBanes(0);
     } catch (e) {
-      setError(String(e));
+      setError(displayError(e, credential));
+      if (/REQUEST_EXPIRED|REQUEST_CONFLICT|INVALID|ROOM_EXPIRED|UNAUTHORIZED/.test(String(e)))
+        retryThrow.current = null;
     } finally {
       setPending(false);
     }
   }
+  useEffect(() => {
+    retryThrow.current = null;
+  }, [diceConfig, edges, banes]);
   function edit(patch: Partial<Style>) {
     setProfile(old => ({ ...old, style: { ...old.style, ...patch } }));
   }
   return (
-    <main className="lab v2">
+    <main className={`lab v2${preferences.highContrast ? ' high-contrast' : ''}`}>
       <div className="roll-area">
         <header className="lab-header">
-          <a href="https://github.com/illos/powerroller">Source</a>
           <h1 className="power-title">Power Roller</h1>
           <button
             type="button"
@@ -665,21 +917,41 @@ function DiceRoom() {
                 <Eraser aria-hidden />
               </button>
             )}
-            {fallback && (
-              <p className="fallback">3D unavailable · shared text results still work.</p>
+            {(fallback || preferences.hidden) && (
+              <p className="fallback">
+                {preferences.hidden
+                  ? '3D dice hidden · shared text results still work.'
+                  : '3D unavailable · shared text results still work.'}
+              </p>
             )}
           </section>
           <section className="controls">
             <div className="power-modifiers" role="group" aria-label="Modifiers for next roll">
               {[
-                { name: 'edge', label: 'Edge', icon: '↑', count: edges, set: setEdges },
-                { name: 'bane', label: 'Bane', icon: '↓', count: banes, set: setBanes },
+                {
+                  name: 'edge',
+                  label: selectedDice === 'power' ? 'Edge' : '+2',
+                  icon: selectedDice === 'power' ? '↑' : '',
+                  count: edges,
+                  set: setEdges,
+                },
+                {
+                  name: 'bane',
+                  label: selectedDice === 'power' ? 'Bane' : '−2',
+                  icon: selectedDice === 'power' ? '↓' : '',
+                  count: banes,
+                  set: setBanes,
+                },
               ].map(control => (
                 <div className="modifier-buttons" key={control.name}>
                   <button
                     type="button"
                     data-roll-modifier={control.name}
-                    aria-label={`${control.label}: ${control.count} of 2. Add ${control.name}`}
+                    aria-label={
+                      selectedDice === 'power'
+                        ? `${control.label}: ${control.count} of 2. Add ${control.name}`
+                        : `${control.name === 'edge' ? 'Positive' : 'Negative'} modifier: ${control.count * 2}. Add ${control.name === 'edge' ? '+2' : '−2'}`
+                    }
                     disabled={clearing || busy || control.count === 2}
                     onClick={() => control.set(count => Math.min(2, count + 1))}
                   >
@@ -692,7 +964,11 @@ function DiceRoom() {
                     <button
                       type="button"
                       data-roll-modifier={control.name}
-                      aria-label={`Remove ${control.name}`}
+                      aria-label={
+                        selectedDice === 'power'
+                          ? `Remove ${control.name}`
+                          : `Remove ${control.name === 'edge' ? '+2' : '−2'} modifier`
+                      }
                       disabled={clearing || busy}
                       onClick={event => {
                         const button = event.currentTarget;
@@ -711,24 +987,122 @@ function DiceRoom() {
                 </div>
               ))}
             </div>
-            <button
-              className="primary"
+            {selectedDice !== 'power' && (
+              <div className="dice-quantity" role="group" aria-label="Dice count">
+                <button
+                  type="button"
+                  aria-label="Remove die"
+                  disabled={clearing || busy || diceCount === 1}
+                  onClick={() => setDiceCount(count => Math.max(1, count - 1))}
+                >
+                  −
+                </button>
+                <output aria-live="polite" aria-label="Number of dice">
+                  {diceCount}
+                </output>
+                <button
+                  type="button"
+                  aria-label="Add die"
+                  disabled={clearing || busy || diceCount === 20}
+                  onClick={() => setDiceCount(count => Math.min(20, count + 1))}
+                >
+                  +
+                </button>
+              </div>
+            )}
+            <div
+              className="roll-button-group"
+              ref={rollControls}
               style={{ backgroundColor: profile.style.color, color: rollInk }}
-              aria-label={
-                !ready || !physicsReady
-                  ? 'Roll (dice warming)'
-                  : pending
-                    ? 'Roll (preparing)'
-                    : busy
-                      ? 'Roll (dice rolling)'
-                      : 'Roll'
-              }
-              aria-busy={pending || clearing}
-              disabled={clearing || !ready || !physicsReady || !joined || busy || room?.expired}
-              onClick={() => void perform()}
             >
-              Roll
-            </button>
+              <button
+                ref={dicePicker}
+                type="button"
+                className="dice-selection-trigger"
+                aria-label="Select dice"
+                title={diceChoices.find(choice => choice.value === selectedDice)!.label}
+                aria-haspopup="menu"
+                aria-expanded={choosingDice}
+                aria-controls={`${instanceId}-dice-selection-menu`}
+                disabled={clearing || busy}
+                onClick={() => setChoosingDice(open => !open)}
+              >
+                <RollDieIcon dice={selectedDice} />
+              </button>
+              <button
+                className="primary"
+                aria-label={
+                  !ready
+                    ? 'Roll (connecting)'
+                    : pending
+                      ? 'Roll (preparing)'
+                      : busy
+                        ? 'Roll (dice rolling)'
+                        : 'Roll'
+                }
+                aria-busy={pending || clearing}
+                disabled={clearing || !ready || !joined || busy || room?.expired}
+                onClick={() => void perform()}
+              >
+                Roll
+              </button>
+              {choosingDice && (
+                <div
+                  id={`${instanceId}-dice-selection-menu`}
+                  ref={diceMenu}
+                  popover="manual"
+                  className="dice-selection-menu"
+                  role="menu"
+                  aria-label="Dice to roll"
+                  onKeyDown={event => {
+                    if (event.key === 'Escape') {
+                      event.preventDefault();
+                      setChoosingDice(false);
+                      dicePicker.current?.focus();
+                      return;
+                    }
+                    const choices = [
+                        ...event.currentTarget.querySelectorAll<HTMLButtonElement>(
+                          '[role="menuitemradio"]',
+                        ),
+                      ],
+                      index = choices.indexOf(document.activeElement as HTMLButtonElement);
+                    const next =
+                      event.key === 'ArrowDown'
+                        ? (index + 1) % choices.length
+                        : event.key === 'ArrowUp'
+                          ? (index + choices.length - 1) % choices.length
+                          : event.key === 'Home'
+                            ? 0
+                            : event.key === 'End'
+                              ? choices.length - 1
+                              : -1;
+                    if (next >= 0) {
+                      event.preventDefault();
+                      choices[next]?.focus();
+                    }
+                  }}
+                >
+                  {diceChoices.map(choice => (
+                    <button
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={selectedDice === choice.value}
+                      key={choice.value}
+                      onClick={() => {
+                        setSelectedDice(choice.value);
+                        setChoosingDice(false);
+                        dicePicker.current?.focus();
+                      }}
+                    >
+                      <RollDieIcon dice={choice.value} />
+                      <span>{choice.label}</span>
+                      {selectedDice === choice.value && <Check aria-hidden />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </section>
         </div>
       </div>
@@ -751,12 +1125,9 @@ function DiceRoom() {
         ) : (
           <p className="empty-log">Throw dice to start the log.</p>
         )}
-        <span className="visually-hidden" role="status">
-          {rollLog[0]
-            ? `${rollLog[0].name} rolled ${rollLog[0].power?.total ?? rollLog[0].faces[0]! + rollLog[0].faces[1]!}`
-            : ''}
-        </span>
+
       </section>
+      {createPortal(<span className="visually-hidden" role="status" aria-live="polite" aria-atomic="true">{announcement}</span>, (customizing ? customization.current : socializing ? socialDialog.current : null) ?? host.current?.parentElement ?? document.body)}
       {error && !customizing && !socializing && (
         <p className="error" role="alert">
           {error}
@@ -781,10 +1152,10 @@ function DiceRoom() {
           backdropPointer.current = null;
         }}
         className="dice-customization social-dialog"
-        aria-labelledby="join-table-title"
+        aria-labelledby={`${instanceId}-join-table-title`}
       >
         <header>
-          <h2 id="join-table-title">Table</h2>
+          <h2 id={`${instanceId}-join-table-title`}>Table</h2>
           <button
             type="button"
             aria-label="Close social menu"
@@ -793,8 +1164,8 @@ function DiceRoom() {
             <X aria-hidden />
           </button>
         </header>
-        <section className="connected-players" aria-labelledby="connected-players-title">
-          <h3 id="connected-players-title">
+        <section className="connected-players" aria-labelledby={`${instanceId}-connected-players-title`}>
+          <h3 id={`${instanceId}-connected-players-title`}>
             Connected players <span>{members.length}</span>
           </h3>
           {members.length ? (
@@ -827,10 +1198,10 @@ function DiceRoom() {
         )}
         <section className="menu-sharing" aria-label="Share table">
           <div>
-            <label htmlFor="menu-table-code">Table code</label>
+            <label htmlFor={`${instanceId}-menu-table-code`}>Table code</label>
             <div className="share-field share-code">
               <input
-                id="menu-table-code"
+                id={`${instanceId}-menu-table-code`}
                 readOnly
                 value={room?.code ?? ''}
                 placeholder="Connecting…"
@@ -848,10 +1219,10 @@ function DiceRoom() {
             </div>
           </div>
           <div>
-            <label htmlFor="menu-table-link">Table link</label>
+            <label htmlFor={`${instanceId}-menu-table-link`}>Table link</label>
             <div className="share-field">
               <input
-                id="menu-table-link"
+                id={`${instanceId}-menu-table-link`}
                 readOnly
                 value={roomLink}
                 placeholder="Connecting…"
@@ -886,15 +1257,13 @@ function DiceRoom() {
               setJoinError('Enter an eight-character room code or room link.');
               return;
             }
-            const address = new URL(location.href);
-            address.searchParams.set('room', key);
-            location.assign(address.href);
+            options.onJoin?.(key);
           }}
         >
-          <label htmlFor="join-table-input">Join a table</label>
+          <label htmlFor={`${instanceId}-join-table-input`}>Join a table</label>
           <div className="join-field">
             <input
-              id="join-table-input"
+              id={`${instanceId}-join-table-input`}
               aria-label="Room code or link"
               placeholder="Room code or link"
               value={joinInput}
@@ -922,11 +1291,11 @@ function DiceRoom() {
           backdropPointer.current = null;
         }}
         className="dice-customization profile-dialog"
-        aria-labelledby="dice-customization-title"
+        aria-labelledby={`${instanceId}-dice-customization-title`}
         onClose={() => setCustomizing(false)}
       >
         <header>
-          <h2 id="dice-customization-title">Customize dice</h2>
+          <h2 id={`${instanceId}-dice-customization-title`}>Customize dice</h2>
           <button
             type="button"
             aria-label="Close customization"
@@ -935,8 +1304,10 @@ function DiceRoom() {
             <X aria-hidden />
           </button>
         </header>
-        {customizing && fontsReady && <DicePreview style={profile.style} />}
-        {customizing && !fontsReady && (
+        {customizing && fontsReady && !preferences.hidden && (
+          <DicePreview style={profile.style} preferences={preferences} />
+        )}
+        {customizing && !fontsReady && !preferences.hidden && (
           <p role="status">{fallback ? '3D font preview unavailable.' : 'Loading dice fonts…'}</p>
         )}
         <fieldset disabled={busy} className="profile-fields">
@@ -971,6 +1342,7 @@ function DiceRoom() {
             </select>
           </label>
         </fieldset>
+        <AccessibilityControls preferences={preferences} onChange={changePreferences} />
         {customizing && error && (
           <p className="error" role="alert">
             {error}
@@ -980,10 +1352,3 @@ function DiceRoom() {
     </main>
   );
 }
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <ConvexProvider client={client}>
-      <DiceRoom />
-    </ConvexProvider>
-  </StrictMode>,
-);

@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: MIT
-export type LegacyStyle = { color: string; ink: string; pattern: 'solid' | 'speckle' | 'marble' };
+export type LegacyStyle = {
+  color: string;
+  ink: string;
+  pattern: 'solid' | 'speckle' | 'marble';
+};
 export type DiceFont = 'serif' | 'modern' | 'rune' | 'gothic';
 export type Style = {
   color: string;
@@ -8,12 +12,33 @@ export type Style = {
   /** Missing on legacy records: retain their original Georgia numerals. */
   font?: DiceFont;
 };
-export type RestingDie = { position: number[]; rotation: number[] };
-export type ThrowScene = { obstacles?: RestingDie[]; scale?: number };
-export type Motion = { seed: number; stepMs: number; samples: number[]; offsets: number[] };
+export type DiceSides = 4 | 6 | 8 | 10 | 12 | 20;
+export type DiceConfig = {
+  kind: 'power' | 'dice';
+  sides: DiceSides;
+  count: number;
+};
+export type RestingDie = {
+  position: number[];
+  rotation: number[];
+  dice?: DiceConfig;
+};
+export type ThrowScene = {
+  obstacles?: RestingDie[];
+  scale?: number;
+  dice?: DiceConfig;
+};
+export type Motion = {
+  seed: number;
+  stepMs: number;
+  samples: number[];
+  offsets: number[];
+  packed?: ArrayBuffer;
+};
 export type Roll = {
   id: string;
   faces: number[];
+  dice?: DiceConfig;
   styles: Style[];
   startsAt: number;
   duration: number;
@@ -35,7 +60,11 @@ export type Viewer = {
   seenAt: number;
   uncertainty: number;
 };
-export type Room = { viewers: Viewer[]; roll: Roll | null; receipts: Receipt[] };
+export type Room = {
+  viewers: Viewer[];
+  roll: Roll | null;
+  receipts: Receipt[];
+};
 export type ClockSample = { start: number; end: number; server: number };
 // A monotonic browser clock mapped to server epoch time. Fastest samples reduce queueing bias.
 export function estimateClock(samples: ClockSample[]) {

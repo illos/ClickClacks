@@ -1,3 +1,4 @@
+@scope (.powerroller) {
 /* SPDX-License-Identifier: MIT */
 /* Shared game-value presentation, including rule and character dialogs rendered in portals. */
 .roster-card-acting {
@@ -86,4 +87,6 @@ button[data-roll-modifier]:hover {
 
 .resource-identity {
   color: var(--resource-color, var(--primary));
+}
+
 }

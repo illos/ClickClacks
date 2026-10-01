@@ -9,7 +9,7 @@ The default interface, materials, recorded physics, customization preview, socia
 menus and compact log come from Salient commit
 `23cf9035b6e55d3e2e3a8198cba8c2320e7d205b` (V272). The standalone site adds the
 requested dice picker inside Roll: Power roll (2d10), d20, d12, diamond d10, d8,
-d6 and d4. Generic rolls support 1–20 dice and numeric bonus/penalty controls; power rolls
+d6 and d4. The +1d4 toggle adds one bonus d4 to generic d6–d20 pools. Generic rolls support 1–20 base dice and numeric bonus/penalty controls; power rolls
 retain Edges, Banes and tiers. Generic dice bonus/penalty controls cycle through
 0, 2 and 5; the wire fields `edges` and `banes` remain stages 0–2. A bonus
 adds its stage value and a penalty subtracts its stage value, so equal stages
@@ -175,6 +175,8 @@ pnpm cli leave --backend https://YOUR.convex.cloud --session /tmp/my-roller.json
 The session file contains a private credential and is written with mode `0600`.
 Keep it outside a repository. Credentials are not printed. Roll output includes
 accepted data and persisted track readback; clear output also reads back state.
+Add `--bonus-d4 true` to include the extra d4 in generic d6–d20 CLI rolls.
+
 Use the same explicit `--id` to retry an uncertain roll. Leave removes membership
 and the session file. Use a separate file for another backend or participant.
 
@@ -182,9 +184,10 @@ and the session file. Use a separate file for another backend or participant.
 
 - The collaborative backend supports the original power roll and homogeneous
   d4/d6/d8/d10/d12/d20 pools of **1–20** dice. Its d10 is the selected diamond model;
-  the power-roll model remains the accepted logical d10. These all have recorded
+  the power-roll model remains the accepted logical d10. Generic d6–d20 pools may
+  add one bonus d4 (up to 21 total dice). These all have recorded
   physics. This bound is not a performance guarantee on every device.
-- Mixed pools, keep/drop, percentiles and additional Draw Steel presets are pure
+- General mixed pools, keep/drop, percentiles and additional Draw Steel presets are pure
   host-side capabilities. They are **not** automatic shared interpretations in
   the community backend. Custom persisted interpretation needs a trusted wrapper.
 - Default rooms last **24 hours**, with **8 active participants**, **2,000**

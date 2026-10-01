@@ -166,3 +166,29 @@ stay visible while scrolling so their close buttons remain reachable.
 Focused Chromium checks passed at 430×932, 390×844 and 320×225 for all selections,
 live pattern colors, distinct samples, loaded fonts and close-button reachability.
 The existing two-viewer history-avatar check also passed. Typecheck/build passed.
+
+## Bonus d4, Power Roll icon and design tabs
+
+Generic d20/d12/d10/d8/d6 controls now include a +1d4 toggle before the positive
+modifier. It adds one d4 after the base pool (up to 20 base dice plus one d4),
+using the current material/font and its own tetrahedral model, hull, numbering,
+resting collisions and recorded motion. The extra face contributes to the
+semantic total. Power roll and base d4 exclude the toggle. The flag is part of
+stable request identity; absent/false normalize equivalently. CLI uses
+`--bonus-d4 true`; formatted text identifies the two dice types.
+
+Power Roll uses two outlined d20 icons marked “10”. Touch selection suppresses
+the selector's persistent focus outline; keyboard focus stays visible. Dice
+customization now has one divided pill: Die color, Text color, Design. Color
+editing retains channel intent across tabs; Design contains the pattern/font
+swatches. Tabs support arrow/Home/End keys and native selected-panel semantics.
+
+Accepted checks: 28 backend/client/config tests; eight mixed-graphics checks
+(including 2d20+1d4, 20d20+1d4, diamond d10+1d4 and 21-track binary roundtrip);
+two original power physics checks; seven format/core checks. Root typecheck
+and build passed. Focused Chromium controls passed at 430×932, 390×844,
+320×225 and desktop, including toggle placement/exclusion and touch-vs-keyboard
+focus. Updated swatch/color/history checks passed after the tabs change.
+Dedicated-dev two-viewer acceptance passed animated d20+1d4 and d10+1d4,
+text-only d6+1d4 with +2, toggled-off d6, persisted face bounds/totals/motion,
+and four cached results after reload. No physical Safari claim is made.

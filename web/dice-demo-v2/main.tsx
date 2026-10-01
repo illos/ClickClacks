@@ -11,7 +11,7 @@ import {
   useState,
   type PointerEvent,
 } from 'react';
-import { Check, Copy, X, Users, Eraser, Volume2, VolumeX, PictureInPicture2, Link as LinkIcon } from 'lucide-react';
+import { Check, Copy, X, Users, Eraser, Volume2, VolumeX, PictureInPicture2, Settings, Link as LinkIcon } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import clickClacksLogo from '../branding/click-clacks.svg';
 import { makeFunctionReference } from 'convex/server';
@@ -495,6 +495,11 @@ function DiceRoom() {
 
   const [customizing, setCustomizing] = useState(false);
   const [socializing, setSocializing] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<'sharing' | 'dice'>('sharing');
+  function selectSettingsTab(tab: 'sharing' | 'dice') {
+    setSettingsTab(tab);
+    setCustomizing(tab === 'dice');
+  }
   useMenuScrollLock(customizing || socializing);
   const [profile, setProfile] = useState(initial);
   const profileRef = useRef(profile);
@@ -1082,6 +1087,23 @@ function DiceRoom() {
   function edit(patch: Partial<Style>) {
     setProfile(old => ({ ...old, style: { ...old.style, ...patch } }));
   }
+  const customizationContent = <>
+    {customizing && fontsReady && !preferences.hidden && (
+      <DicePreview style={profile.style} preferences={preferences} />
+    )}
+    {customizing && !fontsReady && !preferences.hidden && (
+      <p role="status">{fallback ? '3D font preview unavailable.' : 'Loading dice fonts…'}</p>
+    )}
+    <fieldset disabled={busy} className="profile-fields">
+      <DiceDesignControls disabled={busy} active={customizing} style={profile.style} onChange={edit} />
+    </fieldset>
+    <AccessibilityControls preferences={preferences} onChange={changePreferences} />
+    {customizing && error && (
+      <p className="error" role="alert">
+        {error}
+      </p>
+    )}
+  </>;
   return (
     <main onPointerDown={unlockSound} onPointerUp={unlockSound} onKeyDown={unlockSound} className={`lab v2${preferences.highContrast ? ' high-contrast' : ''}`}>
       <div className="roll-area">
@@ -1142,6 +1164,15 @@ function DiceRoom() {
                   : 'Connecting…'
                 : `${members.length} / 8 participants`}
             </div>
+            {options.trayHistory && <button type="button" className="mini-settings-trigger"
+              aria-label="Open tray settings" title="Tray settings" aria-haspopup="dialog"
+              onClick={() => {
+                setJoinError('');
+                setShareError('');
+                selectSettingsTab('sharing');
+                socialDialog.current?.showModal();
+                setSocializing(true);
+              }}><Settings aria-hidden /></button>}
             <button type="button" className="sound-toggle"
               aria-label="Dice sounds" aria-pressed={preferences.sound === true}
               title={preferences.sound ? 'Mute dice sounds' : 'Enable dice sounds'}
@@ -1394,7 +1425,7 @@ function DiceRoom() {
         )}
 
       </RollLog>
-      {createPortal(<span className="visually-hidden" role="status" aria-live="polite" aria-atomic="true">{announcement}</span>, (customizing ? customization.current : socializing ? socialDialog.current : null) ?? host.current?.parentElement ?? document.body)}
+      {createPortal(<span className="visually-hidden" role="status" aria-live="polite" aria-atomic="true">{announcement}</span>, (options.trayHistory && socializing ? socialDialog.current : customizing ? customization.current : socializing ? socialDialog.current : null) ?? host.current?.parentElement ?? document.body)}
       {error && !customizing && !socializing && (
         <p className="error" role="alert">
           {error}
@@ -1413,25 +1444,41 @@ function DiceRoom() {
       )}
       <dialog
         ref={socialDialog}
-        onClose={() => setSocializing(false)}
+        onClose={() => { setSocializing(false); if (options.trayHistory) setCustomizing(false); }}
         onPointerDown={backdropDown}
         onPointerUp={backdropUp}
         onPointerCancel={() => {
           backdropPointer.current = null;
         }}
-        className="dice-customization social-dialog"
+        className={`dice-customization social-dialog${options.trayHistory ? ' mini-settings' : ''}`}
         aria-labelledby={`${instanceId}-join-table-title`}
       >
         <header>
-          <h2 id={`${instanceId}-join-table-title`}>Table</h2>
+          <h2 id={`${instanceId}-join-table-title`}>{options.trayHistory ? 'Settings' : 'Table'}</h2>
           <button
             type="button"
-            aria-label="Close social menu"
+            aria-label={options.trayHistory ? 'Close settings' : 'Close social menu'}
             onClick={() => socialDialog.current?.close()}
           >
             <X aria-hidden />
           </button>
         </header>
+        {options.trayHistory && <div className="mini-settings-tabs" role="tablist" aria-label="Tray settings">
+          {(['sharing', 'dice'] as const).map((tab, index) => <button key={tab} type="button" role="tab"
+            id={`${instanceId}-settings-${tab}`} aria-selected={settingsTab === tab}
+            aria-controls={`${instanceId}-settings-${tab}-panel`} tabIndex={settingsTab === tab ? 0 : -1}
+            onClick={() => selectSettingsTab(tab)} onKeyDown={event => {
+              const next = event.key === 'ArrowRight' || event.key === 'ArrowLeft' ? 1 - index
+                : event.key === 'Home' ? 0 : event.key === 'End' ? 1 : -1;
+              if (next < 0) return;
+              event.preventDefault();
+              selectSettingsTab(next === 0 ? 'sharing' : 'dice');
+              event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
+            }}>{tab === 'sharing' ? 'Sharing' : 'Dice'}</button>)}
+        </div>}
+        <div role={options.trayHistory ? 'tabpanel' : undefined}
+          id={`${instanceId}-settings-sharing-panel`} aria-labelledby={options.trayHistory ? `${instanceId}-settings-sharing` : undefined}
+          hidden={options.trayHistory && settingsTab !== 'sharing'}>
         <section className="connected-players" aria-labelledby={`${instanceId}-connected-players-title`}>
           <h3 id={`${instanceId}-connected-players-title`}>
             Connected players <span>{members.length}</span>
@@ -1556,8 +1603,14 @@ function DiceRoom() {
           {changingTable ? 'Leaving table…' : 'Leave table'}
         </button>
         <p className="leave-table-note">Leave this table and continue rolling on your own.</p>
+        </div>
+        {options.trayHistory && <div className="profile-dialog mini-settings-dice" role="tabpanel"
+          id={`${instanceId}-settings-dice-panel`} aria-labelledby={`${instanceId}-settings-dice`}
+          hidden={settingsTab !== 'dice'}>
+          {customizationContent}
+        </div>}
       </dialog>
-      <dialog
+      {!options.trayHistory && <dialog
         ref={customization}
         onPointerDown={backdropDown}
         onPointerUp={backdropUp}
@@ -1578,22 +1631,8 @@ function DiceRoom() {
             <X aria-hidden />
           </button>
         </header>
-        {customizing && fontsReady && !preferences.hidden && (
-          <DicePreview style={profile.style} preferences={preferences} />
-        )}
-        {customizing && !fontsReady && !preferences.hidden && (
-          <p role="status">{fallback ? '3D font preview unavailable.' : 'Loading dice fonts…'}</p>
-        )}
-        <fieldset disabled={busy} className="profile-fields">
-          <DiceDesignControls disabled={busy} active={customizing} style={profile.style} onChange={edit} />
-        </fieldset>
-        <AccessibilityControls preferences={preferences} onChange={changePreferences} />
-        {customizing && error && (
-          <p className="error" role="alert">
-            {error}
-          </p>
-        )}
-      </dialog>
+        {customizationContent}
+      </dialog>}
     </main>
   );
 }

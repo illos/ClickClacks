@@ -18,6 +18,11 @@ retain Edges, Banes and tiers. Generic dice bonus/penalty controls cycle through
 adds its stage value and a penalty subtracts its stage value, so equal stages
 cancel (stage 2 bonus and stage 1 penalty give +3). Clearing preserves the original shared tray behavior.
 
+The floating tray has a settings cog with Sharing and Dice tabs. Its name, design
+and accessibility controls use the same settings as the main page. Joining or
+leaving a table switches the main page and closes the current floating tray;
+reopening uses that new table. Shared links open the full site.
+
 On supported desktop browsers, the popout icon beside the customization and
 social icons opens a floating dice tray. It shares your table, player and current
 roll controls, with the six latest rolls behind the dice. The main log keeps its

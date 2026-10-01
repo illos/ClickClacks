@@ -3,7 +3,7 @@ import type { Identity } from './session';
 import type { SitePreferences } from './storage';
 import type { RollControls } from 'powerroller/react';
 
-export type TraySession = { identity: Identity; roomKey: string; preferences: SitePreferences; controls?: RollControls; onControls?: (controls:RollControls)=>void };
+export type TraySession = { identity: Identity; roomKey: string; preferences: SitePreferences; controls?: RollControls; onControls?: (controls:RollControls)=>void; onJoin?: (key:string)=>void; roomLink?: (code:string)=>string };
 type MiniWindow = Window & { powerrollerTraySession?: TraySession };
 type PictureInPicture = { window: Window | null; requestWindow(options: {width:number;height:number}): Promise<Window> };
 const pip = (window as Window & { documentPictureInPicture?: PictureInPicture }).documentPictureInPicture;

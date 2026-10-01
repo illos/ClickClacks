@@ -527,3 +527,22 @@ rolls with persisted readback, one table member, synchronized controls/design/
 cooldown, one audio owner, six overlay rows and all main rows, vertical containment,
 slide movement and bottom-only fading, reduced-motion/high-contrast, close/reopen,
 table departure, hidden icon on mobile/unsupported browsers and failed-module retry.
+
+
+### Mini-player settings integration (2026-10-01)
+
+Copied the approved `7a55112` cog, Sharing/Dice tabs and compact spacing into the
+live PiP renderer. The same menu handlers implement name/design/accessibility and
+joining/leaving tables. The PiP session now forwards table changes to its opener
+and builds invite links from the full site URL, preventing the floating player
+from switching tables independently. Table changes close the current floating
+window; reopening follows the main page. The standalone embed route remains a
+private preview and is excluded from this production build.
+
+Authoring checks: `pnpm typecheck` and both production builds passed.
+`tests/browser-live-mini-settings.mjs` passed against the built native Document
+PiP entry: tabs/keyboard/Escape/focus, canonical links, name/design/preferences
+shared with the main page and persisted readback, 360×320 icon spacing and
+scrollable settings, reopen defaults, and PiP-originated join/leave switching the
+main table with old/new membership readback. No page errors. Reused the peer's
+accepted iframe menu proof; no backend change or deployment.

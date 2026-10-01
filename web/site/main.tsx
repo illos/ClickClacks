@@ -34,6 +34,17 @@ function Site() {
     });
     miniSession?.onControls?.(next);
   }
+  function joinTable(key: string) {
+    setControls(undefined);
+    setRoom(key);
+    miniSession?.onJoin?.(key);
+  }
+  function roomLink(code: string) {
+    if (miniSession?.roomLink) return miniSession.roomLink(code);
+    const address = new URL(location.href);
+    address.searchParams.set('room', code);
+    return address.href;
+  }
   useEffect(() => {
     if (miniSession) return;
     let active = true;
@@ -68,13 +79,13 @@ function Site() {
   if (!identity) return null;
   return <PowerRoller client={client} roomKey={room} identity={identity} profile={preferences.profile} preferences={preferences} nameProvider={randomClassicalName}
     trayHistory={document.getElementById('root')?.dataset.trayHistory === 'true'}
-    onPopout={!miniSession && popout.supported ? () => void popout.open({identity, roomKey:room, preferences:loadPreferences(), controls, onControls:updateControls}) : undefined}
+    onPopout={!miniSession && popout.supported ? () => void popout.open({identity, roomKey:room, preferences:loadPreferences(), controls, onControls:updateControls, onJoin:joinTable, roomLink}) : undefined}
     popoutActive={popoutActive} popoutError={popoutError}
     controls={controls} onControls={updateControls}
     onPreferences={value => { savePreferences({ ...value, profile: loadPreferences().profile, room: loadPreferences().room, roomBackend: backend }); setPreferences(loadPreferences()); }}
     onProfile={profile => { saveProfile(profile); setPreferences(loadPreferences()); }}
     onRoom={code => { rememberRoom(code, backend); const address = new URL(location.href); address.searchParams.set('room', code); history.replaceState(null, '', address); }}
-    onJoin={key => { setControls(undefined); setRoom(key); }} roomLink={code => { const address = new URL(location.href); address.searchParams.set('room', code); return address.href; }}
+    onJoin={joinTable} roomLink={roomLink}
     loadHistory={code => loadHistory(backend, code)} onRoll={(code, roll) => cacheRoll(backend, code, roll)} />;
 }
 createRoot(document.getElementById('root')!).render(<StrictMode><Site /></StrictMode>);

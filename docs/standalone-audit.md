@@ -272,3 +272,10 @@ real fresh-roll scheduling after preference reload, recovery from a real suspend
 context with Safari's interrupted state simulated, finite non-silent waveform and
 peak headroom, mute, historical silence, layout, and swatch checks. Production
 build passed. Physical iPhone confirmation remains pending.
+
+Owner clarified sound stayed enabled without leaving the page, so backgrounding
+is not established as the trigger. A targeted path test passed landing detection
+for d4/d6/d8/d10/d12/d20 across three seeds and an accepted 21-die bonus pool.
+A dense d6 diagnostic seed did not settle (the planner's existing retry case);
+no detector failure occurred on accepted paths. On-page silence remains
+unreproduced; the recovery fix does not claim to establish its device cause.

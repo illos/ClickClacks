@@ -51,19 +51,19 @@
   margin: auto;
   padding: 24px 28px 48px;
 }
-.powerroller.lab-header {
+.powerroller .lab-header {
   display: flex;
   gap: 20px;
   align-items: center;
 }
-.powerroller.lab-header a {
+.powerroller .lab-header a {
   font-size: 23px;
 }
-.powerroller.lab-header span {
+.powerroller .lab-header span {
   color: #a5afb1;
   font-size: 13px;
 }
-.powerroller.lab-header button {
+.powerroller .lab-header button {
   margin-left: auto;
   border-radius: 99px;
 }
@@ -279,10 +279,10 @@
   .powerroller.lab {
     padding: 16px 16px 32px;
   }
-  .powerroller.lab-header {
+  .powerroller .lab-header {
     gap: 12px;
   }
-  .powerroller.lab-header span {
+  .powerroller .lab-header span {
     display: none;
   }
   :where(.powerroller) .intro {
@@ -1210,5 +1210,26 @@
   }
   .powerroller :focus-visible {
     outline: 2px solid Highlight;
+  }
+}
+
+/* Short or highly enlarged views use document scrolling instead of clipped fixed rows. */
+@media (max-height: 550px) {
+  .powerroller.lab.v2 {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+  .powerroller.v2 .dice-card {
+    margin-top: 16px;
+  }
+  .powerroller.v2 .dice-card .stage {
+    height: 240px;
+    min-height: 240px;
+    flex: none;
+  }
+  .powerroller.v2 .track-results {
+    margin-top: 16px;
+    max-height: none;
   }
 }

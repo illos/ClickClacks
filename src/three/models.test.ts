@@ -77,7 +77,7 @@ describe("accepted result model mapping", () => {
     for (let value = 1; value <= 4; value++) {
       const labels = canvasStub();
       const [die] = createVisualDice(defaultStyle, 4, value);
-      const points = new THREE.TetrahedronGeometry(1.15, 0).getAttribute(
+      const points = new THREE.TetrahedronGeometry(1, 0).getAttribute(
         "position",
       );
       const distinct = [
@@ -90,7 +90,7 @@ describe("accepted result model mapping", () => {
       ];
       expect(
         distinct[value - 1]!.clone().applyQuaternion(die!.final).y,
-      ).toBeCloseTo(1.15);
+      ).toBeCloseTo(1);
       expect(labels.filter((v) => v === String(value))).toHaveLength(3);
       disposeGroup(die!.mesh);
     }

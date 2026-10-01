@@ -2,8 +2,9 @@
 
 ## Required external steps
 
-- GitHub token allows pushes but Pages creation returned HTTP403. User asked to enable Settings → Pages → GitHub Actions. Actions variable VITE_CONVEX_URL was configured successfully.
-- Actual VoiceOver/NVDA spoken-delivery and real-device animation checks require those environments. Automated DOM/keyboard tests will not be reported as that evidence.
+- Resolved: user enabled Pages Source → GitHub Actions after token creation permission returned403. Actions variable VITE_CONVEX_URL was configured successfully.
+- Actual VoiceOver/NVDA spoken-delivery and real-device animation checks require those environments. User approved publication with these checks pending; automated DOM/keyboard tests are not that evidence.
+- Manual checklist: repeated identical and concurrent rolls announced individually; announcements accessible while each menu is open; no focus loss; iOS/Safari and Android/device animation, foreground recovery, reduced motion and readable stock models.
 
 ## Chosen defaults (configurable for integrations)
 

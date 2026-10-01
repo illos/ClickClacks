@@ -53,7 +53,7 @@ function cube(style: Style, sides: number, value: number): VisualDie {
   };
 }
 function tetrahedron(style: Style, value: number): VisualDie {
-  const source = new THREE.TetrahedronGeometry(1.15, 0),
+  const source = new THREE.TetrahedronGeometry(0.65, 0),
     positions = source.getAttribute("position");
   const mesh = new THREE.Group();
   let target = new THREE.Quaternion();

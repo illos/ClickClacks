@@ -28,7 +28,7 @@ pnpm exec convex dev --once
 pnpm dev
 ```
 
-The site runs at http://localhost:9590/powerroller/. Importing the library has no automatic backend
+The site runs at http://localhost:9591/powerroller/. Importing the library has no automatic backend
 URL fallback. Supply your own endpoint. Never put a Convex deployment key in the Vite environment,
 frontend source or GitHub Pages bundle. The public Convex URL is configuration, not a secret.
 
@@ -109,7 +109,7 @@ Multiple instances are isolated; call `dispose()` to release subscriptions and t
 `setPreferences` and `dispose`. Pass accepted records with `participantId: record.memberId` and
 `style: record.appearance`. Custom `models[sides]` providers can return matching `VisualDie` objects.
 The stock graphics budget is32 dice per participant; larger logical requests remain valid and fully
-readable in HTML. Unsupported model types also preserve complete text results. Cosmetics never
+readable in HTML. Dice remain visible for five seconds after shared reveal, then fade over600ms; the result log remains available. Unsupported model types also preserve complete text results. Cosmetics never
 supply entropy or make rolling depend on WebGL. Changing display preferences only changes that viewer.
 
 ## Install the backend component
@@ -159,6 +159,15 @@ pnpm cli clear '{}'
 multiple callers. Reusing a request ID preserves the accepted roll; use `view`/`events` to read back
 persisted state. A CLI mutation response alone is not proof of persistence.
 
+### Trusted custom interpretation
+
+An authenticated host wrapper can use `components.powerroller.rooms.acceptResolved` to persist its
+own interpretation without editing library source. Supply `{roomId,credential,request,result}`;
+use `request.ruleset: "sum"` with `context.ruleset: "your-game/preset"`, and derive the dice envelope
+from `resolveRoll(request,values)`. Customize bounded `total`, semantic flags and `summary` in your
+trusted wrapper. The component verifies dice IDs, sides, values, kept status and natural total, and
+fingerprints the complete approved result for retries. The community site exposes no such endpoint.
+
 ## Browser persistence and accessibility
 
 The site alone owns versioned preferences, observed history and routing. Preferences use localStorage;
@@ -172,7 +181,7 @@ Menus contain local **Use device setting / Reduce motion / Full animation**, **H
 HTML results remain available in every mode. Device motion preference is applied before graphics
 start. Text-only mode does not load the Three.js chunk. New rolls do not steal focus or force scroll.
 
-Actual VoiceOver/NVDA and real-device verification are listed separately in
+The first release is published with actual VoiceOver/NVDA and real-device verification explicitly pending, as approved by the owner. These are listed separately in
 [open questions](docs/open-questions.md). Automated checks do not prove spoken delivery or WCAG
 conformance. This project does not currently make a conformance claim.
 

@@ -10,7 +10,7 @@ export default defineConfig({
   reporter: "list",
   outputDir: "test-results",
   use: {
-    baseURL: "http://127.0.0.1:9590/powerroller/",
+    baseURL: "http://127.0.0.1:9591/powerroller/",
     ...devices["Desktop Chrome"],
     launchOptions: {
       args: [
@@ -23,8 +23,8 @@ export default defineConfig({
     trace: "off",
   },
   webServer: {
-    command: "pnpm dev",
-    url: "http://127.0.0.1:9590/powerroller/",
+    command: "pnpm exec vite --host 127.0.0.1 --port 9591 --strictPort",
+    url: "http://127.0.0.1:9591/powerroller/",
     reuseExistingServer: true,
     timeout: 30_000,
   },

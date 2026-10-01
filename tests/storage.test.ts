@@ -62,6 +62,28 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe("site storage boundaries and blocked-storage recovery", () => {
+  it("strips palette metadata from clean and restored backend appearance", () => {
+    expect(Object.keys(loadPreferences().appearance).sort()).toEqual([
+      "color",
+      "font",
+      "ink",
+      "pattern",
+    ]);
+    savePreferences({
+      name: "River",
+      appearance: { ...appearance, id: "old-palette-id" } as any,
+      motion: "device",
+      hidden: false,
+      highContrast: false,
+      announcements: "all",
+    });
+    expect(Object.keys(loadPreferences().appearance).sort()).toEqual([
+      "color",
+      "font",
+      "ink",
+      "pattern",
+    ]);
+  });
   it("persists preferences separately from session-scoped credentials", () => {
     const p = {
       name: "River",

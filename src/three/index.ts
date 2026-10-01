@@ -19,6 +19,10 @@ type Lane = {
   dice: VisualDie[];
   shadows: THREE.Mesh[];
   settled: boolean;
+  materials: Map<
+    THREE.Material,
+    { opacity: number; transparent: boolean; depthWrite: boolean }
+  >;
 };
 function seedFor(id: string) {
   let seed = 2166136261;
@@ -26,8 +30,14 @@ function seedFor(id: string) {
   return (seed >>> 0) / 4294967296;
 }
 /** Optional instance-scoped cosmetic presentation. Accepted values are never generated here. */
-export function createTray(host: HTMLElement, options: TrayOptions = {}) {
+export function createTray(
+  host: HTMLElement,
+  options: TrayOptions & { holdMs?: number; fadeMs?: number } = {},
+) {
   const clock = options.clock ?? Date.now;
+  const holdMs = options.holdMs ?? 5000,
+    fadeMs = options.fadeMs ?? 600;
+  let fadeTimer: ReturnType<typeof setTimeout> | undefined;
   const fontAbort = new AbortController();
   let preferences: Preferences = { motion: "full", ...options.preferences };
   const scene = new THREE.Scene(),
@@ -64,13 +74,32 @@ export function createTray(host: HTMLElement, options: TrayOptions = {}) {
       height = Math.max(host.clientHeight, 1);
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
-    const viewHeight = Math.max(6, 8 / camera.aspect, lanes.size * 1.8 + 2);
+    const visible = [...lanes.values()].filter(
+      (lane) => clock() < lane.record.revealAt + holdMs + fadeMs,
+    );
+    const rows = visible.reduce(
+      (sum, lane) =>
+        sum + Math.max(1, Math.ceil(lane.dice.length / 8)) * 1.5 + 0.9,
+      0,
+    );
+    const columns = Math.max(
+      0,
+      ...visible.map((lane) => Math.min(8, lane.dice.length)),
+    );
+    const viewHeight = Math.max(
+      6,
+      8 / camera.aspect,
+      (columns * 1.45 + 2) / camera.aspect,
+      rows + 2,
+    );
+
     camera.position.set(
       0,
       viewHeight / (2 * Math.tan((19 * Math.PI) / 180)),
       0,
     );
     camera.lookAt(0, 0, 0);
+    camera.far = Math.max(100, camera.position.y * 2);
     camera.updateProjectionMatrix();
   }
   function init() {
@@ -112,6 +141,10 @@ export function createTray(host: HTMLElement, options: TrayOptions = {}) {
     const group = new THREE.Group(),
       dice: VisualDie[] = [],
       shadows: THREE.Mesh[] = [];
+    const materials = new Map<
+      THREE.Material,
+      { opacity: number; transparent: boolean; depthWrite: boolean }
+    >();
     const style = normalizeStyle(record.style, preferences.highContrast);
     const max = options.maxAnimatedDice ?? 32;
     record.result.dice.forEach((die, index) => {
@@ -131,17 +164,32 @@ export function createTray(host: HTMLElement, options: TrayOptions = {}) {
         );
       if (dice.length + visual.length > max) return;
       visual.forEach((v) => {
+        const adjusted = new Set<THREE.Material>();
         if (die.kept === false)
           v.mesh.traverse((o) => {
             if (o instanceof THREE.Mesh) {
               for (const m of Array.isArray(o.material)
                 ? o.material
                 : [o.material]) {
+                if (adjusted.has(m)) continue;
+                adjusted.add(m);
                 m.transparent = true;
-                m.opacity = 0.35;
+                m.opacity *= 0.35;
               }
             }
           });
+        v.mesh.traverse((object) => {
+          if (object instanceof THREE.Mesh) {
+            for (const material of Array.isArray(object.material)
+              ? object.material
+              : [object.material])
+              materials.set(material, {
+                opacity: material.opacity,
+                transparent: material.transparent,
+                depthWrite: material.depthWrite,
+              });
+          }
+        });
         dice.push(v);
         group.add(v.mesh);
         const shadow = new THREE.Mesh(
@@ -159,7 +207,7 @@ export function createTray(host: HTMLElement, options: TrayOptions = {}) {
       });
     });
     scene.add(group);
-    return { record, group, dice, shadows, settled: false };
+    return { record, group, dice, shadows, materials, settled: false };
   }
   function replace(record: PresentationRecord) {
     const prev = lanes.get(record.participantId);
@@ -182,12 +230,48 @@ export function createTray(host: HTMLElement, options: TrayOptions = {}) {
     )
       return;
     const now = clock();
-    let active = false;
-    [...lanes.values()].forEach((lane, laneIndex) => {
+    let active = false,
+      nextFade = Infinity,
+      expired = false;
+    for (const [owner, lane] of lanes) {
+      if (now >= lane.record.revealAt + holdMs + fadeMs) {
+        scene.remove(lane.group);
+        disposeGroup(lane.group);
+        lanes.delete(owner);
+        expired = true;
+      }
+    }
+    if (expired) resize();
+    const live = [...lanes.values()];
+    const totalDepth = live.reduce(
+      (sum, lane) =>
+        sum + Math.max(1, Math.ceil(lane.dice.length / 8)) * 1.5 + 0.9,
+      0,
+    );
+    let laneStart = -totalDepth / 2;
+    live.forEach((lane) => {
       const age = now - lane.record.startsAt,
         duration = Math.max(1, lane.record.revealAt - lane.record.startsAt),
         t = Math.max(0, Math.min(1, age / duration));
-      lane.group.position.z = (laneIndex - (lanes.size - 1) / 2) * 1.9;
+      const rows = Math.max(1, Math.ceil(lane.dice.length / 8)),
+        laneDepth = rows * 1.5 + 0.9;
+      lane.group.position.z = laneStart + laneDepth / 2;
+      laneStart += laneDepth;
+      const fadeStart = lane.record.revealAt + holdMs,
+        opacity = Math.max(
+          0,
+          Math.min(1, 1 - (now - fadeStart) / Math.max(1, fadeMs)),
+        );
+      for (const [material, base] of lane.materials) {
+        material.opacity = base.opacity * opacity;
+        const transparent = base.transparent || opacity < 1;
+        if (material.transparent !== transparent) {
+          material.transparent = transparent;
+          material.needsUpdate = true;
+        }
+        material.depthWrite = opacity < 1 ? false : base.depthWrite;
+      }
+
       lane.group.visible =
         age >= 0 &&
         (preferences.motion === "full" || now >= lane.record.revealAt);
@@ -226,25 +310,39 @@ export function createTray(host: HTMLElement, options: TrayOptions = {}) {
         );
         shadow.scale.setScalar(1 + height * 0.3);
         (shadow.material as THREE.MeshBasicMaterial).opacity =
-          0.5 / (1 + height * 1.5);
+          (opacity * 0.5) / (1 + height * 1.5);
       });
       if (now >= lane.record.revealAt && !lane.settled) {
         lane.settled = true;
         status("settled", lane.record.id);
       }
-      if (now < lane.record.revealAt) active = true;
+      if (now < lane.record.revealAt || now >= fadeStart) active = true;
+      else if (Number.isFinite(fadeStart))
+        nextFade = Math.min(nextFade, fadeStart);
     });
     renderer.render(scene, camera);
     if (active) frame = requestAnimationFrame(tick);
+    else if (Number.isFinite(nextFade))
+      fadeTimer = setTimeout(
+        () => {
+          fadeTimer = undefined;
+          wake();
+        },
+        Math.max(1, nextFade - clock()),
+      );
   }
   function wake() {
     if (disposed || failed || preferences.hidden) return;
+    clearTimeout(fadeTimer);
+    fadeTimer = undefined;
     init();
     if (!frame) frame = requestAnimationFrame(tick);
   }
   function visibility() {
     if (document.hidden) {
       cancelAnimationFrame(frame);
+      clearTimeout(fadeTimer);
+      fadeTimer = undefined;
       frame = 0;
     } else wake();
   }
@@ -296,6 +394,7 @@ export function createTray(host: HTMLElement, options: TrayOptions = {}) {
     dispose() {
       if (disposed) return;
       disposed = true;
+      clearTimeout(fadeTimer);
       fontAbort.abort();
       cancelAnimationFrame(frame);
       observer.disconnect();
@@ -319,6 +418,7 @@ export function createPreview(
 ) {
   const tray = createTray(host, {
     preferences: { motion: "reduce", highContrast: options.highContrast },
+    holdMs: Infinity,
   });
   const show = (appearance: Appearance) =>
     tray.present({

@@ -11,13 +11,21 @@ export type Preferences = {
   roomId?: string;
 };
 const key = "powerroller.preferences.v1";
+const appearanceOnly = (value: Appearance): Appearance => ({
+  color: value.color,
+  ink: value.ink,
+  pattern: value.pattern,
+  font: value.font,
+});
 const defaults = (): Preferences => ({
   name: ["Copper Fox", "Silver Finch", "Amber Otter", "Indigo Hare"][
     crypto.getRandomValues(new Uint8Array(1))[0]! % 4
   ]!,
-  appearance: palette.palette[
-    crypto.getRandomValues(new Uint8Array(1))[0]! % palette.palette.length
-  ]! as Appearance,
+  appearance: appearanceOnly(
+    palette.palette[
+      crypto.getRandomValues(new Uint8Array(1))[0]! % palette.palette.length
+    ]! as Appearance,
+  ),
   motion: "device",
   hidden: false,
   highContrast: false,
@@ -41,7 +49,7 @@ export function loadPreferences(): Preferences {
         ["serif", "modern", "rune", "gothic"].includes(p.appearance.font) &&
         /^#[a-f0-9]{6}$/i.test(p.appearance.color) &&
         /^#[a-f0-9]{6}$/i.test(p.appearance.ink)
-          ? p.appearance
+          ? appearanceOnly(p.appearance)
           : base.appearance,
       motion: ["device", "reduce", "full"].includes(p.motion)
         ? p.motion

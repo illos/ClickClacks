@@ -20,7 +20,7 @@
     "./_generated/component.js": "./src/component/_generated/component.ts"
   },
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
+    "dev": "vite --host 127.0.0.1 --port 9591 --strictPort",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

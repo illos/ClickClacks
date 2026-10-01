@@ -1,10 +1,9 @@
 node_modules/
 dist/
-.env*
-!.env.example
 .worktrees/
 .cache/
+.env*
+!.env.example
+convex/_generated/
 test-results/
 playwright-report/
-**/_generated/
-.powerroller-session.json

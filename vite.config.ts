@@ -1,8 +1,9 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { diceFontNotices } from './scripts/lib/dice-font-build.ts';
+
 export default defineConfig({
-  plugins: [react()],
-  base: process.env.PAGES_BASE ?? "/powerroller/",
-  build: { outDir: "dist" },
-  server: { port: 9590 },
+  base: '/powerroller/',
+  plugins: [react(), diceFontNotices()],
+  build: { assetsInlineLimit: 0 },
 });

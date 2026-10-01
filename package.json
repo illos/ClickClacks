@@ -2,53 +2,36 @@
   "name": "powerroller",
   "version": "0.1.0",
   "private": true,
-  "license": "MIT",
   "type": "module",
+  "license": "MIT",
   "packageManager": "pnpm@11.5.3",
   "engines": {
     "node": "24.18.0"
-  },
-  "exports": {
-    "./dice": "./src/dice.ts",
-    "./draw-steel": "./src/draw-steel.ts",
-    "./client": "./src/client.ts",
-    "./three": "./src/three/index.ts",
-    "./convex.config": "./src/component/convex.config.ts",
-    "./react": "./src/react.tsx",
-    "./styles.css": "./src/styles.css",
-    "./convex.config.js": "./src/component/convex.config.ts",
-    "./_generated/component.js": "./src/component/_generated/component.ts"
   },
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 9591 --strictPort",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "check": "pnpm typecheck && pnpm test && pnpm build",
-    "format": "prettier --write src apps tests convex examples *.ts *.json docs README.md",
-    "test:browser": "playwright test",
-    "build:lib": "tsc -p tsconfig.lib.json",
-    "cli": "pnpm build:lib && node scripts/cli.mjs"
+    "test": "vitest run"
   },
   "dependencies": {
+    "cannon-es": "0.20.0",
     "convex": "1.45.0",
+    "lucide-react": "1.45.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "three": "0.186.1",
-    "cannon-es": "0.20.0",
-    "lucide-react": "1.45.0"
+    "three": "0.186.1"
   },
   "devDependencies": {
+    "@types/node": "24.13.4",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/three": "0.186.0",
+    "@vitejs/plugin-react": "6.1.1",
     "typescript": "5.9.3",
     "vite": "8.3.0",
     "vitest": "4.1.11",
     "convex-test": "0.0.57",
-    "@types/react": "19.3.0",
-    "@types/react-dom": "19.3.0",
-    "@types/three": "0.186.0",
-    "@types/node": "24.13.4",
-    "@vitejs/plugin-react": "6.1.1",
-    "@playwright/test": "1.63.0",
-    "prettier": "3.9.6"
+    "@playwright/test": "1.63.0"
   }
 }

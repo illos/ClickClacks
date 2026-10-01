@@ -1,13 +1,8 @@
-name: Publish GitHub Pages
+name: Publish Powerroller
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - "docs/**"
-      - "README.md"
-      - "AGENTS.md"
-      - "THIRD_PARTY_NOTICES.md"
-      - "LICENSE"
+    paths-ignore: ['docs/**', 'README.md', 'AGENTS.md']
   workflow_dispatch:
 permissions:
   contents: read
@@ -33,7 +28,6 @@ jobs:
       - run: pnpm build
         env:
           VITE_CONVEX_URL: ${{ vars.VITE_CONVEX_URL }}
-          PAGES_BASE: /powerroller/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
@@ -44,6 +38,5 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy
+      - uses: actions/deploy-pages@v4
         id: deployment
-        uses: actions/deploy-pages@v4

@@ -515,7 +515,7 @@ focusing an already-visible iframe refreshes clock samples without disabling Rol
 between pointerdown and click. Background/disconnect still invalidate the clock.
 
 The main log retains its existing history limit and row contents. New rows and
-displaced rows slide down over360ms; rows stay fully opaque, with a48px bottom
+displaced rows slide down over 360ms; rows stay fully opaque, with a 48px bottom
 viewport fade only when more scroll content remains. Reaching the bottom removes
 that mask. Reduced motion and high contrast are respected by both log displays.
 The production build has separate site and PiP entry graphs and publishes the

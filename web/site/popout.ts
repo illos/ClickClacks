@@ -55,7 +55,7 @@ export function createTrayPopout() {
       frame = child;
       child.title = 'Dice tray and roll controls';
       const base = new URL(import.meta.env.BASE_URL, location.origin);
-      const address = new URL('pip/web/popout/tray.html', base);
+      const address = new URL(import.meta.env.DEV ? 'web/popout/tray.html' : 'pip/web/popout/tray.html', base);
       address.searchParams.set('room', session.roomKey);
       child.src = address.href;
       target.addEventListener('message', event => {

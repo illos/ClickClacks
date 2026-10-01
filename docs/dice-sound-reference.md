@@ -50,3 +50,31 @@ attenuation retained. A mild lowpass and narrow pitch variation are applied at
 playback. The sound is still generated, not the upstream recording. Matching
 energy and frequency balance helps tuning but does not prove perceptual identity.
 Actual iPhone listening remains the acceptance check for sound character.
+
+## Dice-on-dice pass
+
+Owner subsequently requested dice-on-dice instead of wood. Current playback
+therefore uses `dice-clack.ts` alone; combining contact types is still deferred.
+The wood generator stays available as source for that later option.
+
+Measurements of the medium dice-collision clips show an initial sub-millisecond
+strike, a second contact roughly 8–12 ms later, very little midrange ringing,
+and a spectral center around 5.6–6.7 kHz. Most spectral energy is above 3 kHz.
+The independent synthesis now uses very short 5.1/7.35/9.3 kHz resonances, a
+smaller second strike, and a quiet low-frequency residual. The playback lowpass
+moves to 11 kHz to preserve the measured treble balance. Four variations remain;
+no recording or source waveform is copied.
+
+Using the same onset/energy/FFT method above:
+
+| Measurement | Medium dice 01 | Medium dice 02 | New synthetic variant 1 |
+| --- | ---: | ---: | ---: |
+| 90% energy | 12.23 ms | 8.94 ms | ~8.54 ms |
+| 95% energy | 12.25 ms | 8.98 ms | ~8.62 ms |
+| Spectral centroid | 6152 Hz | 6471 Hz | ~6398 Hz |
+| Energy at 3–6 kHz | 36.3% | 28.7% | ~27.2% |
+| Energy above 6 kHz | 58.2% | 65.7% | ~62.1% |
+
+Reference files:
+[medium dice 01](https://github.com/owlbear-rodeo/dice/blob/ccc32beceee0888c0a48129fbb23f4a636c710ee/src/audio/medium/dice/01.mp3),
+[medium dice 02](https://github.com/owlbear-rodeo/dice/blob/ccc32beceee0888c0a48129fbb23f4a636c710ee/src/audio/medium/dice/02.mp3).

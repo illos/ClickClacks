@@ -303,3 +303,18 @@ background context retirement. Typecheck and production build passed. Expanded
 Chromium verified fresh-context scheduling after simulated tab visibility return,
 reload, interruption recovery, generated waveform, mute, historical silence and
 existing tray/swatch behavior. Physical Safari recovery is not proven here.
+
+## Dice-on-dice sound trial
+
+Owner requested dice-on-dice instead of wood. Current impacts use an independent
+synthesis informed by the already decoded Owlbear medium dice-collision clips:
+sub-ms primary strike, smaller second contact at 8–12 ms, quiet residual body,
+and treble-dominated spectrum near 6.4 kHz. Four variations and existing impact
+volume/pool attenuation remain. The lowpass admits the new treble profile.
+Reference measurements and provenance are in dice-sound-reference.md. No upstream
+recording is shipped; wood remains source for a possible later combined design.
+
+Six focused contact/lifecycle tests, typecheck and build passed. Chromium verified
+live-roll scheduling, generated waveform, mute, reload, simulated tab return,
+interruption recovery, historical silence and existing controls. Physical sound
+character still needs the owner's listening check.

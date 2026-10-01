@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { acquireIosAudioSession } from './ios-audio-session';
-import { woodClack } from './wood-clack';
+import { diceClack } from './dice-clack';
 import type { Motion } from '../dice-demo/model';
 import { revealDelay, type ParticipantRoll } from './model';
 
@@ -29,7 +29,7 @@ export function diceImpacts(motion: Motion | undefined, count: number): DiceImpa
   return impacts.sort((a, b) => a.at - b.at);
 }
 
-/** Procedural plastic-on-wood clacks: a short filtered noise strike and damped
+/** Procedural dice-on-dice clacks: a short filtered noise strike and damped
  * resonances. No downloaded recording, network request, or third-party audio asset. */
 export function createDiceSound() {
   let context: AudioContext | undefined, enabled = false, disposed = false;
@@ -67,7 +67,7 @@ export function createDiceSound() {
     if (!context) return;
     if (!noises.length) {
       for (let variant = 0; variant < 4; variant++) {
-        const samples = woodClack(context.sampleRate, variant);
+        const samples = diceClack(context.sampleRate, variant);
         const buffer = context.createBuffer(1, samples.length, context.sampleRate);
         buffer.getChannelData(0).set(samples);
         noises.push(buffer);
@@ -76,7 +76,7 @@ export function createDiceSound() {
     const source = context.createBufferSource(), filter = context.createBiquadFilter(), gain = context.createGain();
     source.buffer = noises[die % noises.length]!;
     source.playbackRate.value = 0.96 + Math.random() * 0.08;
-    filter.type = 'lowpass'; filter.frequency.value = 6400;
+    filter.type = 'lowpass'; filter.frequency.value = 11000;
     gain.gain.value = (0.12 + strength * 0.26) / Math.sqrt(density);
     source.connect(filter).connect(gain).connect(context.destination);
     voices.set(source, owner);

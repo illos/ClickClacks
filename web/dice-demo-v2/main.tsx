@@ -343,6 +343,7 @@ function DiceRoom() {
   const options = useRoller();
   const { roomKey, client } = options;
   const [preferences, setSavedPreferences] = useState<SitePreferences>(() => options.preferences ?? { motion: 'device', hidden: false, highContrast: false, announcements: 'all' });
+  useEffect(() => { if (options.preferences) setSavedPreferences(options.preferences); }, [options.preferences]);
   const preferencesRef = useRef(preferences);
   preferencesRef.current = preferences;
   const planner = useRef<ReturnType<typeof createThrowPlanner> | null>(null);
@@ -501,13 +502,14 @@ function DiceRoom() {
     let cancelled = false;
     void Promise.resolve().then(() => options.nameProvider ? options.nameProvider() : chooseName({}))
       .then(name => {
+        if (options.nameProvider && (typeof name !== 'string' || !name.trim() || name.length > 32)) throw new Error('Name provider must return 1–32 characters; using Player.');
         if (cancelled) return;
         setInitial(old => ({ ...old, name }));
         setProfile(old => ({ ...old, name: old.name === 'Player' ? name : old.name }));
         setNameReady(true);
       })
       .catch(e => {
-        if (!cancelled) setError(displayError(e, credential));
+        if (!cancelled) { setError(displayError(e, credential)); if (options.nameProvider) setNameReady(true); }
       });
     return () => {
       cancelled = true;

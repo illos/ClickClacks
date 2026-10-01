@@ -75,3 +75,26 @@ core/client build rejected React, Three, Cannon and CSS imports; its optional
 Three build rejected React/CSS imports. Both built successfully. Installed
 component source and the consumer typechecked. Generated component bindings are
 included in artifacts, never committed. npm publication is not part of this release.
+
+## Publication record
+
+`a1055f6` merged and pushed to `main`. [Pages run 36821094341](https://github.com/illos/powerroller/actions/runs/36821094341)
+completed successfully; the live HTML served its new built asset and Power Roller
+title. The deployment coordinator applied the exact main commit to dedicated dev
+`nautical-partridge-636`; Convex codegen, TypeScript and schema validation passed.
+Only the disposable component request table was cleared (11 development records)
+to apply the compact receipt schema, with empty persisted readback confirmed.
+No other tables were reset. Accepted test results were reused for publication.
+
+The separately installed package consumer's actual Convex codegen also passed,
+without deploying that consumer. Both component installation and public package
+entry imports are now proven independently of this repository's app fixture.
+Broader collaborative modes remain queued by the owner. The short-height visual
+fix remains a pending owner decision; it has not been silently applied.
+
+Release closeout corrected saved-room recovery and quota fallback. Focused browser
+readback proved an invalid saved code recovers a new joinable room, while an
+explicit invite takes precedence; no visible errors. Controlled host preference
+changes mounted/disposed the canvas as requested. Storage tests: 8 passed,
+including quota-limited writes with readable storage. Typecheck and production
+build passed. The site entry now consumes the public package exports directly.

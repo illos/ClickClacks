@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
-import type { ParticipantRoll } from '../dice-demo-v2/model';
-import type { Style } from '../dice-demo/model';
+import type { ParticipantRoll, Style } from 'powerroller/client';
 export type Profile = { name: string; style: Style };
 export type SitePreferences = { profile?: Profile; room?: string; roomBackend?: string; motion: 'device' | 'reduce' | 'full'; hidden: boolean; highContrast: boolean; announcements: 'all' | 'mine' | 'off' };
 const key = 'powerroller.preferences.v2';
 const defaults: SitePreferences = { motion: 'device', hidden: false, highContrast: false, announcements: 'all' };
+let preferenceMemoryOnly = false;
 let preferenceMemory: SitePreferences = { ...defaults };
 export function loadPreferences(): SitePreferences {
+  if (preferenceMemoryOnly) return { ...preferenceMemory };
   try {
     const saved = JSON.parse(localStorage.getItem(key) ?? 'null');
     if (saved?.version !== 2) return { ...defaults };
@@ -19,7 +20,7 @@ export function loadPreferences(): SitePreferences {
 }
 export function savePreferences(preferences: SitePreferences) {
   preferenceMemory = { ...preferences };
-  try { localStorage.setItem(key, JSON.stringify({ version: 2, preferences })); } catch {}
+  try { localStorage.setItem(key, JSON.stringify({ version: 2, preferences })); preferenceMemoryOnly = false; } catch { preferenceMemoryOnly = true; }
 }
 export function loadProfile() { return loadPreferences().profile; }
 export function saveProfile(profile: Profile) { savePreferences({ ...loadPreferences(), profile }); }
@@ -59,8 +60,10 @@ export async function cacheRoll(backend: string, room: string, roll: Participant
   try {
     const db=await database();
     const entries=await new Promise<Entry[]>((resolve,reject)=>{const request=db.transaction('rolls').objectStore('rolls').getAll();request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});
-    const keep=new Set(selected([...entries.filter(value=>value.key!==entry.key),entry],backend,room).map(value=>value.key));
-    await new Promise<void>((resolve,reject)=>{const tx=db.transaction('rolls','readwrite'),store=tx.objectStore('rolls');store.put(entry);for(const old of entries)if(old.savedAt<=Date.now()-historyTtl||old.backend===backend&&old.room===room&&!keep.has(old.key))store.delete(old.key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);});
+    const fresh = entries.filter(value=>validEntry(value)&&value.key!==entry.key&&value.savedAt>Date.now()-historyTtl);
+    const bounded = selected([...fresh,entry],backend,room).concat(fresh.filter(value=>value.backend!==backend||value.room!==room)).sort((a,b)=>b.savedAt-a.savedAt).slice(0,10000);
+    const keep=new Set(bounded.map(value=>value.key));
+    await new Promise<void>((resolve,reject)=>{const tx=db.transaction('rolls','readwrite'),store=tx.objectStore('rolls');store.put(entry);for(const old of entries)if(typeof old.key==='string'&&!keep.has(old.key))store.delete(old.key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);});
     db.close();
   } catch {}
 }

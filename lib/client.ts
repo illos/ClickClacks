@@ -10,6 +10,7 @@ import { packMotion, unpackRoll } from '../web/dice-demo/motion-codec.ts';
 import type { ParticipantRoll, Room, Track } from '../web/dice-demo-v2/model.ts';
 
 export type { DiceConfiguration, Style, Motion, ParticipantRoll };
+export { parseRoomKey } from '../web/dice-demo-v2/model.ts';
 export type Identity = { viewer:string; credential:string };
 export type Profile = { name:string; style:Style };
 export type DeliveredRoll = ParticipantRoll & { historical?:boolean };

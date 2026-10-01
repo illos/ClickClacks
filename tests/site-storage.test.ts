@@ -34,3 +34,8 @@ describe('site-owned persistence and private identity',()=>{
   vi.stubGlobal('BroadcastChannel',Channel);const initial=readIdentity('copied'),first=claimIdentity(initial,'copied');await vi.advanceTimersByTimeAsync(200);expect(await first.ready).toEqual(initial);const second=claimIdentity(initial,'copied');await vi.advanceTimersByTimeAsync(200);const fresh=await second.ready;expect(fresh.viewer).not.toBe(initial.viewer);expect(fresh.credential).not.toBe(initial.credential);first.dispose();second.dispose();expect(Channel.all.size).toBe(0);
  });
 });
+
+it('retains new preferences in memory when writes hit quota but reads still work',()=>{
+ vi.stubGlobal('localStorage',{getItem:()=>null,setItem:()=>{throw Error('quota');}});
+ const latest={...profile,name:'Hypatia'};saveProfile(latest);expect(loadProfile()).toEqual(latest);
+});

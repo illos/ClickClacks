@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { makeFunctionReference } from 'convex/server';
 import { ConvexReactClient } from 'convex/react';
-import { PowerRoller } from '../../lib/react';
-import { parseRoomKey } from '../dice-demo-v2/model';
+import { PowerRoller } from 'powerroller/react';
+import { parseRoomKey } from 'powerroller/client';
 import { claimIdentity, readIdentity, type Identity } from './session';
 import { loadPreferences, savePreferences, saveProfile, rememberRoom, cacheRoll, loadHistory } from './storage';
-import '../../lib/styles.css';
+import 'powerroller/styles.css';
 import './style.css';
 
 const backend = import.meta.env.VITE_CONVEX_URL as string;
@@ -23,6 +24,14 @@ function Site() {
     const claim = claimIdentity(readIdentity(backend), backend);
     void claim.ready.then(value => { if (active) setIdentity(value); });
     return () => { active = false; claim.dispose(); };
+  }, []);
+  useEffect(() => {
+    if (parseRoomKey(invite ?? '') || saved.roomBackend !== backend || !saved.room) return;
+    let active = true;
+    void client.query(makeFunctionReference<'query', {key:string}, {code:string|null;expired:boolean}>('diceDemoV2:view'), {key: initialRoom}).then(view => {
+      if (active && (!view.code || view.expired)) { const fresh = crypto.randomUUID(); setRoom(fresh); rememberRoom(fresh, backend); }
+    }).catch(() => { /* Keep the saved room during a temporary connection failure. */ });
+    return () => { active = false; };
   }, []);
   if (!identity) return null;
   return <PowerRoller client={client} roomKey={room} identity={identity} profile={saved.profile} preferences={saved}

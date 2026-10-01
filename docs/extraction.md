@@ -39,4 +39,15 @@ layout, menus, error handling, shared clearing, roll timing or roll acceptance l
 
 Standalone typecheck passed. Both original test files passed:7 tests (477ms).
 Production build passed, including the original physics worker and all four font files/notices.
-Publication pending.
+`f8587f7` merged/pushed to main and deployed to the dedicated Convex dev
+`nautical-partridge-636`. Convex codegen, TypeScript and schema validation passed;
+the discarded component was unmounted.
+
+[GitHub Pages run36816604230](https://github.com/illos/powerroller/actions/runs/36816604230)
+succeeded. Live URL: https://illos.github.io/powerroller/.
+
+A focused live standalone-wiring check loaded the page, joined a fresh room and
+submitted a roll through the copied UI. Persisted readback contained the original
+recorded motion (246 frames), a valid eight-character table code and the accepted
+result. No page errors. This checked the new hosting/backend connection, not an
+alternative reconstruction of the original behavior.

@@ -88,6 +88,7 @@ function TrackCard({
   graphics,
   onReveal,
   onTrack,
+  hasTrack,
 }: {
   member: Participant;
   clock: Clock | null;
@@ -95,8 +96,9 @@ function TrackCard({
   graphics: boolean;
   onReveal: (roll: ParticipantRoll, uncertainty: number) => void;
   onTrack: (owner: string, roll: ParticipantRoll | null) => void;
+  hasTrack: (owner: string, id: string) => boolean;
 }) {
-  const { roomKey } = useRoller();
+  const { roomKey, client } = useRoller();
   const encodedTrack = useQuery(demoV2.track, { key: roomKey, viewer: member.id });
   const track = useMemo(
     () => (encodedTrack ? unpackTrack(encodedTrack) : encodedTrack),
@@ -104,9 +106,17 @@ function TrackCard({
   );
   const roll = track?.roll;
   useEffect(() => {
+    let active = true;
     onTrack(member.id, roll ?? null);
-    return () => onTrack(member.id, null);
-  }, [member.id, roll, onTrack]);
+    for (const previous of track?.activeRolls ?? []) {
+      if (previous.id === roll?.id || hasTrack(member.id, previous.id)) continue;
+      void client.query(demoV2.track, { key: roomKey, viewer: member.id, rollId: previous.id })
+        .then(value => { if (active && value) onTrack(member.id, unpackTrack(value).roll); })
+        .catch(() => { /* A single cosmetic path cannot interrupt current playback. */ });
+    }
+    return () => { active = false; };
+  }, [member.id, track, roomKey, client, onTrack, hasTrack]);
+  useEffect(() => () => onTrack(member.id, null), [member.id, onTrack]);
   useEffect(() => {
     if (!roll) {
       tray.current?.clear(member.id);
@@ -536,30 +546,38 @@ function DiceRoom() {
   }, [room?.code]);
   const tracks = useRef(new Map<string, ParticipantRoll>());
   const [trayRolls, setTrayRolls] = useState<
-    Record<string, Pick<ParticipantRoll, 'id' | 'startsAt' | 'duration'>>
+    Record<string, Pick<ParticipantRoll, 'id' | 'roller' | 'startsAt' | 'duration'>>
   >({});
   const rememberTrack = useCallback((owner: string, roll: ParticipantRoll | null) => {
-    if (roll) tracks.current.set(owner, roll);
-    else tracks.current.delete(owner);
+    const key = roll ? `${owner}:${roll.id}` : null;
+    if (roll) tracks.current.set(key!, roll);
+    else for (const [id, value] of tracks.current) if (value.roller === owner) tracks.current.delete(id);
     setTrayRolls(old => {
-      if (old[owner]?.id === roll?.id) return old;
+      if (key && old[key]?.id === roll?.id) return old;
       const next = { ...old };
-      if (roll) next[owner] = { id: roll.id, startsAt: roll.startsAt, duration: roll.duration };
-      else delete next[owner];
+      if (roll) next[key!] = { id: roll.id, roller: owner, startsAt: roll.startsAt, duration: roll.duration };
+      else for (const [id, value] of Object.entries(next)) if (value.roller === owner) delete next[id];
       return next;
     });
   }, []);
+  const hasTrack = useCallback((owner: string, id: string) => tracks.current.has(`${owner}:${id}`), []);
+  useEffect(() => {
+    if (!clock) return;
+    const expired = [...tracks.current].filter(([, roll]) => trayOpacity(roll, now + clock.offset) === 0).map(([id]) => id);
+    if (!expired.length) return;
+    for (const id of expired) tracks.current.delete(id);
+    setTrayRolls(old => { const next = { ...old }; for (const id of expired) delete next[id]; return next; });
+  }, [now, clock]);
   const audibleOwners = useRef(new Set<string>());
   useEffect(() => {
-    for (const owner of audibleOwners.current) if (!tracks.current.has(owner)) sound.current?.cancel(owner);
-    audibleOwners.current = new Set(tracks.current.keys());
-    if (clock) for (const roll of tracks.current.values()) playSound(roll, clock.offset);
-  }, [trayRolls, clock]);
-  const encodedOwnTrack = useQuery(demoV2.track, { key: roomKey, viewer });
-  const ownTrack = useMemo(
-    () => (encodedOwnTrack ? unpackTrack(encodedOwnTrack) : encodedOwnTrack),
-    [encodedOwnTrack],
-  );
+    const owners = new Set([...tracks.current.values()].map(roll => roll.roller));
+    for (const owner of audibleOwners.current) if (!owners.has(owner)) sound.current?.cancel(owner);
+    audibleOwners.current = owners;
+    if (clock) for (const roll of tracks.current.values()) {
+      playSound(roll, clock.offset);
+      if (graphics) tray.current?.play(roll, clock);
+    }
+  }, [trayRolls, clock, graphics]);
   const ping = useAction(demo.clock),
     sampleFaces = useAction(demo.sampleFaces);
   const chooseName = useMutation(demoV2.randomName);
@@ -819,10 +837,9 @@ function DiceRoom() {
   const hasDice =
     !clearing &&
     !!clock &&
-    members.some(member => {
-      const roll = trayRolls[member.id];
+    Object.values(trayRolls).some(roll => {
       return (
-        roll && now + clock.offset >= roll.startsAt && trayOpacity(roll, now + clock.offset) > 0
+        members.some(member => member.id === roll.roller) && now + clock.offset >= roll.startsAt && trayOpacity(roll, now + clock.offset) > 0
       );
     });
   const buttonChannels = [1, 3, 5].map(i => {
@@ -852,9 +869,18 @@ function DiceRoom() {
     }, 300);
     return () => clearTimeout(timer);
   }, [profile, initial, joined, viewer, credential, customize]);
-  const ownRoll = ownTrack?.roll;
+  const [rollLockUntil, setRollLockUntil] = useState(0);
+  const rollLock = useRef(0);
+  const submissions = useRef(0);
+  const rollQueue = useRef<Promise<void>>(Promise.resolve());
+  useEffect(() => {
+    const delay = rollLockUntil - performance.now();
+    if (delay <= 0) return;
+    const timer = setTimeout(() => setNow(performance.now()), Math.ceil(delay));
+    return () => clearTimeout(timer);
+  }, [rollLockUntil]);
   const busy =
-    changingTable || pending || !!(ownRoll && clock && now + clock.offset < ownRoll.startsAt + rollCooldownMs);
+    changingTable || now < rollLockUntil;
   async function changeTable(next: string) {
     if (changingTableRef.current) return;
     if (next === roomKey || next.toUpperCase() === room?.code) {
@@ -885,7 +911,7 @@ function DiceRoom() {
     sound.current?.cancel();
     setClearing(true);
     setError('');
-    for (const id of tracks.current.keys()) tray.current?.clear(id);
+    for (const owner of new Set([...tracks.current.values()].map(roll => roll.roller))) tray.current?.clear(owner);
     try {
       await clearSharedTray({ key: roomKey, viewer, credential });
     } catch (e) {
@@ -896,12 +922,28 @@ function DiceRoom() {
       setClearing(false);
     }
   }
-  async function perform() {
+  function perform() {
+    const clickedAt = performance.now();
+    if (clickedAt < rollLock.current || changingTableRef.current) return;
+    rollLock.current = clickedAt + rollCooldownMs;
+    setRollLockUntil(rollLock.current);
+    setNow(clickedAt);
     setChoosingDice(false);
     unlockSound();
+    submissions.current++;
     setPending(true);
+    // Capture this tap's configuration; serialize authority requests while the
+    // original recorded dice paths continue playing independently in the tray.
+    rollQueue.current = rollQueue.current.catch(() => {}).then(submit).finally(() => {
+      submissions.current--;
+      setPending(submissions.current > 0);
+    });
+  }
+  async function submit() {
     setError('');
-    const request: NonNullable<typeof retryThrow.current> = retryThrow.current ?? {
+    const retry = retryThrow.current;
+    const request: NonNullable<typeof retryThrow.current> = retry &&
+      JSON.stringify(retry.dice) === JSON.stringify(diceConfig) && retry.edges === edges && retry.banes === banes ? retry : {
       id: crypto.randomUUID(),
       dice: diceConfig,
       edges,
@@ -959,14 +1001,12 @@ function DiceRoom() {
         banes: request.banes,
       });
       retryThrow.current = null;
-      setEdges(0);
-      setBanes(0);
+      setEdges(current => current === edges ? 0 : current);
+      setBanes(current => current === banes ? 0 : current);
     } catch (e) {
       setError(displayError(e, credential));
       if (['REQUEST_EXPIRED','REQUEST_CONFLICT','CONFLICT','INVALID','INVALID_REQUEST','ROOM_EXPIRED','UNAUTHORIZED'].includes(redactError(e, [credential]).code))
         retryThrow.current = null;
-    } finally {
-      setPending(false);
     }
   }
   useEffect(() => {
@@ -1175,11 +1215,9 @@ function DiceRoom() {
                 aria-label={
                   !ready
                     ? 'Roll (connecting)'
-                    : pending
-                      ? 'Roll (preparing)'
-                      : busy
-                        ? 'Roll (dice rolling)'
-                        : 'Roll'
+                    : busy
+                      ? pending ? 'Roll (preparing)' : 'Roll (cooldown)'
+                      : 'Roll'
                 }
                 aria-busy={pending || clearing}
                 disabled={clearing || !ready || !ownParticipant?.ready || busy || room?.expired}
@@ -1259,6 +1297,7 @@ function DiceRoom() {
           graphics={graphics}
           onReveal={report}
           onTrack={rememberTrack}
+          hasTrack={hasTrack}
         />
       ))}
       <section className="track-results" aria-label="Roll log" tabIndex={0}>

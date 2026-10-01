@@ -1,0 +1,23 @@
+/* SPDX-License-Identifier: MIT */
+html, body { margin: 0; min-height: 100%; background: #111415; }
+@scope (.powerroller) {
+  .critical-sound-demo { max-width: 760px; margin: 0 auto; padding: 24px 20px 40px; }
+  .demo-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .demo-header a { font-size: 22px; }
+  .demo-header span, .demo-description, .demo-note { color: #aeb8b8; }
+  .critical-sound-demo h1 { margin: 36px 0 12px; font-size: clamp(28px, 6vw, 40px); }
+  .demo-description { margin: 0 0 24px; line-height: 1.5; }
+  .demo-modes { display: flex; border: 1px solid #3b4548; border-radius: 999px; overflow: hidden; }
+  .demo-modes button { flex: 1; border: 0; border-right: 1px solid #3b4548; border-radius: 0; padding: 12px 8px; }
+  .demo-modes button:last-child { border-right: 0; }
+  .demo-modes button[aria-pressed='true'] { background: #354043; }
+  .critical-sound-demo .stage { margin: 24px 0 16px; height: clamp(280px, 42vh, 400px); }
+  .demo-actions { display: flex; gap: 12px; align-items: center; }
+  #demo-roll { flex: 1; border: 0; border-radius: 999px; padding: 14px 20px; background: #70dac3; color: #111415; font-size: 18px; }
+  #demo-sound { border-radius: 999px; min-width: 115px; padding: 14px 16px; }
+  .demo-volume { margin-top: 22px; display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+  .demo-volume output { font-variant-numeric: tabular-nums; color: #aeb8b8; }
+  .critical-sound-demo #demo-volume { grid-column: 1 / -1; width: 100%; height: 36px; padding: 0; accent-color: #70dac3; cursor: pointer; }
+  #demo-status { min-height: 24px; margin: 20px 0 12px; font-weight: 650; }
+  .demo-note { font-size: 13px; line-height: 1.5; margin: 0; }
+}

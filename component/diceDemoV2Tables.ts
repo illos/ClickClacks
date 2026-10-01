@@ -65,7 +65,7 @@ export const diceDemoV2Tables = {
   diceDemoV2Presentations: defineTable({
     key: v.string(), viewer: v.string(), id: v.string(),
     motion: demoMotion, expiresAt: v.number(),
-  }).index("by_request",["key","viewer","id"]).index("by_expiry",["expiresAt"]),
+  }).index("by_request",["key","viewer","id"]).index("by_room_viewer",["key","viewer"]).index("by_expiry",["expiresAt"]),
   diceDemoV2Sessions: defineTable({
     key: v.string(),
     viewer: v.string(),

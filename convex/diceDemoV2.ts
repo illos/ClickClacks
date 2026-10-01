@@ -4,7 +4,7 @@ import {v,type Infer} from "convex/values";
 import {query,mutation,action,internalMutation,internalQuery} from "./_generated/server";
 import {components} from "./_generated/api";
 import {demoMotion,demoReceipt,demoRoll,demoViewer,demoParticipantStyle} from "../component/diceDemoTables";
-import {diceConfiguration,roomPolicy,participant,participantRoll} from "../component/diceDemoV2Tables";
+import {diceConfiguration,roomPolicy,participant,participantRoll,semanticRoll} from "../component/diceDemoV2Tables";
 const demoStyle = demoParticipantStyle;
 const randomNameReturns=v.string();
 export const randomName=mutation({args:{},returns:randomNameReturns,handler:async(ctx,args):Promise<Infer<typeof randomNameReturns>>=>ctx.runMutation(components.powerroller.diceDemoV2.randomName,args)});
@@ -17,9 +17,9 @@ const viewReturns=v.object({
 export const view=query({args:{ key: v.string() },returns:viewReturns,handler:async(ctx,args):Promise<Infer<typeof viewReturns>>=>ctx.runQuery(components.powerroller.diceDemoV2.view,args)});
 const trackReturns=v.union(
     v.null(),
-    v.object({ roll: participantRoll, receipts: v.array(demoReceipt) }),
+    v.object({ roll: participantRoll, receipts: v.array(demoReceipt), activeRolls: v.optional(v.array(semanticRoll)) }),
   );
-export const track=query({args:{ key: v.string(), viewer: v.string() },returns:trackReturns,handler:async(ctx,args):Promise<Infer<typeof trackReturns>>=>ctx.runQuery(components.powerroller.diceDemoV2.track,args)});
+export const track=query({args:{ key: v.string(), viewer: v.string(), rollId: v.optional(v.string()) },returns:trackReturns,handler:async(ctx,args):Promise<Infer<typeof trackReturns>>=>ctx.runQuery(components.powerroller.diceDemoV2.track,args)});
 const joinReturns=v.null();
 export const join=mutation({args:{
     key: v.string(),

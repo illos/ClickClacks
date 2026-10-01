@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#111415" />
+    <title>Crit sound demo · Power Roller</title>
+  </head>
+  <body class="powerroller">
+    <main class="v2 critical-sound-demo">
+      <header class="demo-header"><a href="./">Power Roller</a><span>Sound demo</span></header>
+      <h1>Crits, on repeat.</h1>
+      <p class="demo-description">Every roll is a crit or a crit fail. The sound plays when the result appears.</p>
+      <div class="demo-modes" role="group" aria-label="Demo result">
+        <button type="button" data-mode="success" aria-pressed="false">Crit</button>
+        <button type="button" data-mode="failure" aria-pressed="false">Crit fail</button>
+        <button type="button" data-mode="alternate" aria-pressed="true">Alternate</button>
+      </div>
+      <section class="stage" aria-label="Dice tray"><div class="canvas-host"></div></section>
+      <div class="demo-actions"><button type="button" id="demo-roll" disabled>Roll</button><button type="button" id="demo-sound" aria-pressed="true">Sound on</button></div>
+      <label class="demo-volume" for="demo-volume">Crit volume <output id="demo-volume-value">70%</output><input id="demo-volume" type="range" min="0" max="100" value="70" /></label>
+      <p id="demo-status" role="status" aria-live="polite">Loading dice…</p>
+      <p class="demo-note">Just a demo: these rolls stay here. Your table, history, and sound setting are unchanged.</p>
+    </main>
+    <script type="module" src="./critical-sounds.ts"></script>
+  </body>
+</html>

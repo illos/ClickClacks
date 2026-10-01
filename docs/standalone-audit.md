@@ -413,3 +413,46 @@ roll. Dice count, bonus d4 and modifiers still reset as previously requested.
 Typecheck, build and nine existing storage tests passed. Chromium verified d20
 restoration on reload and in a new tab, restored Power selection and safe fallback
 from a malformed stored choice.
+
+## Tap-based cooldown, overlapping rolls and sound demo
+
+Owner reported the earlier two-second lock took four seconds from pressing Roll.
+It had begun at synchronized motion start, adding sampling/preparation first.
+The UI now measures two seconds from the tap. A follow-up tapped while preparation
+is still pending captures that tap's configuration and serializes its submission.
+Server eligibility counts preparation using the previous immutable request's
+creation time; a pruned receipt conservatively falls back to the old start time.
+
+Owner clarified that subsequent rolls must play concurrently. Recorded paths now
+have independent lanes per player/roll, using the original pose, materials,
+shadows, reveal, hold and fade code. No-motion results do not clear older dice.
+Clear and participant removal dispose every affected lane; normal fade disposes
+expired geometry/textures/result elements. The client retains overlapping paths
+for sound, rendering and obstacle preparation, pruning at their original expiry.
+
+For reconnects and new observers, latest track readback also returns up to eight
+compact active roll records. An optional `rollId` query retrieves one retained
+path at a time, keeping large pools below the function result byte limit. The
+indexed presentation creation boundary follows the current track's creation,
+excluding cleared paths after a new throw. Compact history remains motion-free.
+
+The owner requested a separate crit/fail listening demo. The static entry
+`web/site/critical-sounds.html` alternates forced natural 19 and double ones, with
+Crit/Crit fail mode buttons, mute and cue volume. It reuses the original planner,
+renderer, recorded clacks and result cue scheduling. It reads saved die design
+without writing preferences, joining rooms or recording history. The production
+cue gain increased from 0.2 to 0.7; generated cue RMS is approximately 0.086, so
+the previously quiet accent is now 3.5 times louder. Clack volume stays the same.
+
+Accepted checks: typecheck and production build, 20 focused cooldown/audio/crit
+tests plus 15 existing component/client contract tests passed. Chromium measured
+2,019ms from tap to enabled Roll, before the recorded 4,500ms animation ended.
+Renderer fixtures proved independent same-owner and peer animation/reveal, owner
+clear/removal, normal fade disposal and no old-lane resurrection. Crit/history
+fixtures and actual AudioContext cues passed with the updated renderer. Demo
+checks exercised forced success/failure, volume, mute and unchanged preferences.
+Backend persisted readback covered overlapping compact records, individual path
+fetch, bounded results, clear/new-track boundaries, credentials and retries.
+The complete delayed-preparation/second-tap/fresh-observer journey is authored in
+`tests/browser-overlapping-rolls.mjs` for the updated backend. Physical iOS audio
+and the previously agreed accessibility/device release checks remain pending.

@@ -5,5 +5,5 @@ import { diceFontNotices } from './scripts/lib/dice-font-build.ts';
 export default defineConfig({
   base: process.env.POWERROLLER_BASE ?? '/powerroller/',
   plugins: [react(), diceFontNotices()],
-  build: { assetsInlineLimit: 0 },
+  build: { assetsInlineLimit: 0, rollupOptions: { input: ['index.html', 'web/site/critical-sounds.html'] } },
 });

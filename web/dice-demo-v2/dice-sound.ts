@@ -34,24 +34,32 @@ export function diceImpacts(motion: Motion | undefined, count: number): DiceImpa
 /** Recorded landing clacks, scheduled against the tray's recorded physics. */
 export function createDiceSound() {
   let context: AudioContext | undefined, enabled = false, disposed = false;
+  let criticalVolume = 0.7;
   let noises: AudioBuffer[] = [];
   const cues = new Map<Exclude<CriticalResult, null>, AudioBuffer>();
   let loading: Promise<void> | undefined;
   let restoreSession: (() => void) | undefined;
   const played = new Set<string>();
   const voices = new Map<AudioBufferSourceNode, string>();
+  const criticalGains = new Map<AudioBufferSourceNode, GainNode>();
   function cancel(owner?: string) {
     for (const [source, roller] of voices) {
       if (owner !== undefined && owner !== roller) continue;
       try { source.stop(); } catch {}
       source.disconnect();
       voices.delete(source);
+      criticalGains.delete(source);
     }
   }
   function setEnabled(value: boolean) {
     enabled = value;
     if (!value) releaseContext();
     else void preloadClacks().catch(() => {});
+  }
+  function setCriticalVolume(value: number) {
+    if (!Number.isFinite(value)) return;
+    criticalVolume = Math.max(0, Math.min(1, value));
+    for (const gain of criticalGains.values()) gain.gain.value = criticalVolume;
   }
   async function unlock() {
     if (!enabled || disposed || document.hidden) return;
@@ -99,10 +107,11 @@ export function createDiceSound() {
     }
     const source = context.createBufferSource(), gain = context.createGain();
     source.buffer = buffer;
-    gain.gain.value = 0.2;
+    gain.gain.value = criticalVolume;
     source.connect(gain).connect(context.destination);
     voices.set(source, owner);
-    source.onended = () => { voices.delete(source); source.disconnect(); gain.disconnect(); };
+    criticalGains.set(source, gain);
+    source.onended = () => { voices.delete(source); criticalGains.delete(source); source.disconnect(); gain.disconnect(); };
     source.start(at);
   }
   function play(roll: ParticipantRoll, offset: number, reduced: boolean) {
@@ -149,5 +158,5 @@ export function createDiceSound() {
     document.removeEventListener('visibilitychange', visibility);
     page?.removeEventListener('pagehide', releaseContext);
   }
-  return { unlock, setEnabled, play, cancel, dispose };
+  return { unlock, setEnabled, setCriticalVolume, play, cancel, dispose };
 }

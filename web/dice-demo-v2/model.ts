@@ -23,7 +23,7 @@ export type ParticipantRoll = Roll & {
   revealAt?: number;
   power?: { edges: number; banes: number; total: number; tier: 1 | 2 | 3 };
 };
-export type Track = { roll: ParticipantRoll; receipts: Receipt[] };
+export type Track = { roll: ParticipantRoll; receipts: Receipt[]; activeRolls?: ParticipantRoll[] };
 export type Room = {
   expired: boolean;
   participants: Participant[];

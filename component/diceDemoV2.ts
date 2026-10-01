@@ -30,6 +30,7 @@ import { sha256, toHex } from "./lib/sha256";
 import {
   participant,
   participantRoll,
+  semanticRoll,
   diceConfiguration,
   roomPolicy,
 } from "./diceDemoV2Tables";
@@ -175,10 +176,10 @@ export const view = query({
   },
 });
 export const track = query({
-  args: { key: v.string(), viewer: v.string() },
+  args: { key: v.string(), viewer: v.string(), rollId: v.optional(v.string()) },
   returns: v.union(
     v.null(),
-    v.object({ roll: participantRoll, receipts: v.array(demoReceipt) }),
+    v.object({ roll: participantRoll, receipts: v.array(demoReceipt), activeRolls: v.optional(v.array(semanticRoll)) }),
   ),
   handler: async (ctx, args) => {
     const found = await room(ctx, args.key);
@@ -194,7 +195,27 @@ export const track = query({
         q.eq("key", found.key).eq("viewer", args.viewer),
       )
       .unique();
-    return current ? { roll: current.roll, receipts: current.receipts } : null;
+    if (!current) return null;
+    // At most eight compact overlapping results travel with the latest path.
+    // Fetch another path separately: returning eight full recordings can exceed
+    // Convex's one-megabyte function result limit for large dice pools.
+    const presentations = await ctx.db.query("diceDemoV2Presentations")
+      .withIndex("by_room_viewer", q => q.eq("key", found.key).eq("viewer", args.viewer).gte("_creationTime", current._creationTime))
+      .order("desc").take(8);
+    const activeRolls = [];
+    for (const presentation of presentations) {
+      if (presentation.expiresAt <= Date.now() || (presentation.motion.version ?? 1) !== 1) continue;
+      const request = await ctx.db.query("diceDemoV2Requests")
+        .withIndex("by_request", q => q.eq("key", found.key).eq("viewer", args.viewer).eq("id", presentation.id))
+        .unique();
+      const roll = request?.roll;
+      if (!roll || request.expiresAt <= Date.now() || roll.startsAt + roll.duration + 5600 <= Date.now()) continue;
+      if (args.rollId === roll.id)
+        return { roll: { ...roll, motion: presentation.motion }, receipts: roll.id === current.roll.id ? current.receipts : [] };
+      activeRolls.push(roll);
+    }
+    if (args.rollId !== undefined) return null;
+    return { roll: current.roll, receipts: current.receipts, activeRolls: activeRolls.reverse() };
   },
 });
 export const join = mutation({
@@ -491,8 +512,19 @@ async function acceptThrow(
       q.eq("key", found.key).eq("viewer", args.viewer),
     )
     .unique();
-  if (previous && previous.roll.startsAt + rollCooldownMs > Date.now())
-    throw new ConvexError("Wait two seconds before another roll.");
+  if (previous) {
+    const previousRequest = await ctx.db
+      .query("diceDemoV2Requests")
+      .withIndex("by_request", (q) =>
+        q.eq("key", found.key).eq("viewer", args.viewer).eq("id", previous.roll.id),
+      )
+      .unique();
+    // Server receipt creation includes sampling and physics preparation time.
+    // Older tracks whose receipt was pruned retain the conservative start fallback.
+    const requestedAt = previousRequest?._creationTime ?? previous.roll.startsAt;
+    if (requestedAt + rollCooldownMs > Date.now())
+      throw new ConvexError("Wait two seconds before another roll.");
+  }
   if (
     args.faces.length !== dicePoolCount(dice) ||
     args.faces.some((n,index) => !Number.isInteger(n) || n < 1 || n > dicePoolSides(dice)[index]!)

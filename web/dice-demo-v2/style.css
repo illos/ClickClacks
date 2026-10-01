@@ -15,6 +15,9 @@
 .track-results {
   max-height: min(360px, 35vh);
   overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+  touch-action: pan-y pinch-zoom;
   align-content: start;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -579,6 +582,13 @@
   gap: 8px;
   white-space: nowrap;
 }
+/* Long pools must wrap rather than widening the history scroll container. */
+.roll-equation {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .roll-total {
   font-size: 18px;
   color: #ff9598;
@@ -667,6 +677,31 @@
   height: 20px;
   border-radius: 50%;
   border: 1px solid #ffffff40;
+}
+.color-wheel {
+  position: relative;
+  width: min(220px, 100%);
+  aspect-ratio: 1;
+  margin: 16px auto;
+  border-radius: 50%;
+  background: radial-gradient(circle closest-side, #fff, #ffffff00),
+    conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
+  touch-action: none;
+  cursor: crosshair;
+}
+.color-wheel:focus-visible {
+  outline: 2px solid #e8e5df;
+  outline-offset: 4px;
+}
+.color-wheel-cursor {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 2px solid white;
+  box-shadow: 0 0 0 1px #182023;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
 }
 .v2 .profile-dialog .profile-fields .color-slider {
   display: grid;

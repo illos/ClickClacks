@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import { useState } from 'react';
+import { useState, type PointerEvent } from 'react';
 
 function channels(hex: string) {
   const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255);
@@ -39,9 +39,11 @@ export function ColorControls({
   color,
   ink,
   onChange,
+  disabled = false,
 }: {
   color: string;
   ink: string;
+  disabled?: boolean;
   onChange: (change: { color?: string; ink?: string }) => void;
 }) {
   const [selected, setSelected] = useState<'color' | 'ink'>('color');
@@ -58,12 +60,18 @@ export function ColorControls({
     });
   }
   const [hue, saturation, lightness] = colors[selected].values;
-  function change(index: number, next: number) {
-    const values: [number, number, number] = [hue, saturation, lightness];
-    values[index] = next;
+  function change(values: [number, number, number]) {
     const hex = hexColor(...values);
     setColors(old => ({ ...old, [selected]: { hex, values } }));
     onChange({ [selected]: hex });
+  }
+  function pick(event: PointerEvent<HTMLDivElement>) {
+    if (disabled) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = (event.clientX - rect.left - rect.width / 2) / (rect.width / 2);
+    const y = (event.clientY - rect.top - rect.height / 2) / (rect.height / 2);
+    const nextHue = (Math.atan2(y, x) * 180 / Math.PI + 90 + 360) % 360;
+    change([nextHue, Math.min(100, Math.hypot(x, y) * 100), lightness]);
   }
   const label = selected === 'color' ? 'Dice color' : 'Number color';
   return (
@@ -85,28 +93,59 @@ export function ColorControls({
           </button>
         ))}
       </div>
-      {['Hue', 'Saturation', 'Lightness'].map((name, index) => (
-        <label key={name} className="color-slider">
-          <span>{name}</span>
-          <input
-            type="range"
-            aria-label={`${label} ${name.toLowerCase()}`}
-            min={0}
-            max={index === 0 ? 359 : 100}
-            step={1}
-            value={Math.round([hue, saturation, lightness][index]!)}
-            onChange={event => change(index, Number(event.target.value))}
-            style={{
-              background:
-                index === 0
-                  ? 'linear-gradient(to right, red, yellow, lime, cyan, blue, magenta, red)'
-                  : index === 1
-                    ? `linear-gradient(to right, ${hexColor(hue, 0, lightness)}, ${hexColor(hue, 100, lightness)})`
-                    : `linear-gradient(to right, #000, ${hexColor(hue, saturation, 50)}, #fff)`,
-            }}
-          />
-        </label>
-      ))}
+      <div
+        className="color-wheel"
+        role="slider"
+        tabIndex={disabled ? -1 : 0}
+        aria-disabled={disabled}
+        aria-label={`${label} wheel`}
+        aria-valuemin={0}
+        aria-valuemax={359}
+        aria-valuenow={Math.round(hue) % 360}
+        aria-valuetext={`Hue ${Math.round(hue)} degrees, saturation ${Math.round(saturation)} percent`}
+        aria-description="Left and right change hue. Up and down change saturation."
+        onPointerDown={event => {
+          if (disabled) return;
+          event.currentTarget.setPointerCapture(event.pointerId);
+          pick(event);
+        }}
+        onPointerMove={event => {
+          if (event.currentTarget.hasPointerCapture(event.pointerId)) pick(event);
+        }}
+        onPointerUp={event => {
+          if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+        }}
+        onKeyDown={event => {
+          if (disabled) return;
+          const step = event.shiftKey ? 10 : 1;
+          if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+            event.preventDefault();
+            change([(hue + (event.key === 'ArrowRight' ? step : -step) + 360) % 360, saturation, lightness]);
+          } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+            event.preventDefault();
+            change([hue, Math.max(0, Math.min(100, saturation + (event.key === 'ArrowUp' ? step : -step))), lightness]);
+          }
+        }}
+      >
+        <span className="color-wheel-cursor" aria-hidden="true" style={{
+          left: `${50 + Math.sin(hue * Math.PI / 180) * saturation / 2}%`,
+          top: `${50 - Math.cos(hue * Math.PI / 180) * saturation / 2}%`,
+          backgroundColor: hexColor(hue, saturation, 50),
+        }} />
+      </div>
+      <label className="color-slider">
+        <span>Lightness</span>
+        <input
+          type="range"
+          aria-label={`${label} lightness`}
+          min={0}
+          max={100}
+          step={1}
+          value={Math.round(lightness)}
+          onChange={event => change([hue, saturation, Number(event.target.value)])}
+          style={{ background: `linear-gradient(to right, #000, ${hexColor(hue, saturation, 50)}, #fff)` }}
+        />
+      </label>
     </div>
   );
 }

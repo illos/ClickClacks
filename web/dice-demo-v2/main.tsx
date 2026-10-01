@@ -316,7 +316,7 @@ function RollDieIcon({ dice }: { dice: SelectedDice }) {
     sides === 4
       ? 'M12 2 23 21H1Z'
       : sides === 6
-        ? 'M3 3H21V21H3Z'
+        ? 'M12 2 22 7v10l-10 5-10-5V7Z'
         : sides === 8 || sides === 10
           ? 'M12 1 22 12 12 23 2 12Z'
           : sides === 12
@@ -332,8 +332,9 @@ function RollDieIcon({ dice }: { dice: SelectedDice }) {
       strokeLinejoin="round"
     >
       <path d={outline} />
-      {sides === 6 && [[6, 6], [18, 6], [12, 12], [6, 18], [18, 18]].map(([cx, cy]) => (
-        <circle key={`${cx}:${cy}`} cx={cx} cy={cy} r="1.4" fill="currentColor" stroke="none" />
+      {sides === 6 && <path d="m2 7 10 5 10-5M12 12v10" />}
+      {sides === 6 && [[12, 7], [5, 11], [9, 17], [15, 17], [17, 14], [19, 11]].map(([cx, cy]) => (
+        <circle key={`${cx}:${cy}`} cx={cx} cy={cy} r="1" fill="currentColor" stroke="none" />
       ))}
       {sides === 12 && <path d="M12 6 18 10.5 16 17H8L6 10.5ZM12 1v5M23 9l-5 1.5M19 22l-3-5M5 22l3-5M1 9l5 1.5" />}
       {sides === 4 && <path d="M12 2V14.7M1 21l11-6.3L23 21" />}
@@ -1320,7 +1321,7 @@ function DiceRoom() {
           <p role="status">{fallback ? '3D font preview unavailable.' : 'Loading dice fonts…'}</p>
         )}
         <fieldset disabled={busy} className="profile-fields">
-          <ColorControls color={profile.style.color} ink={profile.style.ink} onChange={edit} />
+          <ColorControls disabled={busy} color={profile.style.color} ink={profile.style.ink} onChange={edit} />
           <label className="full-field">
             Pattern
             <select

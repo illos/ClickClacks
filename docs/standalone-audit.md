@@ -129,3 +129,20 @@ Focused backend tests passed (11), covering persisted 0/±2/±5, cancellation,
 mixed bonus/penalty magnitudes and retained retry behavior. Focused Chromium
 checks passed for both full cycles, focus retention, power controls, icon SVGs
 and divider height. Typecheck and production build passed.
+
+## Phone history and color wheel follow-up
+
+Long (20-die) equations now wrap within the history panel; its scroll container
+accepts vertical panning and pinch zoom, with horizontal overflow suppressed.
+The short-height layout still scrolls the page to reach the history. Focused
+Chromium checks passed at 430×932 (iPhone 15 Plus sized), 390×844, 320×225 and
+1280×900, including long equations, no horizontal overflow and vertical scrolling.
+WebKit could not launch because host browser libraries are missing; physical
+Safari confirmation remains pending.
+
+At the owner's request, a touch/keyboard color wheel replaces hue/saturation
+sliders. One lightness slider preserves black/white and darker shades. Dice and
+number colors retain separate values and the existing profile/preview pipeline.
+The d6 icon is now a cube with three visible faces and pips. Focused Chromium
+checks passed for touch selection, keyboard hue changes, separate color targets,
+black/white endpoints and the cube icon. Typecheck and production build passed.

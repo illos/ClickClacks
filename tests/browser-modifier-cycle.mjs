@@ -11,7 +11,7 @@ try {
   await picker.click();
   await page.getByRole('menuitemradio', { name: 'd20', exact: true }).click();
   expect(await icon()).toEqual(powerIcon);
-  for (const [name, paths, circles] of [['d6', 1, 5], ['d12', 2, 0], ['d4', 2, 0]]) {
+  for (const [name, paths, circles] of [['d6', 2, 6], ['d12', 2, 0], ['d4', 2, 0]]) {
     await picker.click();
     await page.getByRole('menuitemradio', { name, exact: true }).click();
     await expect(picker.locator('svg path')).toHaveCount(paths);

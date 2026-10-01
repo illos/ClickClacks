@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "allowImportingTsExtensions": false,
+    "declaration": true,
+    "outDir": "dist/lib",
+    "rootDir": "src"
+  },
+  "include": ["src/dice.ts", "src/draw-steel.ts", "src/client.ts"]
+}

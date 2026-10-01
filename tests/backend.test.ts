@@ -357,6 +357,93 @@ describe("isolated collaborative component through community app wrappers", () =
       ).cursor,
     ).toBe(0);
   });
+  it("trusted host custom interpretation is persisted and fingerprinted without changing dice authority", async () => {
+    clock();
+    const t = convexTest(componentSchema, componentModules);
+    const { room } = await t.mutation(componentApi.rooms.create, {
+      name: "Host",
+      credential,
+    });
+    const args = { roomId: room.id, credential };
+    const request = {
+      requestId: "custom-host",
+      dice: [{ sides: 6, count: 3 }],
+      ruleset: "sum" as const,
+      keep: { mode: "highest" as const, count: 2 },
+      context: { ruleset: "example/skill-check", label: "Skill check" },
+    };
+    const approved = {
+      dice: [
+        { id: "0:0", sides: 6, value: 2, kept: false },
+        { id: "0:1", sides: 6, value: 5, kept: true },
+        { id: "0:2", sides: 6, value: 4, kept: true },
+      ],
+      naturalTotal: 9,
+      total: 99,
+      success: true,
+      summary: "Custom skill check succeeded at 99",
+    };
+    const roll = await t.mutation(componentApi.rooms.acceptResolved, {
+      ...args,
+      request,
+      result: approved,
+    });
+    expect(roll.source).toBe("supplied");
+    expect(
+      (await t.query(componentApi.rooms.view, args)).latest[0].result,
+    ).toEqual(approved);
+    await t.mutation(componentApi.rooms.clear, args);
+    expect(
+      await t.mutation(componentApi.rooms.acceptResolved, {
+        ...args,
+        request,
+        result: approved,
+      }),
+    ).toEqual(roll);
+    await expect(
+      t.mutation(componentApi.rooms.acceptResolved, {
+        ...args,
+        request,
+        result: { ...approved, total: 100 },
+      }),
+    ).rejects.toThrow("REQUEST_CONFLICT");
+    vi.advanceTimersByTime(250);
+    await expect(
+      t.mutation(componentApi.rooms.acceptResolved, {
+        ...args,
+        request: { ...request, requestId: "different" },
+        result: {
+          ...approved,
+          dice: approved.dice.map((die, i) =>
+            i === 0 ? { ...die, id: "wrong" } : die,
+          ),
+        },
+      }),
+    ).rejects.toThrow("INVALID_RESOLUTION");
+    await expect(
+      t.mutation(componentApi.rooms.acceptResolved, {
+        ...args,
+        request: { ...request, requestId: "invalid-natural" },
+        result: { ...approved, naturalTotal: 10 },
+      }),
+    ).rejects.toThrow("INVALID_RESOLUTION");
+    await expect(
+      t.mutation(componentApi.rooms.acceptResolved, {
+        ...args,
+        request: { ...request, requestId: "invalid-custom", context: {} },
+        result: approved,
+      }),
+    ).rejects.toThrow("INVALID_RESOLUTION");
+    const events = await t.query(componentApi.rooms.events, {
+      ...args,
+      after: 0,
+    });
+    expect(events.events.map((event: { kind: string }) => event.kind)).toEqual([
+      "roll",
+      "clear",
+    ]);
+    expect(events.events[0].roll!.result).toEqual(approved);
+  });
   it("trusted supplied path is labelled and presentation must match persisted acceptance", async () => {
     clock();
     const t = convexTest(componentSchema, componentModules);
@@ -371,6 +458,13 @@ describe("isolated collaborative component through community app wrappers", () =
       values: [7, 8],
     });
     expect(roll.source).toBe("supplied");
+    await expect(
+      t.mutation(componentApi.rooms.acceptSupplied, {
+        ...args,
+        request,
+        values: [7, 9],
+      }),
+    ).rejects.toThrow("REQUEST_CONFLICT");
     expect(
       (await t.query(componentApi.rooms.view, args)).latest[0].result.total,
     ).toBe(15);

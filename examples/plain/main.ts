@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 // No React, site CSS, URL mutation or browser persistence is required.
-import { createRoller, convexTransport } from "../../src/client";
-import { createTray } from "../../src/three";
-import { formatResult } from "../../src/dice";
+import { createRoller, convexTransport } from "powerroller/client";
+import { createTray } from "powerroller/three";
+import { formatResult } from "powerroller/dice";
 export async function mountExample(
   host: HTMLElement,
   log: HTMLElement,

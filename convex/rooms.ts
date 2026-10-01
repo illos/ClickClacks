@@ -10,7 +10,7 @@ import {
   room,
   sessionArgs,
 } from "../src/component/validators.js";
-import { v } from "convex/values";
+import { v, type Infer } from "convex/values";
 const backend = components.powerroller;
 export const clock = action({
   args: {},
@@ -76,7 +76,8 @@ export const events = query({
 export const roll = action({
   args: { ...sessionArgs, request },
   returns: accepted,
-  handler: (ctx, args) => ctx.runAction(internal.sampling.roll, args),
+  handler: (ctx, args): Promise<Infer<typeof accepted>> =>
+    ctx.runAction(internal.sampling.roll, args),
 });
 export const clear = mutation({
   args: sessionArgs,

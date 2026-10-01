@@ -120,7 +120,8 @@ Copy/adapt wrappers as integration code; component tables/functions remain isola
 Generated bindings are produced by `convex dev --once` and are ignored by Git.
 
 The site creates random private credentials, kept in sessionStorage. Participant IDs are public and
-cannot authorize writes. The backend checks room-scoped credentials, membership, capacity, request
+cannot authorize writes. Secure Node sampling is provided by the app-side internal action in `convex/sampling.ts`, because Convex components cannot run Node actions.
+The backend checks room-scoped credentials, membership, capacity, request
 bounds and ownership. Site users cannot call the supplied-result path. A trusted host wrapper may
 call `components.powerroller.rooms.acceptSupplied` after enforcing its own identity/permission policy.
 Host parent IDs are opaque context values; the component imports no host schema or account system.
@@ -139,6 +140,24 @@ and double0 means100. `keep` explicitly retains highest/lowest N values and reco
 Opposed/project presets have their own Edge/Bane semantics. Critical flags require an explicit main
 action ability context; the roller never grants a generic combat action. Extend trusted presets in
 host integration code rather than transmitting executable callbacks to the server.
+
+## Headless CLI
+
+The CLI calls the same community API as the site and preserves session credentials in a private
+local file. Set your endpoint explicitly; no default cloud account is used.
+
+```sh
+export POWERROLLER_CONVEX_URL=https://your-deployment.convex.cloud
+pnpm cli create '{"name":"Morgan"}'
+pnpm cli roll '{"request":{"requestId":"cli-roll-1","dice":[{"sides":10,"count":2}],"ruleset":"draw-steel/power"}}'
+pnpm cli view '{}'
+pnpm cli clear '{}'
+```
+
+`join`, `profile`, `heartbeat`, `leave`, `events` and `clock` are also supported. `resolve` accepts
+`{request,values}` without a backend. `POWERROLLER_SESSION_FILE` chooses a private session file for
+multiple callers. Reusing a request ID preserves the accepted roll; use `view`/`events` to read back
+persisted state. A CLI mutation response alone is not proof of persistence.
 
 ## Browser persistence and accessibility
 

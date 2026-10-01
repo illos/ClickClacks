@@ -16,8 +16,10 @@ import {
   sessionArgs,
   policyOptions,
   roomPolicy,
+  result as resultValidator,
 } from "./validators.js";
 import { resolveRoll, validateRequest, type RollRequest } from "../dice.js";
+import { approveResolution } from "./resolution.js";
 import { validateInput } from "./errors.js";
 import type { Doc } from "./_generated/dataModel.js";
 const HOUR = 3_600_000;
@@ -400,12 +402,14 @@ function fingerprint(
   input: RollRequest,
   source: "generated" | "supplied",
   values?: number[],
+  resolved?: Infer<typeof resultValidator>,
 ) {
   validateInput(() => validateRequest(input));
   const serialized = canonical({
     input,
     source,
     ...(values ? { values } : {}),
+    ...(resolved ? { resolved } : {}),
   });
   if (serialized.length > 16_000)
     fail("REQUEST_TOO_LARGE", "Roll requests must fit within 16 KB.");
@@ -419,10 +423,16 @@ async function lookup(
     request: RollRequest;
     source: "generated" | "supplied";
     values?: number[];
+    resolved?: Infer<typeof resultValidator>;
   },
 ) {
   const { room, member } = await authenticate(ctx, args);
-  const print = fingerprint(args.request, args.source, args.values);
+  const print = fingerprint(
+    args.request,
+    args.source,
+    args.values,
+    args.resolved,
+  );
   const receipt = await ctx.db
     .query("receipts")
     .withIndex("by_request", (q) =>
@@ -459,6 +469,7 @@ async function accept(
     credential: string;
     request: RollRequest;
     values: number[];
+    resolved?: Infer<typeof resultValidator>;
     source: "generated" | "supplied";
   },
 ) {
@@ -475,7 +486,9 @@ async function accept(
       "ROOM_LIMIT",
       "This room reached its event limit. Create another room.",
     );
-  const result = validateInput(() => resolveRoll(args.request, args.values));
+  const result = args.resolved
+    ? approveResolution(args.request, args.resolved)
+    : validateInput(() => resolveRoll(args.request, args.values));
   const now = Date.now(),
     sequence = room.sequence + 1;
   const id = await ctx.db.insert("rolls", {
@@ -526,6 +539,18 @@ export const acceptSupplied = mutation({
   args: { ...sessionArgs, request, values: v.array(v.number()) },
   returns: accepted,
   handler: (ctx, args) => accept(ctx, { ...args, source: "supplied" }),
+});
+/** Host-authenticated wrappers can install custom interpretation without forking this component. */
+export const acceptResolved = mutation({
+  args: { ...sessionArgs, request, result: resultValidator },
+  returns: accepted,
+  handler: (ctx, args) =>
+    accept(ctx, {
+      ...args,
+      values: args.result.dice.map((die) => die.value),
+      resolved: args.result,
+      source: "supplied",
+    }),
 });
 export const clear = mutation({
   args: sessionArgs,

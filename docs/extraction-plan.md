@@ -1,3 +1,5 @@
+> Historical extraction specification imported from Salient V273. Relative implementation references below point to the original Salient source, not Powerroller files. See README.md for the implemented APIs and docs/work-log.md for evidence.
+
 # Powerroller extraction plan
 
 Date: 2026-10-01. Status: planning document; implementation has not started.
@@ -11,7 +13,7 @@ accepted results, and install the collaborative backend in their own Convex depl
 This consolidates the dice survey, hosting discussion, extraction analysis and accessibility review.
 The inspected baseline is Salient runtime commit `8b93f5c1`, with publication documentation at
 `be6dc311`. Findings describe that baseline, not later changes or verified release readiness.
-The current implementation specification remains [the dice roller spec](dice-roller-spec.md).
+The current implementation specification remains [the dice roller spec](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/docs/dice-roller-spec.md).
 
 ## 1. Confirmed direction and visual constraint
 
@@ -69,20 +71,20 @@ or Pages site has been created. It introduces no new Salient version-one release
 
 ## 2. Existing implementation and extraction seams
 
-| Area | Evidence in the checkout | Implication |
-| --- | --- | --- |
-| Standalone page | [V2 entry](../web/dice-demo-v2/main.tsx), [Vite entry](../vite.dice-v2.config.ts), [HTML](../dice-v2.html) | Already built separately, but the entry owns client creation, URL mutation, controls, state and log. |
-| Dice generation | [Shared generator](../convex/lib/dice.ts), [demo sampling action](../convex/diceDemo.ts) | Pure generation can be extracted; surrounding helpers depend on campaign/user tables. The demo sampling endpoint fixes the request to two d10s. |
-| Room API | [V2 functions](../convex/diceDemoV2.ts), [client references](../web/dice-demo-v2/api.ts) | Join, view, track, customize, throw, clear and receipt operations exist. Endpoint names and types are tied to the current app. |
-| Storage | [V2 tables](../convex/diceDemoV2Tables.ts), [shared demo validators](../convex/diceDemoTables.ts) | Rooms contain participants; tracks are indexed by room/participant and store one current roll. There is no complete shared roll archive. |
-| Names | `randomName` in the V2 backend; [name helper](../convex/lib/foeNames.ts) | Reads `contentManifest`, seeded statblocks and a generated Compendium manifest. A missing catalog prevents initial name readiness. |
-| Rules | [Shared resolution](../shared/resolve/index.ts) | Edge/Bane and tier functions can be isolated from the wider ability/damage engine. Demo characteristic is fixed at +0. |
-| Presentation | [Tray](../web/dice-demo-v2/renderer.ts), [preview](../web/dice-demo-v2/preview.ts) | Mount/play/clear/dispose seams already exist. Rendering still assumes pairs of the same model. |
-| Physics | [Solver](../web/dice-demo/physics.ts), [worker](../web/dice-demo/physics-worker.ts), [preparation](../web/dice-demo/prepare-throw.ts) | Two bodies and a 14-number frame are assumed. Worker ownership is module-global. |
-| Model and styles | [Logical d10](../web/dice-demo/d10.ts), [V2 styles](../web/dice-demo-v2/style.css), [base styles](../web/dice-demo/style.css) | A twenty-face shape represents each logical d10. Global CSS affects the page; body/ink colors and three patterns are configurable today. |
-| Clock and reconnect | [Clock lifecycle](../web/dice-demo-v2/clock-sync.ts) | Reusable implementation includes foreground recovery, deadlines and retry. It remains browser-specific. |
-| Browser state | V2 entry's profile, viewer and log state | A reload creates a new participant/profile. Up to 100 observed results live in React state; no browser persistence exists. |
-| Hosting | [Hosted development](hosted-development.md), [Wrangler assets](../wrangler.jsonc) | Cloudflare serves static assets. The hosted browser connects directly to Convex. |
+| Area                | Evidence in the checkout                                                                                                                                                                                                                                                                                                                                                  | Implication                                                                                                                                     |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Standalone page     | [V2 entry](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/web/dice-demo-v2/main.tsx), [Vite entry](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/vite.dice-v2.config.ts), [HTML](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/dice-v2.html)                            | Already built separately, but the entry owns client creation, URL mutation, controls, state and log.                                            |
+| Dice generation     | [Shared generator](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/convex/lib/dice.ts), [demo sampling action](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/convex/diceDemo.ts)                                                                                                                          | Pure generation can be extracted; surrounding helpers depend on campaign/user tables. The demo sampling endpoint fixes the request to two d10s. |
+| Room API            | [V2 functions](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/convex/diceDemoV2.ts), [client references](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/web/dice-demo-v2/api.ts)                                                                                                                          | Join, view, track, customize, throw, clear and receipt operations exist. Endpoint names and types are tied to the current app.                  |
+| Storage             | [V2 tables](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/convex/diceDemoV2Tables.ts), [shared demo validators](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/convex/diceDemoTables.ts)                                                                                                                 | Rooms contain participants; tracks are indexed by room/participant and store one current roll. There is no complete shared roll archive.        |
+| Names               | `randomName` in the V2 backend; [name helper](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/convex/lib/foeNames.ts)                                                                                                                                                                                                                      | Reads `contentManifest`, seeded statblocks and a generated Compendium manifest. A missing catalog prevents initial name readiness.              |
+| Rules               | [Shared resolution](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/shared/resolve/index.ts)                                                                                                                                                                                                                                               | Edge/Bane and tier functions can be isolated from the wider ability/damage engine. Demo characteristic is fixed at +0.                          |
+| Presentation        | [Tray](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/web/dice-demo-v2/renderer.ts), [preview](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/web/dice-demo-v2/preview.ts)                                                                                                                                | Mount/play/clear/dispose seams already exist. Rendering still assumes pairs of the same model.                                                  |
+| Physics             | [Solver](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/web/dice-demo/physics.ts), [worker](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/web/dice-demo/physics-worker.ts), [preparation](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/web/dice-demo/prepare-throw.ts) | Two bodies and a 14-number frame are assumed. Worker ownership is module-global.                                                                |
+| Model and styles    | [Logical d10](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/web/dice-demo/d10.ts), [V2 styles](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/web/dice-demo-v2/style.css), [base styles](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/web/dice-demo/style.css)         | A twenty-face shape represents each logical d10. Global CSS affects the page; body/ink colors and three patterns are configurable today.        |
+| Clock and reconnect | [Clock lifecycle](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/web/dice-demo-v2/clock-sync.ts)                                                                                                                                                                                                                                          | Reusable implementation includes foreground recovery, deadlines and retry. It remains browser-specific.                                         |
+| Browser state       | V2 entry's profile, viewer and log state                                                                                                                                                                                                                                                                                                                                  | A reload creates a new participant/profile. Up to 100 observed results live in React state; no browser persistence exists.                      |
+| Hosting             | [Hosted development](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/docs/hosted-development.md), [Wrangler assets](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/wrangler.jsonc)                                                                                                                         | Cloudflare serves static assets. The hosted browser connects directly to Convex.                                                                |
 
 ### Present roll flow
 
@@ -112,7 +114,7 @@ Other current constraints:
   animation capacity separate from logical roll limits.
 
 The existing tests cover selected generation, geometry, clock, storage and concurrent-track cases:
-[V1 tests](../tests/app/dice-demo.test.ts), [V2 tests](../tests/app/dice-demo-v2.test.ts).
+[V1 tests](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/tests/app/dice-demo.test.ts), [V2 tests](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/tests/app/dice-demo-v2.test.ts).
 They do not establish package integration, general dice support, browser cache or accessibility.
 Recent UI slices recorded test/device waivers; those are not release evidence for the new library.
 
@@ -121,28 +123,28 @@ Recent UI slices recorded test/device waivers; those are not release evidence fo
 Configuration selects supported behavior. A documented extension adds a new provider or model in
 the consuming project. An extension may require integration code, but not editing Powerroller.
 
-| Capability | Proposed public surface | Baseline |
-| --- | --- | --- |
-| Roll a die or pool | Side count, quantity, stable per-die IDs | Generator supports arbitrary sides; demo exposes 2d10 only. |
-| Mixed dice | Ordered groups such as `2d10 + 3d6` | New demo/client/renderer support required. |
-| Numeric modifiers | Characteristic and labelled bonuses/penalties | Demo characteristic +0 only. |
-| Edges and Banes | Counts interpreted by a Draw Steel preset | Implemented for the demo power roll. |
-| Keep/drop | Keep highest/lowest, retain a record of discarded dice | New. |
-| Percentiles | Explicit tens/ones aggregation | New; never treat percentile dice as an ordinary sum. |
-| Roll purpose | Raw sum, power roll, save, opposed total, project total | Demo exposes one power-roll interpretation. |
-| Supplied results | Accept/resolve/present explicit values without generation | Existing internal path needs a deliberate public contract. |
-| Context | Label, actor/action references and bounded serializable metadata | Mostly participant attribution today. |
-| Custom interpretation | Installed preset or trusted host resolver | Current arithmetic is wired into the demo backend. |
-| Names | An array or sync/async name provider, with a usable fallback | Currently requires the Salient catalog. |
-| Identity | Guest session provider or host-authenticated identity | Client-supplied UUID today. |
-| Dice appearance | Existing body/ink/pattern choices and registered models | Existing customization retained. |
-| Rendering | Tray element, optional renderer, instance lifecycle and host asset paths | Existing renderer is a useful starting point. |
-| Room operations | Create, join, leave, subscribe, update profile, clear | Most exist; leave and policy seams need definition. |
-| Room policy | Capacity, retention, expiry, permissions and bounded request sizes | Hardcoded today. |
-| Events | Accepted/available results, connection, participants, errors, presentation status | Currently coupled to React effects. |
-| Accessibility | Motion/display/contrast preferences, semantic summaries and announcement hooks | Partial OS-motion and status support. |
-| Persistence | Host consumes events and restores its own saved state | Site cache will be a separate module. |
-| Hosting | Supplied Convex connection, API bindings and worker/asset base | No intrinsic Cloudflare dependency. |
+| Capability            | Proposed public surface                                                           | Baseline                                                    |
+| --------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Roll a die or pool    | Side count, quantity, stable per-die IDs                                          | Generator supports arbitrary sides; demo exposes 2d10 only. |
+| Mixed dice            | Ordered groups such as `2d10 + 3d6`                                               | New demo/client/renderer support required.                  |
+| Numeric modifiers     | Characteristic and labelled bonuses/penalties                                     | Demo characteristic +0 only.                                |
+| Edges and Banes       | Counts interpreted by a Draw Steel preset                                         | Implemented for the demo power roll.                        |
+| Keep/drop             | Keep highest/lowest, retain a record of discarded dice                            | New.                                                        |
+| Percentiles           | Explicit tens/ones aggregation                                                    | New; never treat percentile dice as an ordinary sum.        |
+| Roll purpose          | Raw sum, power roll, save, opposed total, project total                           | Demo exposes one power-roll interpretation.                 |
+| Supplied results      | Accept/resolve/present explicit values without generation                         | Existing internal path needs a deliberate public contract.  |
+| Context               | Label, actor/action references and bounded serializable metadata                  | Mostly participant attribution today.                       |
+| Custom interpretation | Installed preset or trusted host resolver                                         | Current arithmetic is wired into the demo backend.          |
+| Names                 | An array or sync/async name provider, with a usable fallback                      | Currently requires the Salient catalog.                     |
+| Identity              | Guest session provider or host-authenticated identity                             | Client-supplied UUID today.                                 |
+| Dice appearance       | Existing body/ink/pattern choices and registered models                           | Existing customization retained.                            |
+| Rendering             | Tray element, optional renderer, instance lifecycle and host asset paths          | Existing renderer is a useful starting point.               |
+| Room operations       | Create, join, leave, subscribe, update profile, clear                             | Most exist; leave and policy seams need definition.         |
+| Room policy           | Capacity, retention, expiry, permissions and bounded request sizes                | Hardcoded today.                                            |
+| Events                | Accepted/available results, connection, participants, errors, presentation status | Currently coupled to React effects.                         |
+| Accessibility         | Motion/display/contrast preferences, semantic summaries and announcement hooks    | Partial OS-motion and status support.                       |
+| Persistence           | Host consumes events and restores its own saved state                             | Site cache will be a separate module.                       |
+| Hosting               | Supplied Convex connection, API bindings and worker/asset base                    | No intrinsic Cloudflare dependency.                         |
 
 General request validation currently supports at most 100 dice and 2–1,000 sides. Preserve bounds
 initially as generator limits; do not represent them as a proven simultaneous 3D rendering capacity.
@@ -157,18 +159,18 @@ The fixed expressions found in the pinned corpus are `1d3`, `2d3`, `1d4`, `1d6`,
 `4d6`, `1d10`, `2d10`, `3d10` and `d100`. Variable d6/d10 pools and mixed project-roll additions
 also occur. This is a survey of expressions, not eleven separate rolling algorithms.
 
-| Use | Source boundary |
-| --- | --- |
-| Ability rolls and tests: 2d10 plus modifiers | [Power Rolls — Types / Making a Power Roll](../vendor/steel-compendium/en/books/heroes/md/rule/dice/power-roll.md) |
-| Opposed rolls: compare totals; special double Edge/Bane treatment | [Opposed Power Rolls](../vendor/steel-compendium/en/books/heroes/md/rule/dice/opposed-power-roll.md) |
-| Project totals and breakthrough | [Project Roll](../vendor/steel-compendium/en/books/heroes/md/rule/downtime/project-roll.md) |
-| Saves: one d10, normally 6+ | [Saving Throw](../vendor/steel-compendium/en/books/heroes/md/rule/general/saving-throw.md) |
-| Combat opening: one d10 determines which side chooses | [Combat Round — Determine Who Goes First](../vendor/steel-compendium/en/books/heroes/md/rule/combat/combat-round.md) |
-| d3 and percentile representation | [The Basics — Dice / D3s / D100s](../vendor/steel-compendium/en/books/heroes/md/chapter/the-basics.md) |
-| Edges, Banes, tiers and natural results | [Edge](../vendor/steel-compendium/en/books/heroes/md/rule/dice/edge.md), [Bane](../vendor/steel-compendium/en/books/heroes/md/rule/dice/bane.md), [Tier Outcomes](../vendor/steel-compendium/en/books/heroes/md/rule/dice/tier-outcome.md), [Natural Roll](../vendor/steel-compendium/en/books/heroes/md/rule/dice/natural-roll.md) |
-| Rare d4 and 4d6 expressions | [Wyvern Lurker — Acidic Anguish](../vendor/steel-compendium/en/unified/md/monster/wyvern/statblock/wyvern-lurker.md), [Logostician Vesper — death explosion](../vendor/steel-compendium/en/unified/md/monster/war-dog/4th-echelon/statblock/logostician-vesper.md) |
-| 2d3 and 3d10 discard-lowest examples | [Final Evolution](../vendor/steel-compendium/en/unified/md/feature/beastheart/level-10/final-evolution.md), [Rampage — 24-point row](../vendor/steel-compendium/en/unified/md/feature/beastheart/level-1/rampage.md) |
-| Variable pools and mixed additions | [To the Uttermost End — Spend](../vendor/steel-compendium/en/books/heroes/md/feature/ability/fury/level-1/to-the-uttermost-end.md), [Ancient Loremaster — Rare Books](../vendor/steel-compendium/en/books/heroes/md/title/ancient-loremaster.md) |
+| Use                                                               | Source boundary                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ability rolls and tests: 2d10 plus modifiers                      | [Power Rolls — Types / Making a Power Roll](https://github.com/SteelCompendium/data-unified/blob/fb83a789da8f0327a389c277a0c790b1648d5810/en/books/heroes/md/rule/dice/power-roll.md)                                                                                                                                                                                                                                                                                                                              |
+| Opposed rolls: compare totals; special double Edge/Bane treatment | [Opposed Power Rolls](https://github.com/SteelCompendium/data-unified/blob/fb83a789da8f0327a389c277a0c790b1648d5810/en/books/heroes/md/rule/dice/opposed-power-roll.md)                                                                                                                                                                                                                                                                                                                                            |
+| Project totals and breakthrough                                   | [Project Roll](https://github.com/SteelCompendium/data-unified/blob/fb83a789da8f0327a389c277a0c790b1648d5810/en/books/heroes/md/rule/downtime/project-roll.md)                                                                                                                                                                                                                                                                                                                                                     |
+| Saves: one d10, normally 6+                                       | [Saving Throw](https://github.com/SteelCompendium/data-unified/blob/fb83a789da8f0327a389c277a0c790b1648d5810/en/books/heroes/md/rule/general/saving-throw.md)                                                                                                                                                                                                                                                                                                                                                      |
+| Combat opening: one d10 determines which side chooses             | [Combat Round — Determine Who Goes First](https://github.com/SteelCompendium/data-unified/blob/fb83a789da8f0327a389c277a0c790b1648d5810/en/books/heroes/md/rule/combat/combat-round.md)                                                                                                                                                                                                                                                                                                                            |
+| d3 and percentile representation                                  | [The Basics — Dice / D3s / D100s](https://github.com/SteelCompendium/data-unified/blob/fb83a789da8f0327a389c277a0c790b1648d5810/en/books/heroes/md/chapter/the-basics.md)                                                                                                                                                                                                                                                                                                                                          |
+| Edges, Banes, tiers and natural results                           | [Edge](https://github.com/SteelCompendium/data-unified/blob/fb83a789da8f0327a389c277a0c790b1648d5810/en/books/heroes/md/rule/dice/edge.md), [Bane](https://github.com/SteelCompendium/data-unified/blob/fb83a789da8f0327a389c277a0c790b1648d5810/en/books/heroes/md/rule/dice/bane.md), [Tier Outcomes](https://github.com/SteelCompendium/data-unified/blob/fb83a789da8f0327a389c277a0c790b1648d5810/en/books/heroes/md/rule/dice/tier-outcome.md), [Natural Roll](https://github.com/SteelCompendium/data-unified/blob/fb83a789da8f0327a389c277a0c790b1648d5810/en/books/heroes/md/rule/dice/natural-roll.md) |
+| Rare d4 and 4d6 expressions                                       | [Wyvern Lurker — Acidic Anguish](https://github.com/SteelCompendium/data-unified/blob/fb83a789da8f0327a389c277a0c790b1648d5810/en/unified/md/monster/wyvern/statblock/wyvern-lurker.md), [Logostician Vesper — death explosion](https://github.com/SteelCompendium/data-unified/blob/fb83a789da8f0327a389c277a0c790b1648d5810/en/unified/md/monster/war-dog/4th-echelon/statblock/logostician-vesper.md)                                                                                                                                          |
+| 2d3 and 3d10 discard-lowest examples                              | [Final Evolution](https://github.com/SteelCompendium/data-unified/blob/fb83a789da8f0327a389c277a0c790b1648d5810/en/unified/md/feature/beastheart/level-10/final-evolution.md), [Rampage — 24-point row](https://github.com/SteelCompendium/data-unified/blob/fb83a789da8f0327a389c277a0c790b1648d5810/en/unified/md/feature/beastheart/level-1/rampage.md)                                                                                                                                                                                        |
+| Variable pools and mixed additions                                | [To the Uttermost End — Spend](https://github.com/SteelCompendium/data-unified/blob/fb83a789da8f0327a389c277a0c790b1648d5810/en/books/heroes/md/feature/ability/fury/level-1/to-the-uttermost-end.md), [Ancient Loremaster — Rare Books](https://github.com/SteelCompendium/data-unified/blob/fb83a789da8f0327a389c277a0c790b1648d5810/en/books/heroes/md/title/ancient-loremaster.md)                                                                                                                                                            |
 
 Keep Draw Steel interpretation in a separate preset. A project roll or opposed total must not silently
 inherit a tiered power roll's double Edge/Bane behavior. A high natural power roll must not grant a
@@ -184,15 +186,15 @@ from the implementation. Unresolved mechanics remain explicit/manual.
 Use one repository with separately importable entry points; package publication names can be decided
 when packaging. Consumers should not download React/Three merely to use dice math.
 
-| Module | Owns | Boundary |
-| --- | --- | --- |
-| `powerroller/dice` | Dice/result types, validation, generation primitives and generic operations | No browser globals, React, rendering or Salient/Convex schema. A `dice.ts` source entry provides this functionality. |
-| `powerroller/draw-steel` | Cited rules presets and semantic result interpretation | Explicit inputs; no character sheets, combat side effects or content database. |
-| `powerroller/client` | Instance controller, event subscription, transport and result lifecycle | Receives dependencies; does not create a global room or mutate browser history on import. |
-| `powerroller/three` | Models, cosmetic solver/worker, tray and preview | Optional; accepts authoritative results and emits presentation status. |
-| React bindings / accessible HTML | Current controls, result views, dialogs and announcer adapter | Scoped styles and reusable components; hosts can supply their own UI. |
-| Packaged Convex component | Rooms, membership, accepted rolls, request receipts, presentation records, expiry | Own tables and API; host wrappers supply auth/access policy. |
-| `apps/site` | Community page, branding, default name data, browser persistence and Pages build | Consumes the public package APIs; owns site preferences and routing. |
+| Module                           | Owns                                                                              | Boundary                                                                                                             |
+| -------------------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `powerroller/dice`               | Dice/result types, validation, generation primitives and generic operations       | No browser globals, React, rendering or Salient/Convex schema. A `dice.ts` source entry provides this functionality. |
+| `powerroller/draw-steel`         | Cited rules presets and semantic result interpretation                            | Explicit inputs; no character sheets, combat side effects or content database.                                       |
+| `powerroller/client`             | Instance controller, event subscription, transport and result lifecycle           | Receives dependencies; does not create a global room or mutate browser history on import.                            |
+| `powerroller/three`              | Models, cosmetic solver/worker, tray and preview                                  | Optional; accepts authoritative results and emits presentation status.                                               |
+| React bindings / accessible HTML | Current controls, result views, dialogs and announcer adapter                     | Scoped styles and reusable components; hosts can supply their own UI.                                                |
+| Packaged Convex component        | Rooms, membership, accepted rolls, request receipts, presentation records, expiry | Own tables and API; host wrappers supply auth/access policy.                                                         |
+| `apps/site`                      | Community page, branding, default name data, browser persistence and Pages build  | Consumes the public package APIs; owns site preferences and routing.                                                 |
 
 For Convex, package isolated tables/functions rather than copying all of Salient's `convex/` folder.
 Consumers mount the component and expose host-owned wrappers. Parent app identifiers cross the
@@ -294,7 +296,7 @@ const accepted = await roller.roll({
 });
 
 // Independently observe semantic availability; the UI need not mount a tray.
-const unsubscribe = roller.on("result.available", result => {
+const unsubscribe = roller.on("result.available", (result) => {
   hostLog.append(result);
 });
 
@@ -325,16 +327,16 @@ preference, not a prerequisite for screen-reader access or successful rolling.
 Native controls, named modal dialogs, labelled icon buttons, HTML results, textual Edge/Bane labels
 and OS reduced-motion handling already exist. Preserve them.
 
-| Finding at the baseline | Planned response |
-| --- | --- |
-| The log is populated by reveal callbacks. | Move semantic delivery to the controller's availability event. |
-| Live status contains only name and total. | Include result meaning, with a detailed accessible explanation in the persistent log. |
-| The newest-entry live region may miss identical or concurrent announcements. | Deduplicate by roll identity, deliver distinct events through an announcement adapter and test actual assistive technology. |
-| OS motion preference works, but there is no explicit control. | Add a dedicated local motion preference applied before graphics start. |
+| Finding at the baseline                                                                 | Planned response                                                                                                                                                                        |
+| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The log is populated by reveal callbacks.                                               | Move semantic delivery to the controller's availability event.                                                                                                                          |
+| Live status contains only name and total.                                               | Include result meaning, with a detailed accessible explanation in the persistent log.                                                                                                   |
+| The newest-entry live region may miss identical or concurrent announcements.            | Deduplicate by roll identity, deliver distinct events through an announcement adapter and test actual assistive technology.                                                             |
+| OS motion preference works, but there is no explicit control.                           | Add a dedicated local motion preference applied before graphics start.                                                                                                                  |
 | The 10px timestamp at 50% opacity computes to about 3.16:1 against the page background. | Record the normal-theme contrast debt; make high-contrast timestamps readable. Any normal-theme visual correction should be narrowly reviewed rather than treated as redesign approval. |
-| Fixed viewport height and hidden outer overflow may clip enlarged content. | Verify reflow and allow needed scrolling at enlarged/short viewport sizes while preserving ordinary layout. |
-| Some controls are 36–40px; preview wheel/drag captures scrolling. | Verify usable hit areas and spacing. Essential actions remain operable without gestures; do not silently redesign default controls. |
-| Connection/expiry status and disappearing/disabled controls need review. | Announce meaningful state changes and preserve sensible focus without moving focus to new results. |
+| Fixed viewport height and hidden outer overflow may clip enlarged content.              | Verify reflow and allow needed scrolling at enlarged/short viewport sizes while preserving ordinary layout.                                                                             |
+| Some controls are 36–40px; preview wheel/drag captures scrolling.                       | Verify usable hit areas and spacing. Essential actions remain operable without gestures; do not silently redesign default controls.                                                     |
+| Connection/expiry status and disappearing/disabled controls need review.                | Announce meaningful state changes and preserve sensible focus without moving focus to new results.                                                                                      |
 
 The timestamp figure is a calculation from CSS, not a rendered conformance test. Small type alone
 does not prove a WCAG failure. Clipping, focus behavior and screen-reader delivery need browser and
@@ -404,13 +406,13 @@ The site consumes public package exports, with no privileged imports of library 
 branding, default names, site navigation, sharing links and the browser cache. It uses the current
 UI as its baseline and introduces only the necessary standalone/accessibility controls.
 
-| Data | Recommended site-owned storage/behavior |
-| --- | --- |
-| Username and selected dice customization | Versioned `localStorage` preferences. |
-| Motion, display and optional contrast/announcement choices | Same preference module; restore before presentation begins. |
-| Current table | Saved locally; an explicit invite URL takes precedence. Validate that the table still exists and is joinable. |
-| Observed roll history | IndexedDB, partitioned by backend/table and deduplicated by roll ID. Store compact accepted results and attribution, not trajectories. |
-| Active browser session | Session-scoped identity/credential handling so separate tabs do not accidentally impersonate one another. Shared preferences are distinct from live session identity. |
+| Data                                                       | Recommended site-owned storage/behavior                                                                                                                               |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Username and selected dice customization                   | Versioned `localStorage` preferences.                                                                                                                                 |
+| Motion, display and optional contrast/announcement choices | Same preference module; restore before presentation begins.                                                                                                           |
+| Current table                                              | Saved locally; an explicit invite URL takes precedence. Validate that the table still exists and is joinable.                                                         |
+| Observed roll history                                      | IndexedDB, partitioned by backend/table and deduplicated by roll ID. Store compact accepted results and attribution, not trajectories.                                |
+| Active browser session                                     | Session-scoped identity/credential handling so separate tabs do not accidentally impersonate one another. Shared preferences are distinct from live session identity. |
 
 Use bounded retention and versioned records, handle malformed/stale data, provide reset/export where
 useful, and fall back to memory if storage is unavailable. Local history contains what that browser
@@ -460,13 +462,13 @@ visual improvements can be ported deliberately without treating this plan as per
 The user intends MIT for Powerroller-owned code. Salient currently declares `GPL-3.0-only`;
 confirm ownership/relicensing authority for extracted source and inventory copied code, dependencies,
 font assets and their notices before assigning the new license. Ownership clarification is recorded
-in [Q-V273-1](rules-questions-for-user.md#q-v273-1--powerroller-relicensing-authority-resolved-2026-10-01).
+in [Q-V273-1](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/docs/rules-questions-for-user.md#q-v273-1--powerroller-relicensing-authority-resolved-2026-10-01).
 Copyright holders can offer their code under another license; a recipient cannot simply remove
 other holders' GPL obligations. See the [GNU licensing FAQ](https://www.gnu.org/licenses/gpl-faq.html#ReleaseUnderGPLAndNF).
 Resolve incompatible inherited code through permission, exclusion or a suitable replacement.
 Do not blanket-relabel third-party fonts or dependencies as MIT. This planning update changes no
 existing license file. The user reported uncertainty about ownership and requested an audit.
-The [source provenance audit](research/powerroller-license-audit.md) inspected baseline `9adc4753`,
+The [source provenance audit](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/docs/research/powerroller-license-audit.md) inspected baseline `9adc4753`,
 including V272: dependencies are permissively licensed, four OFL fonts and notices match upstream,
 and no declared external GPL roller implementation was identified. The user subsequently confirmed
 ownership of all roller code, resolving Q-V273-1. Original demo notes explicitly record no copied
@@ -488,14 +490,14 @@ implementations and arbitrary procedural 3D model generation are not prerequisit
 These are proposed Powerroller phases, not allocated Salient build slices. Each phase should produce
 usable behavior and focused evidence; subsequent work must distinguish implementation from proof.
 
-| Phase | Deliverable | Acceptance evidence |
-| --- | --- | --- |
-| P1: extract the baseline | Repository, explicit package boundaries and example site preserving existing 2d10 UI. Remove catalog/Salient deployment dependencies. | Clean checkout builds without Salient or reference corpora; separate consumer imports public exports; default UI comparison retains accepted layout. |
-| P2: separate authority and presentation | Stable requests/accepted records, supplied-result path, independent availability events, guest/host identity policies. | Headless API request followed by persisted readback; retry, changed-input rejection and clear/reconnect behavior; rolling succeeds with no renderer/physics. |
-| P3: general dice and presets | Mixed groups, modifiers, keep/drop, percentile semantics, cited Draw Steel modes, animated models for every advertised launch die and versioned presentation. | Source-derived rules cases; result/presentation agreement; all launch dice animate; graphics failure and non-stock models preserve usable text; bounded requests and payloads. |
-| P4: accessibility and reusable UI | Complete summaries, reliable announcements, local motion control, optional high contrast and scoped styling. | Keyboard and actual screen-reader journeys; repeated/concurrent results; no lost focus; enlarged/reflow and no-WebGL operation; default appearance retained. |
-| P5: site cache and Pages build | Site-owned preference/history module, reload reconciliation, standalone branding and hosting configuration. | Saved name/style/table/preferences survive reload; history deduplicates; expired table recovery; blocked/quota-limited storage fallback; correct project/custom-domain paths. |
-| P6: independent deployment and release | User-created repository, dedicated Convex target in the user's account and standard Pages publication; README setup/adaptation guide and integration examples. npm publication deferred. | Fresh checkout and separate consumer use public exports and own component without copying internals; non-React example uses controller and imperative tray; two clients observe the same persisted result around shared resolution; package contents/dependency boundary and license provenance checked; publication commands recorded. |
+| Phase                                   | Deliverable                                                                                                                                                                              | Acceptance evidence                                                                                                                                                                                                                                                                                                                     |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P1: extract the baseline                | Repository, explicit package boundaries and example site preserving existing 2d10 UI. Remove catalog/Salient deployment dependencies.                                                    | Clean checkout builds without Salient or reference corpora; separate consumer imports public exports; default UI comparison retains accepted layout.                                                                                                                                                                                    |
+| P2: separate authority and presentation | Stable requests/accepted records, supplied-result path, independent availability events, guest/host identity policies.                                                                   | Headless API request followed by persisted readback; retry, changed-input rejection and clear/reconnect behavior; rolling succeeds with no renderer/physics.                                                                                                                                                                            |
+| P3: general dice and presets            | Mixed groups, modifiers, keep/drop, percentile semantics, cited Draw Steel modes, animated models for every advertised launch die and versioned presentation.                            | Source-derived rules cases; result/presentation agreement; all launch dice animate; graphics failure and non-stock models preserve usable text; bounded requests and payloads.                                                                                                                                                          |
+| P4: accessibility and reusable UI       | Complete summaries, reliable announcements, local motion control, optional high contrast and scoped styling.                                                                             | Keyboard and actual screen-reader journeys; repeated/concurrent results; no lost focus; enlarged/reflow and no-WebGL operation; default appearance retained.                                                                                                                                                                            |
+| P5: site cache and Pages build          | Site-owned preference/history module, reload reconciliation, standalone branding and hosting configuration.                                                                              | Saved name/style/table/preferences survive reload; history deduplicates; expired table recovery; blocked/quota-limited storage fallback; correct project/custom-domain paths.                                                                                                                                                           |
+| P6: independent deployment and release  | User-created repository, dedicated Convex target in the user's account and standard Pages publication; README setup/adaptation guide and integration examples. npm publication deferred. | Fresh checkout and separate consumer use public exports and own component without copying internals; non-React example uses controller and imperative tray; two clients observe the same persisted result around shared resolution; package contents/dependency boundary and license provenance checked; publication commands recorded. |
 
 Apply accessibility event boundaries during P2, not as a retrofit in P4. Keep the current UI usable
 through every phase. The first extraction can retain 2d10 while the generic model is developed;
@@ -528,7 +530,7 @@ simultaneous rolls. Automated accessibility checks and DOM assertions supplement
 cannot establish spoken delivery or practical usability. Rendering/motion/performance claims need
 appropriate device evidence. No conformance or cross-device synchronization guarantee is assumed.
 
-While work remains in Salient, use [the testing process](../testing-process.md): implementers run
+While work remains in Salient, use [the testing process](https://github.com/illos/salient/blob/23cf9035b6e55d3e2e3a8198cba8c2320e7d205b/testing-process.md): implementers run
 authoring checks, the assigned coordinator runs broader jobs, and QC reviews the candidate. Focused
 standalone browser checks are distinct from the table-testing moratorium. Reuse accepted tests for
 publication; do not add deployment smoke runs solely because the environment changed. Establish an

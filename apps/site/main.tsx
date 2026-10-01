@@ -35,6 +35,7 @@ function Site() {
   useEffect(() => {
     if (!backend) return;
     let disposed = false;
+    let historyEpoch = 0;
     const requested =
       new URLSearchParams(location.search).get("room") ??
       prefRef.current.roomId;
@@ -45,35 +46,78 @@ function Site() {
       update({ ...prefRef.current, roomId: s.roomId });
       const url = new URL(location.href);
       url.searchParams.set("room", s.roomId);
-      historyFor(backend, s.roomId).then(setHistory);
+      const epoch = ++historyEpoch;
+      setHistory([]);
+      historyFor(backend, s.roomId).then((records) => {
+        if (!disposed && epoch === historyEpoch) setHistory(records);
+      });
       window.history.replaceState(null, "", url);
     };
-    const instance = createRoller({
-      transport: convexTransport(backend),
-      session: saved,
-      onSession,
+    let instance: ReturnType<typeof createRoller> | undefined;
+    let owned: Session | undefined;
+    const nonce = crypto.randomUUID();
+    const channel =
+      typeof BroadcastChannel === "function"
+        ? new BroadcastChannel("powerroller.active-sessions.v1")
+        : undefined;
+    let occupied = false;
+    channel?.addEventListener("message", (event) => {
+      const message = event.data;
+      if (
+        message?.type === "probe" &&
+        owned &&
+        message.roomId === owned.roomId &&
+        message.memberId === owned.memberId &&
+        message.nonce !== nonce
+      )
+        channel.postMessage({ type: "occupied", nonce: message.nonce });
+      if (message?.type === "occupied" && message.nonce === nonce)
+        occupied = true;
     });
-    setRoller(instance);
+    const sessionCallback = (session: Session) => {
+      owned = session;
+      onSession(session);
+    };
     const boot = async () => {
       try {
-        if (saved) {
+        if (saved && channel) {
+          channel.postMessage({
+            type: "probe",
+            roomId: saved.roomId,
+            memberId: saved.memberId,
+            nonce,
+          });
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        }
+        if (disposed) return;
+        const reusable = saved && !occupied ? saved : undefined;
+        instance = createRoller({
+          transport: convexTransport(backend),
+          session: reusable,
+          onSession: sessionCallback,
+        });
+        setRoller(instance);
+        if (reusable) {
+          owned = reusable;
           await instance.resume();
-          onSession(saved);
+          sessionCallback(reusable);
         } else
           await instance.join(requested, {
             name: prefRef.current.name,
             appearance: prefRef.current.appearance,
           });
       } catch (e) {
-        setError(
-          `${(e as Error).message} Start a new table if the saved one has expired.`,
-        );
+        if (!disposed)
+          setError(
+            `${(e as Error).message} Start a new table if the saved one has expired.`,
+          );
       }
     };
     void boot();
     return () => {
       disposed = true;
-      void instance.dispose();
+      channel?.close();
+      void instance?.dispose();
     };
   }, []);
   if (!backend)

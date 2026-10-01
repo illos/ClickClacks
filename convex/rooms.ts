@@ -1,5 +1,5 @@
 import { action, mutation, query } from "./_generated/server.js";
-import { components } from "./_generated/api.js";
+import { components, internal } from "./_generated/api.js";
 import {
   accepted,
   appearance,
@@ -76,7 +76,7 @@ export const events = query({
 export const roll = action({
   args: { ...sessionArgs, request },
   returns: accepted,
-  handler: (ctx, args) => ctx.runAction(backend.rolls.roll, args),
+  handler: (ctx, args) => ctx.runAction(internal.sampling.roll, args),
 });
 export const clear = mutation({
   args: sessionArgs,

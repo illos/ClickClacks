@@ -112,11 +112,19 @@ describe("isolated collaborative component through community app wrappers", () =
       credential,
     });
     const args = { roomId: room.id, credential };
-    await t.action(componentApi.rolls.roll, { ...args, request });
+    await t.mutation(componentApi.rooms.acceptGenerated, {
+      ...args,
+      request,
+      values: [7, 8],
+    });
     vi.advanceTimersByTime(3_600_001);
     await t.mutation(componentInternal.cleanup.expired, {});
     await expect(
-      t.action(componentApi.rolls.roll, { ...args, request }),
+      t.mutation(componentApi.rooms.acceptGenerated, {
+        ...args,
+        request,
+        values: [7, 8],
+      }),
     ).rejects.toThrow("REQUEST_EXPIRED");
     const receipts = await t.run((ctx) =>
       ctx.db
@@ -140,7 +148,11 @@ describe("isolated collaborative component through community app wrappers", () =
       ),
     ).toHaveLength(0);
     await expect(
-      t.action(componentApi.rolls.roll, { ...args, request }),
+      t.mutation(componentApi.rooms.acceptGenerated, {
+        ...args,
+        request,
+        values: [7, 8],
+      }),
     ).rejects.toThrow("ROOM_EXPIRED");
   });
   it("public member ID grants no access, credentials are room-scoped and clear affects only its caller", async () => {
@@ -193,7 +205,11 @@ describe("isolated collaborative component through community app wrappers", () =
       credential,
     });
     const args = { roomId: room.id, credential };
-    const roll = await t.action(componentApi.rolls.roll, { ...args, request });
+    const roll = await t.mutation(componentApi.rooms.acceptGenerated, {
+      ...args,
+      request,
+      values: [7, 8],
+    });
     await t.mutation(componentApi.rooms.join, {
       roomId: room.id,
       name: "Other",
@@ -227,8 +243,9 @@ describe("isolated collaborative component through community app wrappers", () =
       t.mutation(componentApi.rooms.heartbeat, args),
     ).rejects.toThrow("ROOM_FULL");
     await expect(
-      t.action(componentApi.rolls.roll, {
+      t.mutation(componentApi.rooms.acceptGenerated, {
         ...args,
+        values: [7, 8],
         request: { ...request, requestId: "fresh" },
       }),
     ).rejects.toThrow("ROOM_FULL");
@@ -300,6 +317,45 @@ describe("isolated collaborative component through community app wrappers", () =
         policy: { capacity: 33 },
       }),
     ).rejects.toThrow("INVALID_POLICY");
+  });
+  it("invalid logical requests return structured actionable errors and do not persist rolls", async () => {
+    clock();
+    const t = setup();
+    const { room } = await t.mutation(api.rooms.create, {
+      name: "Errors",
+      credential,
+    });
+    const args = { roomId: room.id, credential };
+    await expect(
+      t.action(api.rooms.roll, {
+        ...args,
+        request: { ...request, dice: [{ sides: 1, count: 2 }] },
+      }),
+    ).rejects.toThrow("INVALID_REQUEST");
+    const state = await t.query(api.rooms.view, args);
+    expect(state.cursor).toBe(0);
+    expect(state.latest).toEqual([]);
+    const component = convexTest(componentSchema, componentModules);
+    const joined = await component.mutation(componentApi.rooms.create, {
+      name: "Supplied",
+      credential,
+    });
+    await expect(
+      component.mutation(componentApi.rooms.acceptSupplied, {
+        roomId: joined.room.id,
+        credential,
+        request,
+        values: [0, 11],
+      }),
+    ).rejects.toThrow("INVALID_REQUEST");
+    expect(
+      (
+        await component.query(componentApi.rooms.view, {
+          roomId: joined.room.id,
+          credential,
+        })
+      ).cursor,
+    ).toBe(0);
   });
   it("trusted supplied path is labelled and presentation must match persisted acceptance", async () => {
     clock();

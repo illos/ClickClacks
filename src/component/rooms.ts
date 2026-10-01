@@ -2,8 +2,6 @@ import { ConvexError, v, type Infer } from "convex/values";
 import {
   mutation,
   query,
-  internalMutation,
-  internalQuery,
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server.js";
@@ -20,6 +18,7 @@ import {
   roomPolicy,
 } from "./validators.js";
 import { resolveRoll, validateRequest, type RollRequest } from "../dice.js";
+import { validateInput } from "./errors.js";
 import type { Doc } from "./_generated/dataModel.js";
 const HOUR = 3_600_000;
 const DEFAULT_POLICY: Infer<typeof roomPolicy> = {
@@ -402,7 +401,7 @@ function fingerprint(
   source: "generated" | "supplied",
   values?: number[],
 ) {
-  validateRequest(input);
+  validateInput(() => validateRequest(input));
   const serialized = canonical({
     input,
     source,
@@ -447,7 +446,7 @@ async function lookup(
   }
   return { room, member, print, receipt };
 }
-export const receipt = internalQuery({
+export const receipt = query({
   args: { ...sessionArgs, request },
   returns: v.union(accepted, v.null()),
   handler: async (ctx, args) =>
@@ -476,7 +475,7 @@ async function accept(
       "ROOM_LIMIT",
       "This room reached its event limit. Create another room.",
     );
-  const result = resolveRoll(args.request, args.values);
+  const result = validateInput(() => resolveRoll(args.request, args.values));
   const now = Date.now(),
     sequence = room.sequence + 1;
   const id = await ctx.db.insert("rolls", {
@@ -517,7 +516,7 @@ async function accept(
   });
   return roll;
 }
-export const acceptGenerated = internalMutation({
+export const acceptGenerated = mutation({
   args: { ...sessionArgs, request, values: v.array(v.number()) },
   returns: accepted,
   handler: (ctx, args) => accept(ctx, { ...args, source: "generated" }),

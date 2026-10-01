@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useId } from "react";
+import { createPortal } from "react-dom";
 import { Users, Eraser, Settings, X, Copy } from "lucide-react";
 import type { AcceptedRoll, Appearance, Roller, RoomView } from "./client";
 import {
@@ -112,6 +113,10 @@ function DicePreview({
 }
 export function Powerroller(props: RollerProps) {
   const { roller, profile, preferences } = props;
+  const id = useId();
+  const [activeMenu, setActiveMenu] = useState<
+    "social" | "settings" | undefined
+  >(undefined);
   const [room, setRoom] = useState<RoomView>(),
     [status, setStatus] = useState("Connecting…"),
     [error, setError] = useState(""),
@@ -156,7 +161,15 @@ export function Powerroller(props: RollerProps) {
     return () => m.removeEventListener("change", update);
   }, []);
   useEffect(() => {
-    setLog(props.history ?? []);
+    setLog((old) =>
+      [
+        ...new Map(
+          [...(props.history ?? []), ...old].map((r) => [r.id, r]),
+        ).values(),
+      ]
+        .sort((a, b) => a.sequence - b.sequence)
+        .slice(-1000),
+    );
   }, [props.history]);
   function announce(text: string) {
     queue.current.push(text);
@@ -345,14 +358,20 @@ export function Powerroller(props: RollerProps) {
           <button
             className="customize-trigger"
             aria-label="Customize dice"
-            onClick={() => settings.current?.showModal()}
+            onClick={() => {
+              settings.current?.showModal();
+              setActiveMenu("settings");
+            }}
           >
             <Settings aria-hidden />
           </button>
           <button
             className="customize-trigger"
             aria-label="Open social menu"
-            onClick={() => social.current?.showModal()}
+            onClick={() => {
+              social.current?.showModal();
+              setActiveMenu("social");
+            }}
           >
             <Users aria-hidden />
           </button>
@@ -495,26 +514,38 @@ export function Powerroller(props: RollerProps) {
           <p className="empty-log">Throw dice to start the log.</p>
         )}
       </section>
-      <span
-        className="visually-hidden"
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        {announcement}
-      </span>
-      {error && (
-        <p className="error" role="alert">
-          {error}
-        </p>
+      {createPortal(
+        <>
+          <span
+            className="visually-hidden"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {announcement}
+          </span>
+          {error && (
+            <p className="error" role="alert">
+              {error}
+            </p>
+          )}
+        </>,
+        (activeMenu === "social"
+          ? social.current
+          : activeMenu === "settings"
+            ? settings.current
+            : null) ??
+          host.current?.closest("main") ??
+          document.body,
       )}
       <dialog
         ref={social}
+        onClose={() => setActiveMenu(undefined)}
         className="dice-customization social-dialog"
-        aria-labelledby="social-title"
+        aria-labelledby={`${id}-social-title`}
       >
         <header>
-          <h2 id="social-title">Your table</h2>
+          <h2 id={`${id}-social-title`}>Your table</h2>
           <button
             aria-label="Close social menu"
             onClick={() => social.current?.close()}
@@ -597,11 +628,12 @@ export function Powerroller(props: RollerProps) {
       </dialog>
       <dialog
         ref={settings}
+        onClose={() => setActiveMenu(undefined)}
         className="dice-customization profile-dialog"
-        aria-labelledby="settings-title"
+        aria-labelledby={`${id}-settings-title`}
       >
         <header>
-          <h2 id="settings-title">Dice & preferences</h2>
+          <h2 id={`${id}-settings-title`}>Dice & preferences</h2>
           <button
             aria-label="Close customization"
             onClick={() => settings.current?.close()}
@@ -640,10 +672,10 @@ export function Powerroller(props: RollerProps) {
             <input
               value={expression}
               onChange={(e) => setExpression(e.target.value)}
-              aria-describedby="dice-help"
+              aria-describedby={`${id}-dice-help`}
             />
           </label>
-          <p id="dice-help">Use pools such as 2d10 + 3d6.</p>
+          <p id={`${id}-dice-help`}>Use pools such as 2d10 + 3d6.</p>
           {mode !== "percentile" && (
             <>
               <label>

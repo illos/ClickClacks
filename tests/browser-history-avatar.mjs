@@ -31,7 +31,7 @@ try {
   await owner.getByRole('slider',{name:'Number color lightness',exact:true}).fill('100');
   await expect(avatar(owner).locator('text')).toHaveAttribute('fill','#ffffff');
   await expect(avatar(peer).locator('text')).toHaveAttribute('fill','#ffffff',{timeout:10000});
-  await owner.getByRole('combobox',{name:'Font style',exact:true}).selectOption('gothic');
+  await owner.getByRole('group',{name:'Font style',exact:true}).getByRole('button',{name:'Gothic',exact:true}).click();
   await expect(avatar(owner).locator('text')).toHaveCSS('font-family','"Dice New Rocker"');
   await expect(avatar(peer).locator('text')).toHaveCSS('font-family','"Dice New Rocker"',{timeout:10000});
   await owner.getByRole('button',{name:'Close customization',exact:true}).click();

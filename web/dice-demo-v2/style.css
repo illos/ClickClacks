@@ -168,6 +168,11 @@
   padding: 20px;
 }
 :is(.profile-dialog, .social-dialog) header {
+  position: sticky;
+  top: -20px;
+  z-index: 3;
+  padding: 12px 0;
+  background: #1b2223;
   gap: 12px;
   margin-bottom: 20px;
 }
@@ -652,6 +657,36 @@
 }
 .preview-canvas:active {
   cursor: grabbing;
+}
+.design-options-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: #a9b2b4;
+}
+.design-swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.design-swatch-grid button {
+  min-width: 0;
+  padding: 6px;
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  text-align: center;
+}
+.design-swatch-grid button[aria-pressed='true'] {
+  border-color: #aeb8b8;
+  background: #354043;
+}
+.dice-customization .design-swatch-grid :is(canvas, svg) {
+  display: block;
+  width: 100%;
+  height: 54px;
+  border-radius: 6px;
+  object-fit: cover;
 }
 .inline-colors {
   min-width: 0;

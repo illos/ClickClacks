@@ -155,3 +155,14 @@ This updates avatar color, ink and font immediately without altering roll
 receipts or results. A focused two-viewer Chromium journey passed: an existing
 entry updates in settings and on the peer, retains its result, and shows the
 current design after reloading cached history. Typecheck and build passed.
+
+## Design swatches and menu close controls
+
+Pattern and font dropdowns are replaced by selectable swatches. Pattern samples
+reuse the unchanged original procedural decoration painter, with current dice
+and ink colors. Font samples render SVG “01” with the existing fonts and colors;
+fonts load when customization opens, including with hidden 3D. Both menu headers
+stay visible while scrolling so their close buttons remain reachable.
+Focused Chromium checks passed at 430×932, 390×844 and 320×225 for all selections,
+live pattern colors, distinct samples, loaded fonts and close-button reachability.
+The existing two-viewer history-avatar check also passed. Typecheck/build passed.

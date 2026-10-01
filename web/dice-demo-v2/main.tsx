@@ -45,6 +45,7 @@ import type { createRoomTray } from './renderer';
 import type { createDicePreview } from './preview';
 import { AccessibilityControls } from './accessibility-controls';
 import { ColorControls } from './color-controls';
+import { DesignSwatches } from './design-swatches';
 import { startClockSync } from './clock-sync';
 export type PowerRollerOptions = {
   client: ConvexReactClient;
@@ -1327,35 +1328,7 @@ function DiceRoom() {
         )}
         <fieldset disabled={busy} className="profile-fields">
           <ColorControls disabled={busy} color={profile.style.color} ink={profile.style.ink} onChange={edit} />
-          <label className="full-field">
-            Pattern
-            <select
-              value={profile.style.pattern}
-              onChange={e => edit({ pattern: e.target.value as Style['pattern'] })}
-            >
-              <option value="solid">Solid</option>
-              <option value="speckle">Speckle</option>
-              <option value="marble">Marble</option>
-              <option value="frosted">Frosted</option>
-            </select>
-          </label>
-          <label className="full-field">
-            Font style
-            <select
-              value={profile.style.font ?? 'legacy'}
-              onChange={e => edit({ font: e.target.value as Style['font'] })}
-            >
-              {!profile.style.font && (
-                <option value="legacy" disabled>
-                  Original · Georgia
-                </option>
-              )}
-              <option value="serif">Serif</option>
-              <option value="modern">Modern</option>
-              <option value="rune">Rune</option>
-              <option value="gothic">Gothic</option>
-            </select>
-          </label>
+          <DesignSwatches active={customizing} style={profile.style} onChange={edit} />
         </fieldset>
         <AccessibilityControls preferences={preferences} onChange={changePreferences} />
         {customizing && error && (

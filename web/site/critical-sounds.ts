@@ -3,7 +3,7 @@ import { createRoomTray } from '../dice-demo-v2/renderer';
 import { createThrowPlanner } from '../dice-demo/prepare-throw';
 import { loadDiceFonts } from '../dice-demo/fonts';
 import { createDiceSound } from '../dice-demo-v2/dice-sound';
-import { cinematicCriticalCue } from './cinematic-critical-cue';
+import { loadRecordedCriticalCue } from './recorded-critical-cue';
 import { criticalLabel, criticalResult } from '../../lib/critical';
 import { loadProfile } from './storage';
 import type { ParticipantRoll } from '../dice-demo-v2/model';
@@ -22,7 +22,8 @@ const volumeValue = document.querySelector<HTMLOutputElement>('#demo-volume-valu
 const style = loadProfile()?.style ?? { color: '#70dac3', ink: '#111415', pattern: 'solid', font: 'serif' };
 const dice = { kind: 'power', sides: 10, count: 2 } as const;
 const planner = createThrowPlanner();
-const audio = createDiceSound(cinematicCriticalCue);
+let recordedCue: Awaited<ReturnType<typeof loadRecordedCriticalCue>>;
+const audio = createDiceSound((sampleRate, result) => recordedCue(sampleRate, result));
 let tray: ReturnType<typeof createRoomTray> | undefined;
 let mode: Mode = 'alternate', alternateSuccess = true, soundEnabled = true;
 let ready = false, preparing = false, unavailableUntil = 0, disposed = false;
@@ -83,7 +84,10 @@ rollButton.addEventListener('click', async () => {
   }
 });
 
-void Promise.all([loadDiceFonts(), planner.warmThrows({ scale: .65, obstacles: [], dice })]).then(() => {
+void Promise.all([
+  loadDiceFonts(), planner.warmThrows({ scale: .65, obstacles: [], dice }),
+  loadRecordedCriticalCue().then(cue => { recordedCue = cue; }),
+]).then(() => {
   if (disposed) return;
   tray = createRoomTray(host, () => {
     ready = false; updateRollButton(); status.textContent = 'The dice tray needs a reload.';

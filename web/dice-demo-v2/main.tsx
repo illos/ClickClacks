@@ -502,9 +502,18 @@ function DiceRoom() {
     profileRef.current = profile;
   }, [profile]);
   useEffect(() => {
-    if (options.profile && JSON.stringify(options.profile) !== JSON.stringify(profileRef.current))
+    if (options.profile && JSON.stringify(options.profile) !== JSON.stringify(profileRef.current)) {
+      profileRef.current = options.profile;
       setProfile(options.profile);
+    }
   }, [options.profile]);
+  // Notify the host only for local intent. Receiving a host/storage/PiP snapshot
+  // must never save it again: queued snapshots can otherwise circulate forever.
+  function changeProfile(next: Profile) {
+    profileRef.current = next;
+    setProfile(next);
+    options.onProfile?.(next);
+  }
   const connection = useConvexConnectionState();
   const [presenceError, setPresenceError] = useState('');
   const selectedDice = preferences.selectedDice ?? 'power';
@@ -653,19 +662,20 @@ function DiceRoom() {
         if (options.nameProvider && (typeof name !== 'string' || !name.trim() || name.length > 32)) throw new Error('Name provider must return 1–32 characters; using Player.');
         if (cancelled) return;
         setInitial(old => ({ ...old, name }));
-        setProfile(old => ({ ...old, name: old.name === 'Player' ? name : old.name }));
+        const current = profileRef.current;
+        changeProfile({ ...current, name: current.name === 'Player' ? name : current.name });
         setNameReady(true);
       })
       .catch(e => {
-        if (!cancelled) { setError(displayError(e, credential)); if (options.nameProvider) setNameReady(true); }
+        if (!cancelled) {
+          setError(displayError(e, credential));
+          if (options.nameProvider) { changeProfile(profileRef.current); setNameReady(true); }
+        }
       });
     return () => {
       cancelled = true;
     };
   }, [chooseName, nameReady]);
-  useEffect(() => {
-    if (nameReady) options.onProfile?.(profile);
-  }, [profile, nameReady]);
   useEffect(() => {
     if (!room?.code) return;
     options.onRoom?.(room.code);
@@ -1080,7 +1090,8 @@ function DiceRoom() {
     retryThrow.current = null;
   }, [diceConfig, edges, banes]);
   function edit(patch: Partial<Style>) {
-    setProfile(old => ({ ...old, style: { ...old.style, ...patch } }));
+    const current = profileRef.current;
+    changeProfile({ ...current, style: { ...current.style, ...patch } });
   }
   return (
     <main onPointerDown={unlockSound} onPointerUp={unlockSound} onKeyDown={unlockSound} className={`lab v2${preferences.highContrast ? ' high-contrast' : ''}`}>
@@ -1456,7 +1467,7 @@ function DiceRoom() {
             maxLength={32}
             value={profile.name}
             disabled={busy}
-            onChange={e => setProfile(old => ({ ...old, name: e.target.value }))}
+            onChange={e => changeProfile({ ...profileRef.current, name: e.target.value })}
           />
         </label>
         {socializing && error && (

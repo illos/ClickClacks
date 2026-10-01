@@ -5,8 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#111415" />
     <title>Power Roller tray</title>
+    <style>
+      body { margin: 0; background: #111415; color: #e8e5df; font-family: system-ui, sans-serif; }
+      #boot-message { padding: 24px; font-size: 14px; }
+      #boot-message[hidden] { display: none; }
+    </style>
   </head>
   <body class="mini-tray">
+    <p id="boot-message" role="status">Loading dice tray…</p>
     <div id="root"></div>
     <script type="module" src="/web/popout-demo/tray.ts"></script>
   </body>

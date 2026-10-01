@@ -88,7 +88,17 @@ try {
   await unsupported.goto(page.url());
   await expect(unsupported.getByRole('button', { name: 'Pop out tray' })).toBeDisabled();
   await expect(unsupported.locator('#status')).toContainText('unavailable');
-  console.log('PASS: real Document PiP; tray/controls only; picker/count; animated 2d6 with persisted readback; controls fit; close/reopen; unsupported message.');
+  const failedContext = await browser.newContext();
+  await failedContext.route(/(\/assets\/main-[^/]+\.js|\/web\/site\/main\.tsx)(?:\?|$)/,
+    route => route.abort('failed'));
+  const failedPage = await failedContext.newPage();
+  await failedPage.goto(page.url());
+  await failedPage.getByRole('button', { name: 'Pop out tray' }).click();
+  await expect(failedPage.locator('#status')).toContainText('could not load');
+  const failedMini = failedContext.pages().find(p => p !== failedPage);
+  await expect(failedMini.frameLocator('iframe').getByRole('alert')).toContainText('could not load');
+  await failedContext.close();
+  console.log('PASS: real Document PiP; tray/controls only; animated 2d6/readback; sizes; close/reopen; unsupported message; failed module shows error instead of blank tray.');
 } finally {
   await browser?.close();
   display?.kill();

@@ -35,8 +35,15 @@ async function openTray() {
     const frame = mini.document.createElement('iframe');
     frame.title = 'Dice tray and roll controls';
     frame.src = new URL('./tray.html', location.href).href;
+    mini.addEventListener('message', event => {
+      if (event.origin !== location.origin || event.source !== frame.contentWindow) return;
+      if (event.data?.type === 'powerroller-tray-ready')
+        status.textContent = 'Tray is open. Close its window to finish.';
+      if (event.data?.type === 'powerroller-tray-error')
+        status.textContent = 'The tray could not load. Close its window and try again.';
+    });
     mini.document.body.append(frame);
-    status.textContent = 'Tray is open. Close its window to finish.';
+    status.textContent = 'Loading tray in the PiP window…';
     button.textContent = 'Focus tray';
     mini.addEventListener('pagehide', () => {
       status.textContent = 'Tray closed. You can open it again.';

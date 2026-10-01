@@ -44,8 +44,7 @@ import {
 import type { createRoomTray } from './renderer';
 import type { createDicePreview } from './preview';
 import { AccessibilityControls } from './accessibility-controls';
-import { ColorControls } from './color-controls';
-import { DesignSwatches } from './design-swatches';
+import { DiceDesignControls } from './dice-design-controls';
 import { startClockSync } from './clock-sync';
 export type PowerRollerOptions = {
   client: ConvexReactClient;
@@ -1347,8 +1346,7 @@ function DiceRoom() {
           <p role="status">{fallback ? '3D font preview unavailable.' : 'Loading dice fonts…'}</p>
         )}
         <fieldset disabled={busy} className="profile-fields">
-          <ColorControls disabled={busy} color={profile.style.color} ink={profile.style.ink} onChange={edit} />
-          <DesignSwatches active={customizing} style={profile.style} onChange={edit} />
+          <DiceDesignControls disabled={busy} active={customizing} style={profile.style} onChange={edit} />
         </fieldset>
         <AccessibilityControls preferences={preferences} onChange={changePreferences} />
         {customizing && error && (

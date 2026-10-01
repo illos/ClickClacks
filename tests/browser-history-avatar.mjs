@@ -23,14 +23,15 @@ try {
   const avatar = page => page.locator('.roll-log-entry .roll-avatar');
   const original = await avatar(owner).locator('path').first().getAttribute('fill');
   await owner.getByRole('button',{name:'Customize dice',exact:true}).click();
-  await owner.getByRole('slider',{name:'Dice color lightness',exact:true}).fill('0');
+  await owner.getByRole('slider',{name:'Die color lightness',exact:true}).fill('0');
   await expect(avatar(owner).locator('path').first()).toHaveAttribute('fill','#000000');
   await expect(avatar(peer).locator('path').first()).toHaveAttribute('fill','#000000',{timeout:10000});
   expect(original).not.toBe('#000000');
-  await owner.getByRole('button',{name:'Numbers',exact:true}).click();
-  await owner.getByRole('slider',{name:'Number color lightness',exact:true}).fill('100');
+  await owner.getByRole('tab',{name:'Text color',exact:true}).click();
+  await owner.getByRole('slider',{name:'Text color lightness',exact:true}).fill('100');
   await expect(avatar(owner).locator('text')).toHaveAttribute('fill','#ffffff');
   await expect(avatar(peer).locator('text')).toHaveAttribute('fill','#ffffff',{timeout:10000});
+  await owner.getByRole('tab',{name:'Design',exact:true}).click();
   await owner.getByRole('group',{name:'Font style',exact:true}).getByRole('button',{name:'Gothic',exact:true}).click();
   await expect(avatar(owner).locator('text')).toHaveCSS('font-family','"Dice New Rocker"');
   await expect(avatar(peer).locator('text')).toHaveCSS('font-family','"Dice New Rocker"',{timeout:10000});

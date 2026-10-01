@@ -39,14 +39,15 @@ export function ColorControls({
   color,
   ink,
   onChange,
+  selected,
   disabled = false,
 }: {
   color: string;
   ink: string;
   disabled?: boolean;
+  selected: 'color' | 'ink';
   onChange: (change: { color?: string; ink?: string }) => void;
 }) {
-  const [selected, setSelected] = useState<'color' | 'ink'>('color');
   const [colors, setColors] = useState(() => ({
     color: { hex: color, values: channels(color) },
     ink: { hex: ink, values: channels(ink) },
@@ -73,26 +74,9 @@ export function ColorControls({
     const nextHue = (Math.atan2(y, x) * 180 / Math.PI + 90 + 360) % 360;
     change([nextHue, Math.min(100, Math.hypot(x, y) * 100), lightness]);
   }
-  const label = selected === 'color' ? 'Dice color' : 'Number color';
+  const label = selected === 'color' ? 'Die color' : 'Text color';
   return (
     <div className="inline-colors full-field">
-      <div className="color-choices" role="group" aria-label="Color to customize">
-        {(['color', 'ink'] as const).map(key => (
-          <button
-            key={key}
-            type="button"
-            aria-pressed={selected === key}
-            onClick={() => setSelected(key)}
-          >
-            <span
-              className="color-swatch"
-              style={{ backgroundColor: key === 'color' ? color : ink }}
-              aria-hidden="true"
-            />
-            {key === 'color' ? 'Dice' : 'Numbers'}
-          </button>
-        ))}
-      </div>
       <div
         className="color-wheel"
         role="slider"

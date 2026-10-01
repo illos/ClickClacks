@@ -7,8 +7,9 @@ try {
     await page.goto('http://127.0.0.1:9594/powerroller/');
     await page.getByRole('button',{name:'Customize dice',exact:true}).click();
     await expect(page.locator('.profile-dialog .preview-canvas')).toBeVisible();
-    const patterns = page.getByRole('group',{name:'Pattern',exact:true});
-    const fonts = page.getByRole('group',{name:'Font style',exact:true});
+    await page.getByRole('tab',{name:'Design',exact:true}).click();
+    const patterns = page.getByRole('group',{name:'Pattern',exact:true,includeHidden:true});
+    const fonts = page.getByRole('group',{name:'Font style',exact:true,includeHidden:true});
     for (const name of ['Solid','Speckle','Marble','Frosted']) {
       const button = patterns.getByRole('button',{name,exact:true});
       await button.click();
@@ -16,9 +17,11 @@ try {
     }
     const snapshots = await patterns.locator('canvas').evaluateAll(canvases => canvases.map(c => c.toDataURL()));
     expect(new Set(snapshots).size).toBe(4);
-    await page.getByRole('slider',{name:'Dice color lightness',exact:true}).fill('0');
+    await page.getByRole('tab',{name:'Die color',exact:true}).click();
+    await page.getByRole('slider',{name:'Die color lightness',exact:true}).fill('0');
     await expect.poll(() => patterns.locator('canvas').first().evaluate(c => Array.from(c.getContext('2d').getImageData(128,128,1,1).data))).toEqual([0,0,0,255]);
     expect(await patterns.locator('canvas').evaluateAll(canvases => canvases.map(c => c.toDataURL()))).not.toEqual(snapshots);
+    await page.getByRole('tab',{name:'Design',exact:true}).click();
     for (const name of ['Serif','Modern','Rune','Gothic']) {
       const button = fonts.getByRole('button',{name,exact:true});
       await button.click();

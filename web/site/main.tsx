@@ -36,6 +36,7 @@ function Site() {
   }, []);
   if (!identity) return null;
   return <PowerRoller client={client} roomKey={room} identity={identity} profile={saved.profile} preferences={saved} nameProvider={randomClassicalName}
+    trayHistory={document.getElementById('root')?.dataset.trayHistory === 'true'}
     onPreferences={preferences => savePreferences({ ...preferences, profile: loadPreferences().profile, room: loadPreferences().room, roomBackend: backend })} onProfile={saveProfile}
     onRoom={code => { rememberRoom(code, backend); const address = new URL(location.href); address.searchParams.set('room', code); history.replaceState(null, '', address); }}
     onJoin={setRoom} roomLink={code => { const address = new URL(location.href); address.searchParams.set('room', code); return address.href; }}

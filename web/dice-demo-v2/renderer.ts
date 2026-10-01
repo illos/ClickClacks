@@ -27,7 +27,7 @@ type Lane = {
   frames: number;
   maxFrameGap: number;
 };
-export type TrayPreferences = { motion?: 'device' | 'reduce' | 'full'; highContrast?: boolean };
+export type TrayPreferences = { motion?: 'device' | 'reduce' | 'full'; highContrast?: boolean; transparent?: boolean };
 /** One WebGL context with independent playback tracks; no per-viewer physics simulation. */
 export function createRoomTray(
   host: HTMLElement,
@@ -41,10 +41,11 @@ export function createRoomTray(
   };
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
+    alpha: options.transparent === true,
     powerPreference: 'low-power',
   });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.setClearColor('#151a1b');
+  renderer.setClearColor('#151a1b', options.transparent ? 0 : 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.35;

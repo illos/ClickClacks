@@ -532,7 +532,8 @@ table departure, hidden icon on mobile/unsupported browsers and failed-module re
 ### Mini-player settings integration (2026-10-01)
 
 Copied the approved `7a55112` cog, Sharing/Dice tabs and compact spacing into the
-live PiP renderer. The same menu handlers implement name/design/accessibility and
+live PiP renderer. Applied `d1fe6d5` to keep the participant counter at its
+original top-left position (`top:12px; left:14px`). The same menu handlers implement name/design/accessibility and
 joining/leaving tables. The PiP session now forwards table changes to its opener
 and builds invite links from the full site URL, preventing the floating player
 from switching tables independently. Table changes close the current floating

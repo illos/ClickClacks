@@ -24,7 +24,9 @@ request IDs, keep/drop, d3/d100, characteristic/labelled bonus input, project/sa
 opposed rulesets, custom interpreted totals or bounded host context metadata.
 These pure API capabilities can be used in a host's own local or authoritative
 workflow; they are not secretly converted into a site power roll. The stock
-site's generic double edge/bane is numerical ±4 and never grants a tier.
+site's generic bonus/penalty stages select 0, 2 and 5; the resulting modifier
+is bonus value minus penalty value and never grants a tier. Power-roll Edge/Bane
+math remains the original Draw Steel interpretation.
 
 The copied motion contract now has explicit version 1 (absent means legacy v1),
 with unsupported replay falling back to text. Per-request presentation storage

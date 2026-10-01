@@ -108,7 +108,9 @@ See the non-React example for controller/tray integration.
 
 The collaborative endpoint supports homogeneous stock d4/d6/d8/d10/d12/d20
 pools of 1–20 dice and the original tiered 2d10 power roll. Generic edge/bane
-counts apply numeric ±2/±4 and do not produce a tier. It does not persist mixed
+fields are stages 0–2 selecting values 0, 2 and 5. The modifier is the bonus
+value minus the penalty value; equal stages cancel and stages 2/1 yield +3.
+Generic results do not produce a tier. It does not persist mixed
 pools, keep/drop choices, percentile interpretations, custom totals or the other
 Draw Steel presets. Those are available as pure host-side operations where
 implemented; adding shared interpretation requires a trusted host integration.

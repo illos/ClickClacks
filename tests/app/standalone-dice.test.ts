@@ -53,8 +53,8 @@ test("secure sampling is bound to stable requests; headless generic rolls persis
     banes: 0,
   });
   expect(roll.power).toBeUndefined();
-  expect(roll.total).toBe(faces.reduce((a, b) => a + b, 0) + 4);
-  expect(roll.modifier).toBe(4);
+  expect(roll.total).toBe(faces.reduce((a, b) => a + b, 0) + 5);
+  expect(roll.modifier).toBe(5);
   expect(roll.source).toBe("generated");
   expect(roll.motion).toBeUndefined();
   expect(roll.revealAt).toBe(roll.startsAt + 2200);
@@ -267,4 +267,26 @@ test("permanent authority errors expose stable codes while retaining friendly me
   expect(expired.data).toEqual({code:"REQUEST_EXPIRED",message:"Request expired. Start a new roll with a new ID."});
   const unauthorized=await t.mutation(demoV2.customize,{key,viewer,credential:other,name:"Intruder",style}).catch(error=>error);
   expect(unauthorized.data).toEqual({code:"UNAUTHORIZED",message:"Invalid private session credential."});
+});
+
+
+test("generic modifier stages persist zero, two and five with cancellation and stable retries", async()=>{
+  vi.useFakeTimers();
+  const t=await joined();
+  const dice:DiceConfiguration={kind:"dice",sides:6,count:1};
+  const cases=[
+    [0,0,0],[1,0,2],[2,0,5],[0,1,-2],[0,2,-5],
+    [1,1,0],[2,2,0],[2,1,3],[1,2,-3],
+  ] as const;
+  for(const [index,[edges,banes,modifier]] of cases.entries()){
+    const args={key,viewer,credential,id:id(700+index),dice};
+    const faces=await t.action(demo.sampleFaces,args);
+    const roll=await t.mutation(demoV2.throwDice,{...args,faces,edges,banes});
+    expect([roll.modifier,roll.total,roll.power]).toEqual([modifier,faces[0]!+modifier,undefined]);
+    expect((await t.query(demoV2.track,{key,viewer}))!.roll).toEqual(roll);
+    await t.mutation(demoV2.clearTray,{key,viewer,credential});
+    expect(await t.mutation(demoV2.throwDice,{...args,faces,edges,banes})).toEqual(roll);
+    await expect(t.mutation(demoV2.throwDice,{...args,faces,edges:(edges+1)%3,banes})).rejects.toThrow("already used");
+    vi.advanceTimersByTime(3000);
+  }
 });

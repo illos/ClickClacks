@@ -25,3 +25,14 @@ export function validateDiceConfiguration(
     );
   return value;
 }
+
+export type GenericModifierStage = 0 | 1 | 2;
+/** Generic bonus/penalty clicks select no modifier, two, then five. */
+export function genericModifierValue(stage: GenericModifierStage): number {
+  if (!Number.isInteger(stage) || stage < 0 || stage > 2)
+    throw new Error('Choose a generic modifier stage from zero to two.');
+  return [0, 2, 5][stage]!;
+}
+export function genericModifier(edges: number, banes: number): number {
+  return genericModifierValue(edges as GenericModifierStage) - genericModifierValue(banes as GenericModifierStage);
+}

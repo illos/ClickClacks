@@ -15,6 +15,7 @@ import { createPortal } from 'react-dom';
 import { makeFunctionReference } from 'convex/server';
 import { createController, type Identity, type Profile, type DeliveredRoll } from '../../lib/client';
 import { displayError, redactError } from '../../lib/errors';
+import { genericModifierValue } from '../../shared/dice';
 import { describeRoll } from '../../lib/format';
 import {
   ConvexProvider,
@@ -310,7 +311,7 @@ const diceChoices: ReadonlyArray<{ value: SelectedDice; label: string }> = [
   ...([20, 12, 10, 8, 6, 4] as const).map(value => ({ value, label: `d${value}` })),
 ];
 function RollDieIcon({ dice }: { dice: SelectedDice }) {
-  const sides = dice === 'power' ? 10 : dice;
+  const sides = dice === 'power' ? 20 : dice;
   const outline =
     sides === 4
       ? 'M12 2 23 21H1Z'
@@ -331,6 +332,11 @@ function RollDieIcon({ dice }: { dice: SelectedDice }) {
       strokeLinejoin="round"
     >
       <path d={outline} />
+      {sides === 6 && [[6, 6], [18, 6], [12, 12], [6, 18], [18, 18]].map(([cx, cy]) => (
+        <circle key={`${cx}:${cy}`} cx={cx} cy={cy} r="1.4" fill="currentColor" stroke="none" />
+      ))}
+      {sides === 12 && <path d="M12 6 18 10.5 16 17H8L6 10.5ZM12 1v5M23 9l-5 1.5M19 22l-3-5M5 22l3-5M1 9l5 1.5" />}
+      {sides === 4 && <path d="M12 2V14.7M1 21l11-6.3L23 21" />}
       {sides === 20 && <path d="m12 2-5 13h10Zm-9 5 4 8-4 2m18-10-4 8 4 2M7 15l5 7 5-7" />}
       {sides === 10 && <path d="m12 1-5 11 5 11 5-11ZM2 12h20" />}
       {sides === 8 && <path d="M2 12h20M12 1v22" />}
@@ -933,14 +939,14 @@ function DiceRoom() {
               {[
                 {
                   name: 'edge',
-                  label: selectedDice === 'power' ? 'Edge' : '+2',
+                  label: selectedDice === 'power' ? 'Edge' : `+${genericModifierValue(edges as 0 | 1 | 2)}`,
                   icon: selectedDice === 'power' ? '↑' : '',
                   count: edges,
                   set: setEdges,
                 },
                 {
                   name: 'bane',
-                  label: selectedDice === 'power' ? 'Bane' : '−2',
+                  label: selectedDice === 'power' ? 'Bane' : `−${genericModifierValue(banes as 0 | 1 | 2)}`,
                   icon: selectedDice === 'power' ? '↓' : '',
                   count: banes,
                   set: setBanes,
@@ -953,17 +959,17 @@ function DiceRoom() {
                     aria-label={
                       selectedDice === 'power'
                         ? `${control.label}: ${control.count} of 2. Add ${control.name}`
-                        : `${control.name === 'edge' ? 'Positive' : 'Negative'} modifier: ${control.count * 2}. Add ${control.name === 'edge' ? '+2' : '−2'}`
+                        : `${control.name === 'edge' ? 'Positive' : 'Negative'} modifier: ${control.label}. Cycle to ${control.name === 'edge' ? '+' : '−'}${genericModifierValue(((control.count + 1) % 3) as 0 | 1 | 2)}`
                     }
-                    disabled={clearing || busy || control.count === 2}
-                    onClick={() => control.set(count => Math.min(2, count + 1))}
+                    disabled={clearing || busy || (selectedDice === 'power' && control.count === 2)}
+                    onClick={() => control.set(count => selectedDice === 'power' ? Math.min(2, count + 1) : (count + 1) % 3)}
                   >
-                    <span aria-hidden>{control.icon}</span> {control.label}
-                    <span className="modifier-count" aria-hidden>
+                    {selectedDice === 'power' && <span aria-hidden>{control.icon}</span>} {control.label}
+                    {selectedDice === 'power' && <span className="modifier-count" aria-hidden>
                       {control.count}
-                    </span>
+                    </span>}
                   </button>
-                  {control.count > 0 && (
+                  {selectedDice === 'power' && control.count > 0 && (
                     <button
                       type="button"
                       data-roll-modifier={control.name}

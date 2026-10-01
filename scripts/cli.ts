@@ -8,7 +8,7 @@ import { createController, redactError, type Identity, type Profile, type Transp
 import type { DiceConfiguration } from '../shared/dice.ts';
 
 type Saved={version:1;backend:string;key:string;identity:Identity;profile:Profile};
-const usage='powerroller create|join|roll|view|events|profile|clear|leave --backend URL --session FILE [--key CODE] [--name NAME] [--dice power|4|6|8|10|12|20] [--count N] [--edges N] [--banes N] [--id ID]';
+const usage='powerroller create|join|roll|view|events|profile|clear|leave --backend URL --session FILE [--key CODE] [--name NAME] [--dice power|4|6|8|10|12|20] [--count N] [--edges N] [--banes N] [--id ID]\nGeneric dice: --edges and --banes are stages 0|1|2 selecting 0|2|5; modifier = bonus minus penalty. Power rolls retain Draw Steel Edges/Banes.';
 function argumentsFor(argv:string[]){const[command,...tokens]=argv;const flags:Record<string,string>={};for(let i=0;i<tokens.length;i+=2){if(!tokens[i]?.startsWith('--')||tokens[i+1]===undefined)throw Error(usage);flags[tokens[i]!.slice(2)]=tokens[i+1]!;}return{command,flags};}
 function httpTransport(url:string):Transport{
  const client=new ConvexHttpClient(url);

@@ -17,6 +17,7 @@ import {
 import { resolveEdgeBane, tierOf } from "../shared/resolve/index";
 import {
   defaultDice,
+  genericModifier,
   validateDiceConfiguration,
   type DiceConfiguration,
 } from "../shared/dice";
@@ -506,7 +507,7 @@ async function acceptThrow(
   const natural = args.faces.reduce((sum, n) => sum + n, 0),
     adjustment = resolveEdgeBane(edges, banes),
     modifier =
-      dice.kind === "power" ? adjustment.modifier : 2 * (edges - banes),
+      dice.kind === "power" ? adjustment.modifier : genericModifier(edges, banes),
     total = natural + modifier;
   const power =
     dice.kind === "power"

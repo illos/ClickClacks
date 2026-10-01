@@ -9,8 +9,11 @@ The default interface, materials, recorded physics, customization preview, socia
 menus and compact log come from Salient commit
 `23cf9035b6e55d3e2e3a8198cba8c2320e7d205b` (V272). The standalone site adds the
 requested dice picker inside Roll: Power roll (2d10), d20, d12, diamond d10, d8,
-d6 and d4. Generic rolls support 1–20 dice and numeric +2/−2 controls; power rolls
-retain Edges, Banes and tiers. Clearing preserves the original shared tray behavior.
+d6 and d4. Generic rolls support 1–20 dice and numeric bonus/penalty controls; power rolls
+retain Edges, Banes and tiers. Generic dice bonus/penalty controls cycle through
+0, 2 and 5; the wire fields `edges` and `banes` remain stages 0–2. A bonus
+adds its stage value and a penalty subtracts its stage value, so equal stages
+cancel (stage 2 bonus and stage 1 penalty give +3). Clearing preserves the original shared tray behavior.
 
 ## Run your own site
 

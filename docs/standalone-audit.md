@@ -110,3 +110,22 @@ Focused Chromium checks passed at 320×225 and 640×450: modifier, picker and di
 count controls are reachable by vertical scrolling, count changes work and no
 horizontal page overflow occurs. At 390×844 and 1280×900 the original grid remains.
 The picker styling was verified at all four sizes. Production build passed.
+
+
+## Modifier cycles and icon follow-up
+
+Per the owner's request, generic bonus/penalty controls now display signed zero
+and cycle independently through 0, 2, 5 and back to zero. The existing 0–2 request
+stages map to those magnitudes; the accepted modifier is bonus minus penalty.
+Prior accepted receipts retain their original totals on retries. Power roll's
+edge/bane arithmetic and controls are unchanged.
+
+Power roll uses the d20 SVG. The d6 icon has five pips, the d12 has nested
+pentagons joined at their vertices, and the d4 has three corner-to-center lines.
+The picker divider now spans the button's full height. These are control icons;
+the existing 3D material, numbering and physics pipelines are unchanged.
+
+Focused backend tests passed (11), covering persisted 0/±2/±5, cancellation,
+mixed bonus/penalty magnitudes and retained retry behavior. Focused Chromium
+checks passed for both full cycles, focus retention, power controls, icon SVGs
+and divider height. Typecheck and production build passed.

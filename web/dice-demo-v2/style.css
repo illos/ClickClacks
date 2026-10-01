@@ -807,10 +807,9 @@
   content: '';
   position: absolute;
   right: 0;
-  top: 22%;
-  bottom: 22%;
+  top: 0;
+  bottom: 0;
   width: 1px;
-  border-radius: 1px;
   background: currentColor;
   opacity: 0.3;
   pointer-events: none;

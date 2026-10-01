@@ -6,3 +6,4 @@ dist/
 .cache/
 test-results/
 playwright-report/
+**/_generated/

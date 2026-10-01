@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="UTF-8" /><meta
+    name="viewport"
+    content="width=device-width"
+  /><title>Plain Powerroller</title>
+  <body>
+    <h1>Plain browser consumer</h1>
+    <form id="connect">
+      <label
+        >Your Convex deployment URL
+        <input id="url" type="url" required /></label
+      ><button>Connect</button>
+    </form>
+    <div id="tray" style="height: 300px"></div>
+    <button id="roll" disabled>Roll 3d6</button>
+    <div id="log" role="log" aria-label="Roll results"></div>
+    <script type="module">
+      import { mountExample } from "./main.ts";
+      let mounted;
+      document.querySelector("#connect").onsubmit = async (event) => {
+        event.preventDefault();
+        await mounted?.dispose();
+        mounted = await mountExample(
+          document.querySelector("#tray"),
+          document.querySelector("#log"),
+          document.querySelector("#url").value,
+        );
+        document.querySelector("#roll").disabled = false;
+      };
+      document.querySelector("#roll").onclick = () => mounted?.roll();
+    </script>
+  </body>
+</html>

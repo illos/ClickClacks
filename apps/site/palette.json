@@ -1,0 +1,705 @@
+{
+  "version": 1,
+  "palette": [
+    {
+      "id": 1,
+      "color": "#ffffff",
+      "ink": "#000000",
+      "pattern": "solid",
+      "font": "serif"
+    },
+    {
+      "id": 2,
+      "color": "#000000",
+      "ink": "#ffffff",
+      "pattern": "solid",
+      "font": "rune"
+    },
+    {
+      "id": 3,
+      "color": "#1c59b5",
+      "ink": "#4a1f5b",
+      "pattern": "frosted",
+      "font": "modern"
+    },
+    {
+      "id": 4,
+      "color": "#74007a",
+      "ink": "#ffffff",
+      "pattern": "frosted",
+      "font": "serif"
+    },
+    {
+      "id": 5,
+      "color": "#8a8a8a",
+      "ink": "#890b0d",
+      "pattern": "speckle",
+      "font": "serif"
+    },
+    {
+      "id": 6,
+      "color": "#602045",
+      "ink": "#000000",
+      "pattern": "marble",
+      "font": "rune"
+    },
+    {
+      "id": 7,
+      "color": "#709a2b",
+      "ink": "#9c2c7d",
+      "pattern": "marble",
+      "font": "rune"
+    },
+    {
+      "id": 8,
+      "color": "#25abbd",
+      "ink": "#0a0b8d",
+      "pattern": "marble",
+      "font": "gothic"
+    },
+    {
+      "id": 9,
+      "color": "#421f20",
+      "ink": "#82e4ca",
+      "pattern": "speckle",
+      "font": "rune"
+    },
+    {
+      "id": 10,
+      "color": "#1eeb48",
+      "ink": "#47331f",
+      "pattern": "frosted",
+      "font": "serif"
+    },
+    {
+      "id": 11,
+      "color": "#9008a6",
+      "ink": "#4c1a43",
+      "pattern": "frosted",
+      "font": "gothic"
+    },
+    {
+      "id": 12,
+      "color": "#525d1f",
+      "ink": "#98f566",
+      "pattern": "marble",
+      "font": "gothic"
+    },
+    {
+      "id": 13,
+      "color": "#5ee8b1",
+      "ink": "#0a107a",
+      "pattern": "speckle",
+      "font": "gothic"
+    },
+    {
+      "id": 14,
+      "color": "#f634fb",
+      "ink": "#8ff591",
+      "pattern": "solid",
+      "font": "modern"
+    },
+    {
+      "id": 15,
+      "color": "#420d2c",
+      "ink": "#a4f909",
+      "pattern": "marble",
+      "font": "gothic"
+    },
+    {
+      "id": 16,
+      "color": "#090792",
+      "ink": "#8b3444",
+      "pattern": "marble",
+      "font": "gothic"
+    },
+    {
+      "id": 17,
+      "color": "#47562a",
+      "ink": "#26d5bf",
+      "pattern": "frosted",
+      "font": "rune"
+    },
+    {
+      "id": 18,
+      "color": "#fd5353",
+      "ink": "#fdf1f3",
+      "pattern": "solid",
+      "font": "rune"
+    },
+    {
+      "id": 19,
+      "color": "#543495",
+      "ink": "#70e609",
+      "pattern": "solid",
+      "font": "modern"
+    },
+    {
+      "id": 20,
+      "color": "#40029c",
+      "ink": "#43945a",
+      "pattern": "frosted",
+      "font": "gothic"
+    },
+    {
+      "id": 21,
+      "color": "#8b93b1",
+      "ink": "#5a2c5e",
+      "pattern": "speckle",
+      "font": "gothic"
+    },
+    {
+      "id": 22,
+      "color": "#1c95a3",
+      "ink": "#93409b",
+      "pattern": "speckle",
+      "font": "rune"
+    },
+    {
+      "id": 23,
+      "color": "#9d4c07",
+      "ink": "#9bdc8b",
+      "pattern": "marble",
+      "font": "rune"
+    },
+    {
+      "id": 24,
+      "color": "#30ef26",
+      "ink": "#fd4949",
+      "pattern": "speckle",
+      "font": "modern"
+    },
+    {
+      "id": 25,
+      "color": "#5f7b5b",
+      "ink": "#ffffff",
+      "pattern": "marble",
+      "font": "gothic"
+    },
+    {
+      "id": 26,
+      "color": "#4ff8e0",
+      "ink": "#19291b",
+      "pattern": "solid",
+      "font": "rune"
+    },
+    {
+      "id": 27,
+      "color": "#f1e61e",
+      "ink": "#e00606",
+      "pattern": "solid",
+      "font": "gothic"
+    },
+    {
+      "id": 28,
+      "color": "#05f7dc",
+      "ink": "#3d3d3d",
+      "pattern": "speckle",
+      "font": "gothic"
+    },
+    {
+      "id": 29,
+      "color": "#1f5eef",
+      "ink": "#abedd4",
+      "pattern": "frosted",
+      "font": "modern"
+    },
+    {
+      "id": 30,
+      "color": "#f8e043",
+      "ink": "#9a570f",
+      "pattern": "solid",
+      "font": "gothic"
+    },
+    {
+      "id": 31,
+      "color": "#71e6d4",
+      "ink": "#a1422f",
+      "pattern": "solid",
+      "font": "modern"
+    },
+    {
+      "id": 32,
+      "color": "#35bbed",
+      "ink": "#292e8a",
+      "pattern": "frosted",
+      "font": "modern"
+    },
+    {
+      "id": 33,
+      "color": "#d31e85",
+      "ink": "#16e6ea",
+      "pattern": "marble",
+      "font": "rune"
+    },
+    {
+      "id": 34,
+      "color": "#ae02cb",
+      "ink": "#c4b7e1",
+      "pattern": "solid",
+      "font": "gothic"
+    },
+    {
+      "id": 35,
+      "color": "#453b7b",
+      "ink": "#1c016c",
+      "pattern": "speckle",
+      "font": "rune"
+    },
+    {
+      "id": 36,
+      "color": "#c2f155",
+      "ink": "#6192b1",
+      "pattern": "marble",
+      "font": "serif"
+    },
+    {
+      "id": 37,
+      "color": "#6c6858",
+      "ink": "#05f49d",
+      "pattern": "marble",
+      "font": "rune"
+    },
+    {
+      "id": 38,
+      "color": "#587c2b",
+      "ink": "#21ac42",
+      "pattern": "frosted",
+      "font": "serif"
+    },
+    {
+      "id": 39,
+      "color": "#d2b001",
+      "ink": "#b2fbcb",
+      "pattern": "frosted",
+      "font": "rune"
+    },
+    {
+      "id": 40,
+      "color": "#453314",
+      "ink": "#58954d",
+      "pattern": "frosted",
+      "font": "gothic"
+    },
+    {
+      "id": 41,
+      "color": "#3feb2d",
+      "ink": "#e12b4e",
+      "pattern": "solid",
+      "font": "serif"
+    },
+    {
+      "id": 42,
+      "color": "#862626",
+      "ink": "#3d002f",
+      "pattern": "marble",
+      "font": "gothic"
+    },
+    {
+      "id": 43,
+      "color": "#fb4698",
+      "ink": "#96f107",
+      "pattern": "frosted",
+      "font": "modern"
+    },
+    {
+      "id": 44,
+      "color": "#de383d",
+      "ink": "#d5a08a",
+      "pattern": "speckle",
+      "font": "modern"
+    },
+    {
+      "id": 45,
+      "color": "#c3b790",
+      "ink": "#1945df",
+      "pattern": "frosted",
+      "font": "gothic"
+    },
+    {
+      "id": 46,
+      "color": "#dd34ee",
+      "ink": "#f9157e",
+      "pattern": "frosted",
+      "font": "modern"
+    },
+    {
+      "id": 47,
+      "color": "#c3c003",
+      "ink": "#000000",
+      "pattern": "marble",
+      "font": "serif"
+    },
+    {
+      "id": 48,
+      "color": "#8ad9fa",
+      "ink": "#636363",
+      "pattern": "frosted",
+      "font": "gothic"
+    },
+    {
+      "id": 49,
+      "color": "#fcf644",
+      "ink": "#e74646",
+      "pattern": "speckle",
+      "font": "gothic"
+    },
+    {
+      "id": 50,
+      "color": "#22cbc0",
+      "ink": "#82d327",
+      "pattern": "frosted",
+      "font": "modern"
+    },
+    {
+      "id": 51,
+      "color": "#7e8d3d",
+      "ink": "#4fbec5",
+      "pattern": "frosted",
+      "font": "rune"
+    },
+    {
+      "id": 52,
+      "color": "#1469e4",
+      "ink": "#7313cf",
+      "pattern": "frosted",
+      "font": "rune"
+    },
+    {
+      "id": 53,
+      "color": "#5fc770",
+      "ink": "#d61293",
+      "pattern": "frosted",
+      "font": "serif"
+    },
+    {
+      "id": 54,
+      "color": "#ff77b1",
+      "ink": "#85dfcc",
+      "pattern": "solid",
+      "font": "modern"
+    },
+    {
+      "id": 55,
+      "color": "#ffffff",
+      "ink": "#6553fd",
+      "pattern": "solid",
+      "font": "serif"
+    },
+    {
+      "id": 56,
+      "color": "#4deac2",
+      "ink": "#000000",
+      "pattern": "solid",
+      "font": "modern"
+    },
+    {
+      "id": 57,
+      "color": "#3197fb",
+      "ink": "#4d18b7",
+      "pattern": "frosted",
+      "font": "serif"
+    },
+    {
+      "id": 58,
+      "color": "#b66ab2",
+      "ink": "#d76a35",
+      "pattern": "frosted",
+      "font": "rune"
+    },
+    {
+      "id": 59,
+      "color": "#57f8fa",
+      "ink": "#ed07d2",
+      "pattern": "frosted",
+      "font": "modern"
+    },
+    {
+      "id": 60,
+      "color": "#08071c",
+      "ink": "#2227e3",
+      "pattern": "marble",
+      "font": "modern"
+    },
+    {
+      "id": 61,
+      "color": "#17d22b",
+      "ink": "#642b81",
+      "pattern": "marble",
+      "font": "modern"
+    },
+    {
+      "id": 62,
+      "color": "#ffffff",
+      "ink": "#00a8a3",
+      "pattern": "marble",
+      "font": "serif"
+    },
+    {
+      "id": 63,
+      "color": "#2a8c9e",
+      "ink": "#3bf5ff",
+      "pattern": "frosted",
+      "font": "gothic"
+    },
+    {
+      "id": 64,
+      "color": "#c2474e",
+      "ink": "#7de218",
+      "pattern": "solid",
+      "font": "serif"
+    },
+    {
+      "id": 65,
+      "color": "#f8e6c4",
+      "ink": "#787751",
+      "pattern": "marble",
+      "font": "rune"
+    },
+    {
+      "id": 66,
+      "color": "#626262",
+      "ink": "#c2c2c2",
+      "pattern": "speckle",
+      "font": "modern"
+    },
+    {
+      "id": 67,
+      "color": "#fab328",
+      "ink": "#4f4f4f",
+      "pattern": "speckle",
+      "font": "serif"
+    },
+    {
+      "id": 68,
+      "color": "#209870",
+      "ink": "#552cf8",
+      "pattern": "solid",
+      "font": "modern"
+    },
+    {
+      "id": 69,
+      "color": "#5a20a5",
+      "ink": "#0a172f",
+      "pattern": "frosted",
+      "font": "serif"
+    },
+    {
+      "id": 70,
+      "color": "#1e687a",
+      "ink": "#cf61fa",
+      "pattern": "solid",
+      "font": "serif"
+    },
+    {
+      "id": 71,
+      "color": "#237fc9",
+      "ink": "#68fc97",
+      "pattern": "speckle",
+      "font": "rune"
+    },
+    {
+      "id": 72,
+      "color": "#6c67cb",
+      "ink": "#d5e10d",
+      "pattern": "speckle",
+      "font": "rune"
+    },
+    {
+      "id": 73,
+      "color": "#f22716",
+      "ink": "#5a0749",
+      "pattern": "marble",
+      "font": "serif"
+    },
+    {
+      "id": 74,
+      "color": "#950891",
+      "ink": "#cceb9a",
+      "pattern": "frosted",
+      "font": "rune"
+    },
+    {
+      "id": 75,
+      "color": "#865b68",
+      "ink": "#13f641",
+      "pattern": "marble",
+      "font": "serif"
+    },
+    {
+      "id": 76,
+      "color": "#71f2f6",
+      "ink": "#3823a2",
+      "pattern": "solid",
+      "font": "gothic"
+    },
+    {
+      "id": 77,
+      "color": "#6fd796",
+      "ink": "#4465d6",
+      "pattern": "speckle",
+      "font": "gothic"
+    },
+    {
+      "id": 78,
+      "color": "#0b7861",
+      "ink": "#8f3284",
+      "pattern": "frosted",
+      "font": "gothic"
+    },
+    {
+      "id": 79,
+      "color": "#f0ac21",
+      "ink": "#ac7608",
+      "pattern": "speckle",
+      "font": "gothic"
+    },
+    {
+      "id": 80,
+      "color": "#1d101e",
+      "ink": "#cc2648",
+      "pattern": "frosted",
+      "font": "rune"
+    },
+    {
+      "id": 81,
+      "color": "#18ca03",
+      "ink": "#835102",
+      "pattern": "speckle",
+      "font": "gothic"
+    },
+    {
+      "id": 82,
+      "color": "#c6f650",
+      "ink": "#009966",
+      "pattern": "speckle",
+      "font": "modern"
+    },
+    {
+      "id": 83,
+      "color": "#f5ee27",
+      "ink": "#fc2a2a",
+      "pattern": "frosted",
+      "font": "serif"
+    },
+    {
+      "id": 84,
+      "color": "#a100e1",
+      "ink": "#1abb81",
+      "pattern": "solid",
+      "font": "rune"
+    },
+    {
+      "id": 85,
+      "color": "#1497db",
+      "ink": "#9e2076",
+      "pattern": "marble",
+      "font": "modern"
+    },
+    {
+      "id": 86,
+      "color": "#8d4405",
+      "ink": "#c3aaa0",
+      "pattern": "solid",
+      "font": "serif"
+    },
+    {
+      "id": 87,
+      "color": "#3be135",
+      "ink": "#476776",
+      "pattern": "frosted",
+      "font": "serif"
+    },
+    {
+      "id": 88,
+      "color": "#ba67c5",
+      "ink": "#e3cedd",
+      "pattern": "solid",
+      "font": "modern"
+    },
+    {
+      "id": 89,
+      "color": "#e2286c",
+      "ink": "#6e3a03",
+      "pattern": "frosted",
+      "font": "modern"
+    },
+    {
+      "id": 90,
+      "color": "#e8684f",
+      "ink": "#912780",
+      "pattern": "speckle",
+      "font": "rune"
+    },
+    {
+      "id": 91,
+      "color": "#904a38",
+      "ink": "#ffffff",
+      "pattern": "speckle",
+      "font": "rune"
+    },
+    {
+      "id": 92,
+      "color": "#b92230",
+      "ink": "#46a959",
+      "pattern": "solid",
+      "font": "gothic"
+    },
+    {
+      "id": 93,
+      "color": "#d8cba4",
+      "ink": "#817b01",
+      "pattern": "marble",
+      "font": "serif"
+    },
+    {
+      "id": 94,
+      "color": "#d132c0",
+      "ink": "#4ed8ce",
+      "pattern": "marble",
+      "font": "gothic"
+    },
+    {
+      "id": 95,
+      "color": "#c2abc0",
+      "ink": "#000f07",
+      "pattern": "frosted",
+      "font": "gothic"
+    },
+    {
+      "id": 96,
+      "color": "#8a7722",
+      "ink": "#2a1fb9",
+      "pattern": "frosted",
+      "font": "rune"
+    },
+    {
+      "id": 97,
+      "color": "#177fb6",
+      "ink": "#3a3f77",
+      "pattern": "frosted",
+      "font": "rune"
+    },
+    {
+      "id": 98,
+      "color": "#70bd25",
+      "ink": "#9808c5",
+      "pattern": "speckle",
+      "font": "serif"
+    },
+    {
+      "id": 99,
+      "color": "#e47063",
+      "ink": "#ffffff",
+      "pattern": "frosted",
+      "font": "rune"
+    },
+    {
+      "id": 100,
+      "color": "#0d2009",
+      "ink": "#acefea",
+      "pattern": "marble",
+      "font": "modern"
+    }
+  ]
+}

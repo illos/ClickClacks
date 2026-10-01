@@ -279,3 +279,27 @@ for d4/d6/d8/d10/d12/d20 across three seeds and an accepted 21-die bonus pool.
 A dense d6 diagnostic seed did not settle (the planner's existing retry case);
 no detector failure occurred on accepted paths. On-page silence remains
 unreproduced; the recovery fix does not claim to establish its device cause.
+
+## Wood reference and Safari tab-return recovery
+
+Owner clarified silence occurs after Safari tab switching and survives reload,
+requiring a new tab. WebKit reports matching tab-session failures:
+https://bugs.webkit.org/show_bug.cgi?id=323104
+Contexts now retire on visibility loss/pagehide and recreate on the next gesture.
+On iOS Safari only, the owner-approved AudioSession workaround cycles ambient to
+playback to refresh the browser's audio category. It restores the prior category
+on backgrounding, mute, or disposal. Desktop Chrome/Safari/Firefox and other iOS
+browsers receive no category override. Playback mode can pause other iOS device
+music; this limitation was explained and the owner approved the scoped workaround.
+
+The sound now follows measured Owlbear wood impacts, with four independent
+synthesized variants. See dice-sound-reference.md for sources, method and values.
+Wood is the current scope; wood/dice-on-dice mixing is queued.
+
+Accepted checks: ten focused synthesis/session/lifecycle tests passed, including
+wood energy-decay/headroom at 44.1/48 kHz, iOS Safari/iPad detection, desktop and
+other-iOS-browser exclusion, category restoration/cancelled acquisition, and
+background context retirement. Typecheck and production build passed. Expanded
+Chromium verified fresh-context scheduling after simulated tab visibility return,
+reload, interruption recovery, generated waveform, mute, historical silence and
+existing tray/swatch behavior. Physical Safari recovery is not proven here.

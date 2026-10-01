@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT
+import { acquireIosAudioSession } from './ios-audio-session';
+import { woodClack } from './wood-clack';
 import type { Motion } from '../dice-demo/model';
 import { revealDelay, type ParticipantRoll } from './model';
 
@@ -31,7 +33,8 @@ export function diceImpacts(motion: Motion | undefined, count: number): DiceImpa
  * resonances. No downloaded recording, network request, or third-party audio asset. */
 export function createDiceSound() {
   let context: AudioContext | undefined, enabled = false, disposed = false;
-  let noise: AudioBuffer | undefined;
+  let noises: AudioBuffer[] = [];
+  let restoreSession: (() => void) | undefined;
   const played = new Set<string>();
   const voices = new Map<AudioBufferSourceNode, string>();
   function cancel(owner?: string) {
@@ -42,54 +45,38 @@ export function createDiceSound() {
       voices.delete(source);
     }
   }
-  function setEnabled(value: boolean) { enabled = value; if (!value) cancel(); }
+  function setEnabled(value: boolean) { enabled = value; if (!value) releaseContext(); }
   async function unlock() {
-    if (!enabled || disposed) return;
+    if (!enabled || disposed || document.hidden) return;
     try {
       if (!context || context.state === 'closed') {
+        restoreSession?.();
+        restoreSession = acquireIosAudioSession();
         context = new AudioContext();
-        noise = undefined;
+        noises = [];
       }
       // Safari uses 'interrupted' after app/tab switching or screen locking.
       // Resume every recoverable non-running state on the current user gesture.
       if (context.state !== 'running') await context.resume();
-    } catch { /* Audio is cosmetic; unsupported/blocked devices can still roll. */ }
+    } catch {
+      if (!context || context.state === 'closed') { restoreSession?.(); restoreSession = undefined; }
+      /* Audio is cosmetic; unsupported/blocked devices can still roll. */
+    }
   }
   function strike(at: number, strength: number, die: number, owner: string, density: number) {
     if (!context) return;
-    if (!noise) {
-      noise = context.createBuffer(1, Math.ceil(context.sampleRate * 0.07), context.sampleRate);
-      const data = noise.getChannelData(0);
-      // A fuller plastic crack: sustain the low/mid strike for several ms,
-      // rather than letting a sub-2ms high-frequency tick dominate the sound.
-      let bodyNoise = 0, edgeNoise = 0, peak = 0;
-      for (let i = 0; i < data.length; i++) {
-        const t = i / context.sampleRate, white = Math.random() * 2 - 1;
-        bodyNoise = bodyNoise * 0.85 + white * 0.15;
-        edgeNoise = edgeNoise * 0.35 + white * 0.65;
-        const mid = edgeNoise - bodyNoise;
-        const attack = Math.min(1, t / 0.00035);
-        const tail = Math.min(1, (data.length - 1 - i) / (context.sampleRate * 0.004));
-        const snap = white * Math.exp(-t * 500) * 0.2;
-        const crack = mid * Math.exp(-t * 135) * 1.15;
-        // A tiny second contact thickens the edge strike without a separate echo.
-        const contactAge = t - 0.003;
-        const contact = contactAge > 0
-          ? mid * Math.min(1, contactAge / 0.0003) * Math.exp(-contactAge * 210) * 0.5 : 0;
-        const wood = bodyNoise * Math.exp(-t * 95) * 0.8;
-        const modes = Math.sin(t * Math.PI * 2 * 310) * Math.exp(-t * 100) * 0.26
-          + Math.sin(t * Math.PI * 2 * 790) * Math.exp(-t * 145) * 0.18
-          + Math.sin(t * Math.PI * 2 * 1435) * Math.exp(-t * 205) * 0.12;
-        data[i] = (snap + crack + contact + wood + modes) * attack * tail;
-        peak = Math.max(peak, Math.abs(data[i]!));
+    if (!noises.length) {
+      for (let variant = 0; variant < 4; variant++) {
+        const samples = woodClack(context.sampleRate, variant);
+        const buffer = context.createBuffer(1, samples.length, context.sampleRate);
+        buffer.getChannelData(0).set(samples);
+        noises.push(buffer);
       }
-      // Keep stronger transients within headroom, without increasing roll volume.
-      if (peak > 0.9) for (let i = 0; i < data.length; i++) data[i] *= 0.9 / peak;
     }
     const source = context.createBufferSource(), filter = context.createBiquadFilter(), gain = context.createGain();
-    source.buffer = noise;
-    source.playbackRate.value = 0.88 + (die % 7) * 0.045 + Math.random() * 0.06;
-    filter.type = 'lowpass'; filter.frequency.value = 5800;
+    source.buffer = noises[die % noises.length]!;
+    source.playbackRate.value = 0.96 + Math.random() * 0.08;
+    filter.type = 'lowpass'; filter.frequency.value = 6400;
     gain.gain.value = (0.12 + strength * 0.26) / Math.sqrt(density);
     source.connect(filter).connect(gain).connect(context.destination);
     voices.set(source, owner);
@@ -114,11 +101,24 @@ export function createDiceSound() {
       strike(context.currentTime + delay / 1000, impact.strength, impact.die, roll.roller, density);
     }
   }
-  function visibility() { if (document.hidden) cancel(); }
+  function releaseContext() {
+    cancel();
+    const retired = context;
+    context = undefined;
+    noises = [];
+    restoreSession?.(); restoreSession = undefined;
+    // Some Safari contexts stay silent after interruption despite reporting running.
+    // Retire them while hidden; the next gesture creates a fresh audio session.
+    void retired?.close().catch(() => {});
+  }
+  function visibility() { if (document.hidden) releaseContext(); }
   document.addEventListener('visibilitychange', visibility);
+  const page = document.defaultView;
+  page?.addEventListener('pagehide', releaseContext);
   function dispose() {
-    disposed = true; cancel(); document.removeEventListener('visibilitychange', visibility);
-    void context?.close().catch(() => {});
+    disposed = true; releaseContext();
+    document.removeEventListener('visibilitychange', visibility);
+    page?.removeEventListener('pagehide', releaseContext);
   }
   return { unlock, setEnabled, play, cancel, dispose };
 }

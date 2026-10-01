@@ -36,7 +36,7 @@ it('schedules against the tray clock once, skips history, and stops pending audi
   audio.play(roll,100,false); expect(sources).toHaveLength(1);
   audio.play({...roll,id:'old',startsAt:0},100,false); expect(sources).toHaveLength(1);
   audio.setEnabled(false); expect(sources[0].stop).toHaveBeenCalledOnce();
-  audio.setEnabled(true); audio.play({...roll,id:'new'},100,false); doc.hidden=true;listeners.get('visibilitychange')!();expect(sources[1].stop).toHaveBeenCalledOnce();
+  audio.setEnabled(true); await audio.unlock(); audio.play({...roll,id:'new'},100,false); doc.hidden=true;listeners.get('visibilitychange')!();expect(sources[1].stop).toHaveBeenCalledOnce();
   audio.dispose();expect(listeners.size).toBe(0);
 });
 
@@ -57,4 +57,26 @@ it('resumes Safari interruption on a gesture and recreates a closed context', as
   contexts[0]!.state = 'closed';
   await audio.unlock(); expect(contexts).toHaveLength(2); expect(contexts[1]!.state).toBe('running');
   audio.dispose();
+});
+
+it('retires backgrounded audio and keeps the enabled setting for the next tap', async () => {
+  const listeners = new Map<string, () => void>(), pageListeners = new Map<string, () => void>();
+  const doc = { hidden: false, addEventListener: (key:string, fn:()=>void) => listeners.set(key, fn), removeEventListener: (key:string) => listeners.delete(key),
+    defaultView: { addEventListener: (key:string, fn:()=>void) => pageListeners.set(key, fn), removeEventListener: (key:string) => pageListeners.delete(key) } };
+  vi.stubGlobal('document', doc);
+  const contexts: Context[] = [];
+  class Context {
+    state = 'running'; close = vi.fn(async () => {});
+    constructor() { contexts.push(this); }
+  }
+  vi.stubGlobal('AudioContext', Context);
+  const audio = createDiceSound(); audio.setEnabled(true); await audio.unlock();
+  doc.hidden = true; listeners.get('visibilitychange')!();
+  expect(contexts[0]!.close).toHaveBeenCalledOnce();
+  await audio.unlock(); expect(contexts).toHaveLength(1);
+  doc.hidden = false; listeners.get('visibilitychange')!();
+  expect(contexts).toHaveLength(1); // No automatic audio session on return.
+  await audio.unlock(); expect(contexts).toHaveLength(2); // Saved enablement survives.
+  pageListeners.get('pagehide')!(); expect(contexts[1]!.close).toHaveBeenCalledOnce();
+  audio.dispose(); expect(listeners.size).toBe(0); expect(pageListeners.size).toBe(0);
 });

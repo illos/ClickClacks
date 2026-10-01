@@ -52,6 +52,21 @@ try {
   await expect(page.getByRole('button',{name:'Roll',exact:true})).toBeEnabled({timeout:20000});
   await page.getByRole('button',{name:'Roll',exact:true}).click();
   await expect.poll(()=>page.evaluate(()=>window.audioStarts.length),{timeout:20000}).toBeGreaterThan(afterReload);
+  const beforeBackground=await page.evaluate(()=>({contexts:window.audioContexts.length,starts:window.audioStarts.length}));
+  await page.evaluate(async()=>{
+    const ctx=window.audioContexts.at(-1);delete ctx.state;
+    Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});
+    document.dispatchEvent(new Event('visibilitychange'));
+    await new Promise(resolve=>setTimeout(resolve,50));
+  });
+  expect(await page.evaluate(()=>window.audioContexts.at(-1).state)).toBe('closed');
+  await page.evaluate(()=>{delete document.hidden;document.dispatchEvent(new Event('visibilitychange'));});
+  await expect(toggle).toHaveAttribute('aria-pressed','true');
+  expect(await page.evaluate(()=>window.audioContexts.length)).toBe(beforeBackground.contexts);
+  await expect(page.getByRole('button',{name:'Roll',exact:true})).toBeEnabled({timeout:20000});
+  await page.getByRole('button',{name:'Roll',exact:true}).click();
+  await expect.poll(()=>page.evaluate(()=>window.audioStarts.length),{timeout:20000}).toBeGreaterThan(beforeBackground.starts);
+  expect(await page.evaluate(()=>window.audioContexts.length)).toBe(beforeBackground.contexts+1);
   await page.getByRole('button',{name:'Customize dice',exact:true}).click();
   await page.getByRole('tab',{name:'Design',exact:true}).click();
   const pixel=async name=>page.getByRole('button',{name,exact:true}).locator('canvas').evaluate(canvas=>{
@@ -61,5 +76,5 @@ try {
   expect(frost[1]).toBeGreaterThan(frost[0]);expect(solid[0]).toBe(solid[1]);
   await page.screenshot({path:'/tmp/powerroller-frosted-swatch.png'});
   expect(errors).toEqual([]);
-  console.log('PASS: real AudioContext live-roll scheduling; roll after reload; interrupted-context recovery; non-silent finite waveform; mute; local persistence; no historical playback; right-aligned separate tray actions; Frosted gradient; no page errors');
+  console.log('PASS: real AudioContext live-roll scheduling; roll after reload; interrupted-context recovery; fresh context and audible waveform after simulated tab return; non-silent finite waveform; mute; local persistence; no historical playback; right-aligned separate tray actions; Frosted gradient; no page errors');
 } finally {await browser.close();}

@@ -8,7 +8,7 @@ import { createController, redactError, type Identity, type Profile, type Transp
 import type { DiceConfiguration } from '../shared/dice.ts';
 
 type Saved={version:1;backend:string;key:string;identity:Identity;profile:Profile};
-const usage='powerroller create|join|roll|view|events|profile|clear|leave --backend URL --session FILE [--key CODE] [--name NAME] [--dice power|4|6|8|10|12|20] [--count N] [--edges N] [--banes N] [--id ID]\nGeneric dice: --edges and --banes are stages 0|1|2 selecting 0|2|5; modifier = bonus minus penalty. Power rolls retain Draw Steel Edges/Banes.';
+const usage='powerroller create|join|roll|view|events|profile|clear|leave --backend URL --session FILE [--key CODE] [--name NAME] [--dice power|4|6|8|10|12|20] [--count N] [--bonus-d4 true|false] [--edges N] [--banes N] [--id ID]\nGeneric dice: --edges and --banes are stages 0|1|2 selecting 0|2|5; modifier = bonus minus penalty. Power rolls retain Draw Steel Edges/Banes.';
 function argumentsFor(argv:string[]){const[command,...tokens]=argv;const flags:Record<string,string>={};for(let i=0;i<tokens.length;i+=2){if(!tokens[i]?.startsWith('--')||tokens[i+1]===undefined)throw Error(usage);flags[tokens[i]!.slice(2)]=tokens[i+1]!;}return{command,flags};}
 function httpTransport(url:string):Transport{
  const client=new ConvexHttpClient(url);
@@ -37,6 +37,8 @@ export async function runCli(argv:string[]){
   if(command==='create'||command==='join'){await save(path,state);console.log(JSON.stringify({key:state.key,room:await transport.call('diceDemoV2:view',{key:state.key})},null,2));}
   else if(command==='roll'){
    const selected=flags.dice??'power';const dice:DiceConfiguration=selected==='power'?{kind:'power',sides:10,count:2}:{kind:'dice',sides:Number(selected) as DiceConfiguration['sides'],count:Number(flags.count??1)};
+   if(flags["bonus-d4"]!==undefined && !["true","false"].includes(flags["bonus-d4"]!)) throw Error("--bonus-d4 must be true or false.");
+   if(flags["bonus-d4"]==="true") dice.bonusD4=true;
    const accepted=await controller.roll({id:flags.id,dice,edges:Number(flags.edges??0),banes:Number(flags.banes??0)});
    const track=await transport.call('diceDemoV2:track',{key:state.key,viewer:state.identity.viewer});console.log(JSON.stringify({accepted,persistedTrack:track},null,2));
   }else if(command==='view')console.log(JSON.stringify(await transport.call('diceDemoV2:view',{key:state.key}),null,2));

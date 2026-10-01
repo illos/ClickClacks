@@ -9,7 +9,7 @@ export function decodedSamples(
     if (
       motion.samples.length ||
       motion.packed.byteLength % 8 ||
-      motion.packed.byteLength > 538720
+      motion.packed.byteLength > 565656
     )
       throw authorityError("INVALID_REQUEST","Invalid recorded motion.");
     return new Float64Array(motion.packed);

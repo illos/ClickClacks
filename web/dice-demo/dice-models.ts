@@ -270,11 +270,15 @@ export function createDie(style: Style, config: DiceConfig | undefined, index = 
         // Larger corner numerals sit farther inside the triangular face to avoid clipping.
         f.points.forEach((p, j) => {
           const value = model.vertices.findIndex(vertex => vertex.distanceTo(p) < 1e-5) + 1;
-          ctx.fillText(
-            String(value),
+          ctx.save();
+          ctx.translate(
             128 + (coords[j]![0]! / span) * 132,
             128 - (coords[j]![1]! / span) * 132,
           );
+          // Each numeral's top points outward toward its vertex, as on a tip-read d4.
+          ctx.rotate(Math.atan2(coords[j]![0]!, coords[j]![1]!));
+          ctx.fillText(String(value), 0, 0);
+          ctx.restore();
         });
       } else {
         ctx.fillText(String(f.value), 128, 132);

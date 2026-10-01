@@ -65,6 +65,14 @@ export function createRoomTray(
     scene.add(light);
   }
   const lanes = new Map<string, Lane>();
+  const members = new Map<string, Participant>();
+  const rollKey = (roll: ParticipantRoll) => JSON.stringify([roll.roller, roll.id]);
+  function removeLane(key: string, lane: Lane) {
+    scene.remove(lane.group);
+    disposeGroup(lane.group);
+    lane.result.remove();
+    lanes.delete(key);
+  }
   let participantAppearance = '';
   const queued = new Map<
     string,
@@ -226,7 +234,7 @@ export function createRoomTray(
     lastDraw = mono;
     let active = false,
       nextFade = Infinity;
-    for (const lane of lanes.values()) {
+    for (const [key, lane] of lanes) {
       if (!lane.roll) continue;
       const now = mono + lane.offset,
         roll = lane.roll,
@@ -267,6 +275,10 @@ export function createRoomTray(
           },
           lane.uncertainty,
         );
+      }
+      if (now >= fadeAt && (reduced || alpha <= 0)) {
+        removeLane(key, lane);
+        continue;
       }
       if (t < 1 || (resultAge >= 0 && resultAge < 1000) || (!reduced && now >= fadeAt && alpha > 0))
         active = true;
@@ -323,94 +335,97 @@ export function createRoomTray(
       for (const lane of lanes.values()) style(lane, { style: lane.appearance } as Participant);
       wake();
     },
-    participants(members: Participant[]) {
+    participants(participants: Participant[]) {
       // Presence/clock refreshes do not change the scene or wake settled playback.
       const appearance = JSON.stringify(
-        members.map(({ id, name, style, slot }) => ({ id, name, style, slot })),
+        participants.map(({ id, name, style, slot }) => ({ id, name, style, slot })),
       );
       if (appearance === participantAppearance) return;
       participantAppearance = appearance;
-      for (const [id, lane] of lanes)
-        if (!members.some(p => p.id === id)) {
-          scene.remove(lane.group);
-          disposeGroup(lane.group);
-          lane.result.remove();
-          lanes.delete(id);
+      for (const id of members.keys())
+        if (!participants.some(p => p.id === id)) {
+          members.delete(id);
+          this.clear(id);
         }
-      for (const member of members) {
-        let lane = lanes.get(member.id);
-        if (!lane) {
-          const group = new THREE.Group();
-          group.scale.setScalar(0.62);
-          scene.add(group);
-          const shadows = Array.from({ length: 2 }, () => shadow(group));
-          const result = document.createElement('div');
-          result.className = 'tray-roll-result';
-          result.setAttribute('aria-hidden', 'true');
-          result.hidden = true;
-          host.appendChild(result);
-          lane = {
-            group,
-            result,
-            resultWidth: 0,
-            dice: [],
-            shadows,
-            styleKey: '',
-            appearance: member.style,
-            materials: [],
-            offset: 0,
-            uncertainty: 0,
-            reported: false,
-            revealAfter: 0,
-            firstFrame: 0,
-            lastFrame: 0,
-            frames: 0,
-            maxFrameGap: 0,
-          };
-          lanes.set(member.id, lane);
+      for (const member of participants) members.set(member.id, member);
+      for (const [key, lane] of lanes) {
+        const member = members.get(lane.roll!.roller);
+        if (!member) {
+          removeLane(key, lane);
+          continue;
         }
         lane.group.userData.slot = member.slot;
         style(lane, member);
       }
       layout();
-      for (const [id, pending] of queued) {
-        if (lanes.has(id)) {
-          queued.delete(id);
+      for (const [key, pending] of queued) {
+        if (members.has(pending.roll.roller)) {
+          queued.delete(key);
           this.play(pending.roll, pending.clock);
         }
       }
       wake();
     },
     clear(roller: string) {
-      queued.delete(roller);
-      const lane = lanes.get(roller);
-      if (!lane) return;
-      lane.roll = undefined;
-      lane.result.hidden = true;
-      for (const object of [...lane.dice, ...lane.shadows]) object.visible = false;
+      for (const [key, pending] of queued)
+        if (pending.roll.roller === roller) queued.delete(key);
+      for (const [key, lane] of lanes)
+        if (lane.roll?.roller === roller) removeLane(key, lane);
       wake();
     },
     play(roll: ParticipantRoll, clock: { offset: number; uncertainty: number }) {
       roll = unpackRoll(roll);
-      if (!roll.motion) {
-        this.clear(roll.roller);
-        return;
-      }
-      const lane = lanes.get(roll.roller);
-      if (!lane) {
-        queued.set(roll.roller, { roll, clock });
-        return;
-      }
-      if (lane.roll?.id === roll.id) {
-        if (lane.offset !== clock.offset) {
-          lane.offset = clock.offset;
-          lane.uncertainty = clock.uncertainty;
+      // A logical-only result has no visual lane and leaves other throws intact.
+      if (!roll.motion) return;
+      const key = rollKey(roll);
+      const existing = lanes.get(key);
+      if (existing) {
+        if (existing.offset !== clock.offset || existing.uncertainty !== clock.uncertainty) {
+          existing.offset = clock.offset;
+          existing.uncertainty = clock.uncertainty;
           wake();
         }
         return;
       }
-      lane.roll = roll;
-      style(lane, { style: lane.appearance } as Participant);
+      // Settled history must not resurrect a disposed lane on a later refresh.
+      if (performance.now() + clock.offset >= roll.startsAt + roll.duration + 5600) return;
+      const member = members.get(roll.roller);
+      if (!member) {
+        queued.set(key, { roll, clock });
+        return;
+      }
+      const group = new THREE.Group();
+      group.scale.setScalar(0.62);
+      scene.add(group);
+      const result = document.createElement('div');
+      result.className = 'tray-roll-result';
+      result.setAttribute('aria-hidden', 'true');
+      result.dataset.rollId = roll.id;
+      result.dataset.roller = roll.roller;
+      result.hidden = true;
+      host.appendChild(result);
+      const lane: Lane = {
+        group,
+        result,
+        resultWidth: 0,
+        dice: [],
+        shadows: [],
+        styleKey: '',
+        appearance: member.style,
+        materials: [],
+        roll,
+        offset: clock.offset,
+        uncertainty: clock.uncertainty,
+        reported: false,
+        revealAfter: 0,
+        firstFrame: 0,
+        lastFrame: 0,
+        frames: 0,
+        maxFrameGap: 0,
+      };
+      group.userData.slot = member.slot;
+      lanes.set(key, lane);
+      style(lane, member);
       const total = document.createElement('strong');
       total.textContent = String(
         roll.total ?? roll.power?.total ?? roll.faces.reduce((sum, face) => sum + face, 0),

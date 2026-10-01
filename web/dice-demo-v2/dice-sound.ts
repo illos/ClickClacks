@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 import { acquireIosAudioSession } from './ios-audio-session';
 import { loadRecordedClacks, preloadClacks } from './recorded-clacks';
+import { loadRecordedResults, preloadResults } from './recorded-results';
 import { criticalResult, type CriticalResult } from '../../lib/critical';
-import { criticalCue } from './critical-cue';
+import type { criticalCue } from './critical-cue';
 import type { Motion } from '../dice-demo/model';
 import { revealDelay, type ParticipantRoll } from './model';
 
@@ -32,26 +33,34 @@ export function diceImpacts(motion: Motion | undefined, count: number): DiceImpa
 }
 
 /** Recorded landing clacks, scheduled against the tray's recorded physics. */
-export function createDiceSound() {
+export function createDiceSound(makeCriticalCue?: typeof criticalCue) {
   let context: AudioContext | undefined, enabled = false, disposed = false;
+  let criticalVolume = 0.7;
   let noises: AudioBuffer[] = [];
   const cues = new Map<Exclude<CriticalResult, null>, AudioBuffer>();
   let loading: Promise<void> | undefined;
   let restoreSession: (() => void) | undefined;
   const played = new Set<string>();
   const voices = new Map<AudioBufferSourceNode, string>();
+  const criticalGains = new Map<AudioBufferSourceNode, GainNode>();
   function cancel(owner?: string) {
     for (const [source, roller] of voices) {
       if (owner !== undefined && owner !== roller) continue;
       try { source.stop(); } catch {}
       source.disconnect();
       voices.delete(source);
+      criticalGains.delete(source);
     }
   }
   function setEnabled(value: boolean) {
     enabled = value;
     if (!value) releaseContext();
-    else void preloadClacks().catch(() => {});
+    else void Promise.all([preloadClacks(), makeCriticalCue ? undefined : preloadResults()]).catch(() => {});
+  }
+  function setCriticalVolume(value: number) {
+    if (!Number.isFinite(value)) return;
+    criticalVolume = Math.max(0, Math.min(1, value));
+    for (const gain of criticalGains.values()) gain.gain.value = criticalVolume;
   }
   async function unlock() {
     if (!enabled || disposed || document.hidden) return;
@@ -65,10 +74,16 @@ export function createDiceSound() {
       // Safari uses 'interrupted' after app/tab switching or screen locking.
       // Resume every recoverable non-running state on the current user gesture.
       if (context.state !== 'running') await context.resume();
-      if (!noises.length && context && !disposed && enabled && !document.hidden) {
+      if ((!noises.length || (!makeCriticalCue && cues.size < 2)) && context && !disposed && enabled && !document.hidden) {
         const target = context;
-        loading ??= loadRecordedClacks(target).then(buffers => {
-          if (context === target) noises = buffers;
+        loading ??= Promise.all([
+          loadRecordedClacks(target),
+          makeCriticalCue ? [] : loadRecordedResults(target).catch(() => []),
+        ]).then(([buffers, results]) => {
+          if (context !== target) return;
+          noises = buffers;
+          if (results[0]) cues.set('success', results[0]);
+          if (results[1]) cues.set('failure', results[1]);
         }).finally(() => { if (context === target) loading = undefined; });
         await loading;
       }
@@ -92,17 +107,20 @@ export function createDiceSound() {
     if (!context) return;
     let buffer = cues.get(result);
     if (!buffer) {
-      const samples = criticalCue(context.sampleRate, result);
+      // Missing cosmetic audio must not block landing clacks or substitute another cue.
+      if (!makeCriticalCue) return;
+      const samples = makeCriticalCue(context.sampleRate, result);
       buffer = context.createBuffer(1, samples.length, context.sampleRate);
       buffer.getChannelData(0).set(samples);
       cues.set(result, buffer);
     }
     const source = context.createBufferSource(), gain = context.createGain();
     source.buffer = buffer;
-    gain.gain.value = 0.2;
+    gain.gain.value = criticalVolume;
     source.connect(gain).connect(context.destination);
     voices.set(source, owner);
-    source.onended = () => { voices.delete(source); source.disconnect(); gain.disconnect(); };
+    criticalGains.set(source, gain);
+    source.onended = () => { voices.delete(source); criticalGains.delete(source); source.disconnect(); gain.disconnect(); };
     source.start(at);
   }
   function play(roll: ParticipantRoll, offset: number, reduced: boolean) {
@@ -149,5 +167,5 @@ export function createDiceSound() {
     document.removeEventListener('visibilitychange', visibility);
     page?.removeEventListener('pagehide', releaseContext);
   }
-  return { unlock, setEnabled, play, cancel, dispose };
+  return { unlock, setEnabled, setCriticalVolume, play, cancel, dispose };
 }

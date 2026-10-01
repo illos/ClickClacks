@@ -6,6 +6,7 @@ try {
   await page.goto(process.env.URL || 'http://127.0.0.1:9594/powerroller/');
   const button = page.locator('.roll-button-group > .primary');
   await expect(button).toBeEnabled({ timeout: 30000 });
+  const tappedAt = Date.now();
   await button.click();
   await expect(button).toBeDisabled();
   // Observe the exact DOM transition rather than waiting for the result flash.
@@ -29,9 +30,9 @@ try {
   expect(result.status).toBe('success');
   const roll = result.value.roll;
   expect(roll.motion).toBeDefined();
-  expect(enabledAt - roll.startsAt).toBeGreaterThanOrEqual(1900);
-  expect(enabledAt - roll.startsAt).toBeLessThan(2300);
+  expect(enabledAt - tappedAt).toBeGreaterThanOrEqual(1900);
+  expect(enabledAt - tappedAt).toBeLessThan(2300);
   expect(enabledAt).toBeLessThan(roll.startsAt + roll.duration);
-  await expect(page.locator('.roll-log-entry')).toHaveCount(1);
-  console.log(`PASS: Roll re-enabled ${enabledAt - roll.startsAt}ms after the persisted throw started, before its ${roll.duration}ms animation finished.`);
+  await expect(page.locator('.roll-log-entry')).toHaveCount(1, { timeout: 10000 });
+  console.log(`PASS: Roll re-enabled ${enabledAt - tappedAt}ms after the TAP, before its ${roll.duration}ms recorded animation finished.`);
 } finally { await browser.close(); }

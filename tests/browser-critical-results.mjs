@@ -54,17 +54,18 @@ try {
  const host=page.locator('.stage').last();
  for(const name of ['Power 19','Power fail','D20 crit','D20 fail','Modified 20']){
   const fixture=fixtures.find(r=>r.name===name);
-  await page.evaluate(async roll=>{
+  const id=await page.evaluate(async roll=>{
    const motion=(await window.fixturePlanner.prepareThrow(roll.faces,{scale:.65,obstacles:[],dice:roll.dice})).motion;
-   const startsAt=performance.now()+150;const played={...roll,id:crypto.randomUUID(),startsAt,duration:(motion.samples.length/(roll.faces.length*7)-1)*motion.stepMs,motion};window.fixtureTray.play(played,{offset:0,uncertainty:0});window.fixtureAudio.play(played,0,false);
+   const startsAt=performance.now()+150;const played={...roll,id:crypto.randomUUID(),startsAt,duration:(motion.samples.length/(roll.faces.length*7)-1)*motion.stepMs,motion};window.fixtureTray.play(played,{offset:0,uncertainty:0});window.fixtureAudio.play(played,0,false);return played.id;
   },fixture);
-  const result=host.locator('.tray-roll-result');await expect(result).toBeVisible({timeout:20000});
+  const result=host.locator(`.tray-roll-result[data-roll-id="${id}"]`);await expect(result).toBeVisible({timeout:20000});
   const failure=name.includes('fail');if(name==='Modified 20'){await expect(result.locator('.critical-badge')).toHaveCount(0);await expect(result).not.toHaveClass(/critical-/);}else{await expect(result.locator('.critical-badge')).toHaveText(failure?'Crit fail':'Crit');await expect(result).toHaveClass(new RegExp('critical-'+(failure?'failure':'success')));}
   const box=await result.boundingBox(),trayBox=await host.boundingBox();expect(box.x).toBeGreaterThanOrEqual(trayBox.x-1);expect(box.x+box.width).toBeLessThanOrEqual(trayBox.x+trayBox.width+1);
   if(name==='Power 19'||name==='Power fail')await page.screenshot({path:`/tmp/powerroller-${failure?'fail':'crit'}-flash.png`});
  }
  expect(await page.evaluate(()=>window.cueStarts.length)).toBe(4);
- expect(await page.evaluate(()=>window.cueStarts.every(c=>c.rms>.04&&Math.abs(c.duration-.33)<.001))).toBe(true);
+ expect(await page.evaluate(()=>window.cueStarts.every(c=>c.rms>.08))).toBe(true);
+ expect(await page.evaluate(()=>window.cueStarts.map(c=>Number(c.duration.toFixed(3))))).toEqual([.768,1.3,.768,1.3]);
  await page.evaluate(()=>{window.fixtureAudio.dispose();window.fixtureTray.dispose();window.fixturePlanner.dispose();});expect(errors).toEqual([]);
  console.log('PASS: cached history crit colors/labels survive reload; natural values ignore modifiers; bonus d4 and multi-d20 exclusions; semantic descriptions; 320px history containment; real planner/renderer success/fail flashes and ordinary-flash reset; four real AudioContext reveal cues with non-silent buffers; no page errors.');
 }finally{await browser.close();}

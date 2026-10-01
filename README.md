@@ -1,4 +1,7 @@
-# Power Roller
+# Click Clacks
+
+Click Clacks is the standalone dice roller published from `illos/powerroller`.
+The approved High Voltage branding changes the site name; package, API and browser-storage identifiers remain compatible.
 
 A free realtime dice roller for Draw Steel, with a reusable TypeScript library,
 optional React/Three presentation and an isolated Convex backend.
@@ -14,6 +17,11 @@ retain Edges, Banes and tiers. Generic dice bonus/penalty controls cycle through
 0, 2 and 5; the wire fields `edges` and `banes` remain stages 0–2. A bonus
 adds its stage value and a penalty subtracts its stage value, so equal stages
 cancel (stage 2 bonus and stage 1 penalty give +3). Clearing preserves the original shared tray behavior.
+
+On supported desktop browsers, the popout icon beside the customization and
+social icons opens a floating dice tray. It shares your table, player and current
+roll controls, with the six latest rolls behind the dice. The main log keeps its
+full history and fades only near the bottom of its scroll area.
 
 ## Run your own site
 
@@ -49,6 +57,10 @@ uses the repository's Actions workflow and the repository variable
 `VITE_CONVEX_URL`. The default asset base is `/powerroller/`; configure Vite's base
 for another hosting path. Publish matching backend functions before a frontend
 that requires them.
+
+The build publishes the main site and a separate PiP entry under `dist/pip/`.
+Deploy the whole `dist/` directory. Set `POWERROLLER_BASE` (with a trailing slash)
+when building for a hosting path other than `/powerroller/`.
 
 ## Embed without adopting the site
 

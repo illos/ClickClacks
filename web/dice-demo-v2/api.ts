@@ -24,7 +24,7 @@ export const demoV2 = {
   ),
   track: makeFunctionReference<
     "query",
-    { key: string; viewer: string },
+    { key: string; viewer: string; rollId?: string },
     Track | null
   >("diceDemoV2:track"),
   join: makeFunctionReference<

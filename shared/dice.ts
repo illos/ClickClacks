@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-/** A new throw may start two seconds after the previous throw starts. */
+/** Roll taps are spaced two seconds apart; preparation counts toward the wait. */
 export const rollCooldownMs = 2000;
 export type DiceConfiguration = {
   kind: "power" | "dice";

@@ -244,3 +244,9 @@ Focused Chromium on a 430×932 touch viewport verified real AudioContext schedul
 on live rolls, mute, preference reload, no history audio, separate right-aligned
 tray actions, and Frosted-versus-Solid pixels with no page errors. Mobile screenshots
 were inspected. Actual iPhone sound quality/autoplay behavior remains a device check.
+
+Dice sound refinement: replaced the pitched 920/1760 Hz pair with short,
+inharmonic 230/415/735 Hz body resonances and low noise. A stronger broadband
+snap and higher filter cutoff sharpen the strike, while a shorter tail keeps
+it dry. Peak normalization retains headroom. The three focused sound tests,
+typecheck, and production build passed; subjective iPhone listening is pending.

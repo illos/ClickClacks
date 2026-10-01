@@ -53,20 +53,31 @@ export function createDiceSound() {
   function strike(at: number, strength: number, die: number, owner: string, density: number) {
     if (!context) return;
     if (!noise) {
-      noise = context.createBuffer(1, Math.ceil(context.sampleRate * 0.09), context.sampleRate);
+      noise = context.createBuffer(1, Math.ceil(context.sampleRate * 0.07), context.sampleRate);
       const data = noise.getChannelData(0);
-      // A sharp attack with several decaying body resonances, softly varied per die.
+      // A dry, broadband edge strike over a low wooden body. Short, inharmonic
+      // modes avoid the pitched "toke" of the earlier 920/1760 Hz sine pair.
+      let bodyNoise = 0, peak = 0;
       for (let i = 0; i < data.length; i++) {
-        const t = i / context.sampleRate;
-        data[i] = (Math.random() * 2 - 1) * Math.exp(-t * 180) * 0.55
-          + Math.sin(t * Math.PI * 2 * 920) * Math.exp(-t * 85) * 0.27
-          + Math.sin(t * Math.PI * 2 * 1760) * Math.exp(-t * 125) * 0.18;
+        const t = i / context.sampleRate, white = Math.random() * 2 - 1;
+        bodyNoise = bodyNoise * 0.78 + white * 0.22;
+        const attack = Math.min(1, t / 0.0002);
+        const tail = Math.min(1, (data.length - 1 - i) / (context.sampleRate * 0.004));
+        const snap = white * Math.exp(-t * 650) * 0.8;
+        const wood = bodyNoise * Math.exp(-t * 125) * 0.55;
+        const modes = Math.sin(t * Math.PI * 2 * 230) * Math.exp(-t * 120) * 0.36
+          + Math.sin(t * Math.PI * 2 * 415) * Math.exp(-t * 165) * 0.24
+          + Math.sin(t * Math.PI * 2 * 735) * Math.exp(-t * 230) * 0.13;
+        data[i] = (snap + wood + modes) * attack * tail;
+        peak = Math.max(peak, Math.abs(data[i]!));
       }
+      // Keep stronger transients within headroom, without increasing roll volume.
+      if (peak > 0.9) for (let i = 0; i < data.length; i++) data[i] *= 0.9 / peak;
     }
     const source = context.createBufferSource(), filter = context.createBiquadFilter(), gain = context.createGain();
     source.buffer = noise;
     source.playbackRate.value = 0.88 + (die % 7) * 0.045 + Math.random() * 0.06;
-    filter.type = 'lowpass'; filter.frequency.value = 4100;
+    filter.type = 'lowpass'; filter.frequency.value = 7200;
     gain.gain.value = (0.12 + strength * 0.26) / Math.sqrt(density);
     source.connect(filter).connect(gain).connect(context.destination);
     voices.set(source, owner);

@@ -2,8 +2,8 @@
 import type { Style } from './model';
 
 /** Original procedural surface decoration shared by dice textures and design swatches. */
-export function paintDiePattern(ctx: CanvasRenderingContext2D, style: Style) {
-  ctx.fillStyle = style.color;
+export function paintDiePattern(ctx: CanvasRenderingContext2D, style: Style, background?: CanvasGradient) {
+  ctx.fillStyle = background ?? style.color;
   ctx.fillRect(0, 0, 256, 256);
   // Stable procedural decoration, no downloaded artwork or per-frame texture generation.
   if (style.pattern.startsWith('frosted')) {

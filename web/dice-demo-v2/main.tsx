@@ -10,7 +10,7 @@ import {
   useState,
   type PointerEvent,
 } from 'react';
-import { Check, Copy, X, Users, Eraser, Link as LinkIcon } from 'lucide-react';
+import { Check, Copy, X, Users, Eraser, Volume2, VolumeX, Link as LinkIcon } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { makeFunctionReference } from 'convex/server';
 import { createController, type Identity, type Profile, type DeliveredRoll } from '../../lib/client';
@@ -43,6 +43,7 @@ import {
 } from './model';
 import type { createRoomTray } from './renderer';
 import type { createDicePreview } from './preview';
+import { createDiceSound } from './dice-sound';
 import { AccessibilityControls } from './accessibility-controls';
 import { DiceDesignControls } from './dice-design-controls';
 import { startClockSync } from './clock-sync';
@@ -381,6 +382,24 @@ function DiceRoom() {
   useEffect(() => { if (options.preferences) setSavedPreferences(options.preferences); }, [options.preferences]);
   const preferencesRef = useRef(preferences);
   preferencesRef.current = preferences;
+  const sound = useRef<ReturnType<typeof createDiceSound> | null>(null);
+  useEffect(() => {
+    const audio = createDiceSound(); sound.current = audio; audio.setEnabled(preferencesRef.current.sound === true);
+    return () => { audio.dispose(); sound.current = null; };
+  }, []);
+  useEffect(() => { sound.current?.setEnabled(preferences.sound === true); }, [preferences.sound]);
+  function unlockSound() {
+    void sound.current?.unlock().then(() => {
+      const clock = clockRef.current;
+      if (!clock) return;
+      for (const roll of tracks.current.values()) playSound(roll, clock.offset);
+    });
+  }
+  function playSound(roll: ParticipantRoll, offset: number) {
+    const p = preferencesRef.current;
+    const reduced = p.hidden || p.motion === 'reduce' || (p.motion === 'device' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+    sound.current?.play(roll, offset, reduced);
+  }
   const planner = useRef<ReturnType<typeof createThrowPlanner> | null>(null);
   const makeRestingScene = useRef<typeof restingScene | null>(null);
   function changePreferences(next: SitePreferences) {
@@ -523,6 +542,12 @@ function DiceRoom() {
       return next;
     });
   }, []);
+  const audibleOwners = useRef(new Set<string>());
+  useEffect(() => {
+    for (const owner of audibleOwners.current) if (!tracks.current.has(owner)) sound.current?.cancel(owner);
+    audibleOwners.current = new Set(tracks.current.keys());
+    if (clock) for (const roll of tracks.current.values()) playSound(roll, clock.offset);
+  }, [trayRolls, clock]);
   const encodedOwnTrack = useQuery(demoV2.track, { key: roomKey, viewer });
   const ownTrack = useMemo(
     () => (encodedOwnTrack ? unpackTrack(encodedOwnTrack) : encodedOwnTrack),
@@ -843,6 +868,7 @@ function DiceRoom() {
     }
   }
   async function clearDice() {
+    sound.current?.cancel();
     setClearing(true);
     setError('');
     for (const id of tracks.current.keys()) tray.current?.clear(id);
@@ -858,6 +884,7 @@ function DiceRoom() {
   }
   async function perform() {
     setChoosingDice(false);
+    unlockSound();
     setPending(true);
     setError('');
     const request: NonNullable<typeof retryThrow.current> = retryThrow.current ?? {
@@ -933,7 +960,7 @@ function DiceRoom() {
     setProfile(old => ({ ...old, style: { ...old.style, ...patch } }));
   }
   return (
-    <main className={`lab v2${preferences.highContrast ? ' high-contrast' : ''}`}>
+    <main onPointerDown={unlockSound} onKeyDown={unlockSound} className={`lab v2${preferences.highContrast ? ' high-contrast' : ''}`}>
       <div className="roll-area">
         <header className="lab-header">
           <h1 className="power-title">Power Roller</h1>
@@ -985,6 +1012,17 @@ function DiceRoom() {
                   : 'Connecting…'
                 : `${members.length} / 8 participants`}
             </div>
+            <button type="button" className="sound-toggle"
+              aria-label="Dice sounds" aria-pressed={preferences.sound === true}
+              title={preferences.sound ? 'Mute dice sounds' : 'Enable dice sounds'}
+              onClick={() => {
+                const enabled = !preferences.sound;
+                sound.current?.setEnabled(enabled);
+                changePreferences({ ...preferences, sound: enabled });
+                if (enabled) unlockSound();
+              }}>
+              {preferences.sound ? <Volume2 aria-hidden /> : <VolumeX aria-hidden />}
+            </button>
             {hasDice && (
               <button
                 type="button"

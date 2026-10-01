@@ -8,7 +8,26 @@ function PatternSample({ style }: { style: Style }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const context = canvas.current?.getContext('2d');
-    if (context) paintDiePattern(context, style);
+    if (!context) return;
+    let background: CanvasGradient | undefined;
+    if (style.pattern === 'frosted') {
+      // Preview the die shader's quadratic rim glow as a left-to-right ramp.
+      // d10.ts mixes linear-light RGB toward 1.8 with frostGlow * 0.85.
+      const gradient = context.createLinearGradient(0, 0, 256, 0);
+      const rgb = [1, 3, 5].map(start => parseInt(style.color.slice(start, start + 2), 16) / 255);
+      const linear = rgb.map(c => c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+      for (let step = 0; step <= 8; step++) {
+        const t = step / 8, glow = t * t * 0.85;
+        const color = linear.map(c => {
+          const light = c * (1 - glow) + 1.8 * glow;
+          const srgb = light <= 0.0031308 ? light * 12.92 : 1.055 * light ** (1 / 2.4) - 0.055;
+          return Math.round(Math.min(1, srgb) * 255);
+        });
+        gradient.addColorStop(t, `rgb(${color.join(',')})`);
+      }
+      background = gradient;
+    }
+    paintDiePattern(context, style, background);
   }, [style.color, style.ink, style.pattern]);
   return <canvas ref={canvas} width={256} height={256} aria-hidden="true" />;
 }

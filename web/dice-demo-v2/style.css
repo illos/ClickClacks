@@ -417,7 +417,7 @@
   padding-inline: 22px;
   border-color: transparent;
 }
-.clear-tray {
+.clear-tray, .sound-toggle {
   position: absolute;
   top: 12px;
   right: 12px;
@@ -430,7 +430,7 @@
   align-items: center;
   justify-content: center;
 }
-.clear-tray svg {
+.clear-tray svg, .sound-toggle svg {
   width: 18px;
   height: 18px;
 }
@@ -1014,4 +1014,8 @@
   .v2 .dice-card .power-modifiers { flex: 0 0 auto; }
   .v2 .track-results { margin-top: 16px; max-height: none; }
 }
+
+/* Keep both tray actions at the right, beside the participant count. */
+.clear-tray { right: 60px; }
+.sound-toggle[aria-pressed="true"] { color: #70dac3; }
 }

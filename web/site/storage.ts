@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 import type { ParticipantRoll, Style } from 'powerroller/client';
 export type Profile = { name: string; style: Style };
-export type SitePreferences = { profile?: Profile; room?: string; roomBackend?: string; motion: 'device' | 'reduce' | 'full'; hidden: boolean; highContrast: boolean; announcements: 'all' | 'mine' | 'off' };
+export type SitePreferences = { profile?: Profile; room?: string; roomBackend?: string; sound?: boolean; motion: 'device' | 'reduce' | 'full'; hidden: boolean; highContrast: boolean; announcements: 'all' | 'mine' | 'off' };
 const key = 'powerroller.preferences.v2';
-const defaults: SitePreferences = { motion: 'device', hidden: false, highContrast: false, announcements: 'all' };
+const defaults: SitePreferences = { sound: false, motion: 'device', hidden: false, highContrast: false, announcements: 'all' };
 let preferenceMemoryOnly = false;
 let preferenceMemory: SitePreferences = { ...defaults };
 export function loadPreferences(): SitePreferences {
@@ -15,7 +15,7 @@ export function loadPreferences(): SitePreferences {
     const style = p?.profile?.style;
     const profile = typeof p?.profile?.name === 'string' && p.profile.name.trim() && p.profile.name.length <= 32 && /^#[a-f\d]{6}$/i.test(style?.color ?? '') && /^#[a-f\d]{6}$/i.test(style?.ink ?? '') && ['solid','speckle','marble','frosted'].includes(style?.pattern) && [undefined,'serif','modern','rune','gothic'].includes(style?.font)
       ? { name: p.profile.name, style: { color: style.color, ink: style.ink, pattern: style.pattern, ...(style.font ? {font:style.font} : {}) } } : undefined;
-    return { profile, room: typeof p?.room === 'string' ? p.room : undefined, roomBackend: typeof p?.roomBackend === 'string' ? p.roomBackend : undefined, motion: ['device','reduce','full'].includes(p?.motion) ? p.motion : 'device', hidden: p?.hidden === true, highContrast: p?.highContrast === true, announcements: ['all','mine','off'].includes(p?.announcements) ? p.announcements : 'all' };
+    return { sound: p?.sound === true, profile, room: typeof p?.room === 'string' ? p.room : undefined, roomBackend: typeof p?.roomBackend === 'string' ? p.roomBackend : undefined, motion: ['device','reduce','full'].includes(p?.motion) ? p.motion : 'device', hidden: p?.hidden === true, highContrast: p?.highContrast === true, announcements: ['all','mine','off'].includes(p?.announcements) ? p.announcements : 'all' };
   } catch { return { ...preferenceMemory }; }
 }
 export function savePreferences(preferences: SitePreferences) {

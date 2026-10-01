@@ -219,3 +219,28 @@ table with archived history. The lightness slider now has a 44px-high touch area
 and a wider, taller handle. Existing color-wheel checks passed; mobile layout
 was visually inspected. Pressing Roll closes an open dice picker immediately.
 Typecheck and production build passed.
+
+## Optional dice sounds and Frosted preview
+
+The tray's top-right sound toggle saves its opt-in state with local browser
+preferences. The eraser sits immediately to its left. Web Audio generates short
+plastic-on-wood clacks without a third-party recording. Landing/bounce impulses
+are detected from the same recorded frame path the tray replays and scheduled
+against its shared clock; quiet settling is ignored. Reduced/hidden motion uses
+a single clack at result reveal. Audio unlocks on interaction, stays cosmetic if
+unsupported, and cancels on mute, tray clear, backgrounding, or table unmount.
+Historical/missed impacts are not replayed. Dense pools attenuate simultaneous
+clacks. No backend or shared roll data changes are required.
+
+Frosted's pattern swatch adds a linear preview of the existing shader's quadratic
+rim glow, using its 0.85 mix toward linear-light 1.8. The original fine grain is
+painted over that gradient; other swatches and actual dice rendering retain the
+existing behavior.
+
+Accepted checks: 12 focused sound/storage tests passed, including recorded bounce
+frames, mixed-pool timing, shared-clock scheduling, deduplication, mute/background
+cancellation, and saved-boolean validation. Typecheck and production build passed.
+Focused Chromium on a 430×932 touch viewport verified real AudioContext scheduling
+on live rolls, mute, preference reload, no history audio, separate right-aligned
+tray actions, and Frosted-versus-Solid pixels with no page errors. Mobile screenshots
+were inspected. Actual iPhone sound quality/autoplay behavior remains a device check.

@@ -202,6 +202,7 @@ and the session file. Use a separate file for another backend or participant.
 - Browser preferences and observed history are site-owned, bounded and
   origin-specific. Unavailable storage falls back to memory. The library does not
   secretly persist a host's session or rewrite its navigation.
+- Optional tray sounds are off by default and saved locally. Clacks follow recorded bounce timing; reduced/hidden motion uses a result-reveal clack.
 - Local motion/text/contrast preferences affect presentation. Shared result
   availability stays aligned with the common reveal timestamp. Real-device
   timing and actual VoiceOver/NVDA checks remain separate manual evidence; this

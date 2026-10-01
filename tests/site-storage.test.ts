@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cacheRoll, loadHistory, loadPreferences, loadProfile, saveProfile } from '../web/site/storage';
+import { cacheRoll, loadHistory, loadPreferences, loadProfile, saveProfile, savePreferences } from '../web/site/storage';
 import { claimIdentity, readIdentity } from '../web/site/session';
 import type { ParticipantRoll } from '../web/dice-demo-v2/model';
 function storage(){const values=new Map<string,string>();return{getItem:(key:string)=>values.get(key)??null,setItem:(key:string,value:string)=>values.set(key,value),removeItem:(key:string)=>values.delete(key),clear:()=>values.clear()};}
@@ -8,6 +8,11 @@ const roll=(id:string,startsAt:number):ParticipantRoll=>({id,name:'River',roller
 beforeEach(()=>{vi.stubGlobal('localStorage',storage());vi.stubGlobal('sessionStorage',storage());vi.stubGlobal('indexedDB',undefined);});
 afterEach(()=>{vi.useRealTimers();vi.unstubAllGlobals();});
 describe('site-owned persistence and private identity',()=>{
+ it('defaults sound off and persists only an explicit boolean preference',()=>{
+  expect(loadPreferences().sound).toBe(false);
+  savePreferences({...loadPreferences(),sound:true});expect(loadPreferences().sound).toBe(true);
+  localStorage.setItem('powerroller.preferences.v2',JSON.stringify({version:2,preferences:{sound:'true'}}));expect(loadPreferences().sound).toBe(false);
+ });
  it('validates malformed saved profiles before restoring them',()=>{
   localStorage.setItem('powerroller.preferences.v2',JSON.stringify({version:2,preferences:{profile:{...profile,style:{...profile.style,font:'invalid'}},motion:'invalid',room:2}}));expect(loadProfile()).toBeUndefined();expect(loadPreferences()).toMatchObject({motion:'device',room:undefined});saveProfile(profile);expect(loadProfile()).toEqual(profile);
  });

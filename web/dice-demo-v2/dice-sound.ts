@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 import { acquireIosAudioSession } from './ios-audio-session';
 import { loadRecordedClacks, preloadClacks } from './recorded-clacks';
+import { criticalResult, type CriticalResult } from '../../lib/critical';
+import { criticalCue } from './critical-cue';
 import type { Motion } from '../dice-demo/model';
 import { revealDelay, type ParticipantRoll } from './model';
 
@@ -33,6 +35,7 @@ export function diceImpacts(motion: Motion | undefined, count: number): DiceImpa
 export function createDiceSound() {
   let context: AudioContext | undefined, enabled = false, disposed = false;
   let noises: AudioBuffer[] = [];
+  const cues = new Map<Exclude<CriticalResult, null>, AudioBuffer>();
   let loading: Promise<void> | undefined;
   let restoreSession: (() => void) | undefined;
   const played = new Set<string>();
@@ -85,6 +88,23 @@ export function createDiceSound() {
     source.onended = () => { voices.delete(source); source.disconnect(); gain.disconnect(); };
     source.start(at);
   }
+  function accent(at: number, result: Exclude<CriticalResult, null>, owner: string) {
+    if (!context) return;
+    let buffer = cues.get(result);
+    if (!buffer) {
+      const samples = criticalCue(context.sampleRate, result);
+      buffer = context.createBuffer(1, samples.length, context.sampleRate);
+      buffer.getChannelData(0).set(samples);
+      cues.set(result, buffer);
+    }
+    const source = context.createBufferSource(), gain = context.createGain();
+    source.buffer = buffer;
+    gain.gain.value = 0.2;
+    source.connect(gain).connect(context.destination);
+    voices.set(source, owner);
+    source.onended = () => { voices.delete(source); source.disconnect(); gain.disconnect(); };
+    source.start(at);
+  }
   function play(roll: ParticipantRoll, offset: number, reduced: boolean) {
     if (!enabled || disposed || document.hidden || context?.state !== 'running' || !noises.length) return;
     const key = JSON.stringify([roll.roller, roll.id]);
@@ -102,12 +122,18 @@ export function createDiceSound() {
       const density = impacts.filter(other => Math.abs(other.at - impact.at) < 35).length;
       strike(context.currentTime + delay / 1000, impact.strength, roll.roller, density);
     }
+    const result = criticalResult(roll);
+    const delay = roll.startsAt + revealDelay(roll) - now;
+    if (result && delay >= 0 && delay <= 10000) {
+      try { accent(context.currentTime + delay / 1000, result, roll.roller); } catch { /* Cosmetic result cue cannot interrupt a roll. */ }
+    }
   }
   function releaseContext() {
     cancel();
     const retired = context;
     context = undefined;
     noises = [];
+    cues.clear();
     loading = undefined;
     restoreSession?.(); restoreSession = undefined;
     // Some Safari contexts stay silent after interruption despite reporting running.

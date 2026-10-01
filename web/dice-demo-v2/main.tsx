@@ -15,8 +15,9 @@ import { createPortal } from 'react-dom';
 import { makeFunctionReference } from 'convex/server';
 import { createController, type Identity, type Profile, type DeliveredRoll } from '../../lib/client';
 import { displayError, redactError } from '../../lib/errors';
-import { genericModifierValue } from '../../shared/dice';
-import { describeRoll } from '../../lib/format';
+import { genericModifierValue, rollCooldownMs } from '../../shared/dice';
+import { describeRoll, rollDiceNotation } from '../../lib/format';
+import { criticalResult, criticalLabel } from '../../lib/critical';
 import {
   ConvexProvider,
   ConvexReactClient,
@@ -154,8 +155,10 @@ function DiceAvatar({ style, className = '' }: { style?: Style; className?: stri
 }
 
 function RollEntry({ roll, viewer, avatarStyle }: { roll: LogRoll; viewer: string; avatarStyle?: Style }) {
+  const critical = criticalResult(roll);
+  const showEquation = roll.faces.length > 1 || !!roll.modifier;
   return (
-    <article className="roll-log-entry">
+    <article className={`roll-log-entry${critical ? ` critical-${critical}` : ''}`}>
       <header>
         <strong className="roll-author">
           <DiceAvatar style={avatarStyle ?? roll.styles[0]} className="roll-avatar" />
@@ -169,16 +172,18 @@ function RollEntry({ roll, viewer, avatarStyle }: { roll: LogRoll; viewer: strin
         </time>
       </header>
       <div className="roll-result-line">
-        <span className="roll-equation">
+        <span className="roll-dice-notation">{rollDiceNotation(roll)}</span>
+        <span aria-hidden="true">|</span>
+        {showEquation && <span className="roll-equation">
           {roll.faces.join(' + ')}
           {roll.power && roll.power.edges - roll.power.banes === 1 && ' + 2'}
           {roll.power && roll.power.edges - roll.power.banes === -1 && ' − 2'}
           {!roll.power &&
             !!roll.modifier &&
             `${roll.modifier > 0 ? ' + ' : ' − '}${Math.abs(roll.modifier)}`}
-        </span>
+        </span>}
         <span className="roll-outcome">
-          <span>=</span>
+          {showEquation && <span>=</span>}
           <strong className="roll-total">
             {roll.total ?? roll.power?.total ??
               roll.faces.reduce((total, face) => total + face, 0) + (roll.modifier ?? 0)}
@@ -186,6 +191,7 @@ function RollEntry({ roll, viewer, avatarStyle }: { roll: LogRoll; viewer: strin
           {roll.power && (
             <strong className={`tier tier-${roll.power.tier}`}>Tier {roll.power.tier}</strong>
           )}
+          {critical && <strong className={`critical-badge critical-${critical}`}>{criticalLabel(critical)}</strong>}
         </span>
         {roll.power && roll.power.edges > 0 && (
           <span className="edge">↑ {roll.power.edges === 2 ? 'Double edge' : 'Edge'}</span>
@@ -848,7 +854,7 @@ function DiceRoom() {
   }, [profile, initial, joined, viewer, credential, customize]);
   const ownRoll = ownTrack?.roll;
   const busy =
-    changingTable || pending || !!(ownRoll && clock && now + clock.offset < ownRoll.startsAt + ownRoll.duration);
+    changingTable || pending || !!(ownRoll && clock && now + clock.offset < ownRoll.startsAt + rollCooldownMs);
   async function changeTable(next: string) {
     if (changingTableRef.current) return;
     if (next === roomKey || next.toUpperCase() === room?.code) {

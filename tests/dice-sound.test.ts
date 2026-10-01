@@ -84,3 +84,46 @@ it('retires backgrounded audio and keeps the enabled setting for the next tap', 
   pageListeners.get('pagehide')!(); expect(contexts[1]!.close).toHaveBeenCalledOnce();
   audio.dispose(); expect(listeners.size).toBe(0); expect(pageListeners.size).toBe(0);
 });
+
+it('plays one crit accent at reveal, preserves clacks, skips ordinary/pool/history results and cancels owned cues', async () => {
+  const sources: any[] = [], buffers: Float32Array[] = [];
+  vi.stubGlobal('document', { hidden: false, addEventListener: vi.fn(), removeEventListener: vi.fn() });
+  vi.stubGlobal('performance', { now: () => 1000 });
+  class Context {
+    state = 'running'; currentTime = 10; sampleRate = 48000; destination = {};
+    close = vi.fn(async () => {});
+    createBuffer = (_channels: number, length: number) => {
+      const data = new Float32Array(length); buffers.push(data);
+      return { getChannelData: () => data };
+    };
+    createBufferSource = () => {
+      const node = { buffer: undefined, playbackRate: {value:1}, connect: vi.fn((target:any) => target), disconnect: vi.fn(), start: vi.fn(), stop: vi.fn() };
+      sources.push(node); return node;
+    };
+    createGain = () => ({gain:{value:0},connect:()=>{},disconnect:vi.fn()});
+  }
+  vi.stubGlobal('AudioContext', Context);
+  const audio = createDiceSound(); audio.setEnabled(true); await audio.unlock();
+  const power: ParticipantRoll = {id:'crit',roller:'me',name:'Me',faces:[9,10],styles:[],startsAt:1200,duration:1000,revealAt:1800,
+    motion:motion([[1,1],[.5,1],[.7,1]])};
+  audio.play(power,100,false);
+  expect(sources).toHaveLength(2); // Original landing and separate result accent.
+  expect(sources[0].start).toHaveBeenCalledWith(10.12);
+  expect(sources[1].start).toHaveBeenCalledWith(10.7);
+  expect(buffers).toHaveLength(1);
+  audio.play(power,100,false); expect(sources).toHaveLength(2);
+  audio.cancel('someone-else'); expect(sources[1].stop).not.toHaveBeenCalled();
+  audio.cancel('me'); expect(sources[0].stop).toHaveBeenCalledOnce(); expect(sources[1].stop).toHaveBeenCalledOnce();
+  const still = motion([[1],[1],[1]]);
+  audio.play({...power,id:'ordinary',faces:[8,10],motion:motion([[1,1],[1,1],[1,1]])},100,false);
+  audio.play({...power,id:'pool',faces:[20,1],dice:{kind:'dice',sides:20,count:2},motion:motion([[1,1],[1,1],[1,1]])},100,false);
+  audio.play({...power,id:'old',startsAt:0,revealAt:500},100,false);
+  expect(sources).toHaveLength(2);
+  audio.play({...power,id:'failure',faces:[1,3],dice:{kind:'dice',sides:20,count:1,bonusD4:true},motion:motion([[1,1],[1,1],[1,1]])},100,false);
+  expect(sources).toHaveLength(3); expect(sources[2].start).toHaveBeenCalledWith(10.7);
+  expect(buffers).toHaveLength(2); expect(buffers[0]).not.toEqual(buffers[1]);
+  audio.setEnabled(false); expect(sources[2].stop).toHaveBeenCalledOnce();
+  audio.play({...power,id:'muted',faces:[20],dice:{kind:'dice',sides:20,count:1},motion:still},100,false);
+  expect(sources).toHaveLength(3);
+  audio.dispose();
+});

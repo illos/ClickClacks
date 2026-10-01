@@ -6,6 +6,7 @@ import { unpackRoll } from '../dice-demo/motion-codec';
 import type { Style } from '../dice-demo/model';
 import { progress } from '../dice-demo/model';
 import { revealDelay, trayOpacity, type Participant, type ParticipantRoll } from './model';
+import { criticalResult, criticalLabel } from '../../lib/critical';
 import type { Timing } from '../dice-demo/renderer';
 type Lane = {
   group: THREE.Group;
@@ -414,6 +415,14 @@ export function createRoomTray(
         roll.total ?? roll.power?.total ?? roll.faces.reduce((sum, face) => sum + face, 0),
       );
       lane.result.replaceChildren(total);
+      const critical = criticalResult(roll);
+      lane.result.className = `tray-roll-result${critical ? ` critical-${critical}` : ''}`;
+      if (critical) {
+        const badge = document.createElement('span');
+        badge.className = `critical-badge critical-${critical}`;
+        badge.textContent = criticalLabel(critical);
+        lane.result.appendChild(badge);
+      }
       if (roll.power) {
         const net = roll.power.edges - roll.power.banes;
         if (net) {

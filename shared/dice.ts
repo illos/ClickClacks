@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT
+/** A new throw may start two seconds after the previous throw starts. */
+export const rollCooldownMs = 2000;
 export type DiceConfiguration = {
   kind: "power" | "dice";
   sides: 4 | 6 | 8 | 10 | 12 | 20;

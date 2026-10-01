@@ -17,6 +17,7 @@ import {
 import { resolveEdgeBane, tierOf } from "../shared/resolve/index";
 import {
   defaultDice,
+  rollCooldownMs,
   dicePoolSides,
   dicePoolCount,
   genericModifier,
@@ -490,8 +491,8 @@ async function acceptThrow(
       q.eq("key", found.key).eq("viewer", args.viewer),
     )
     .unique();
-  if (previous && previous.roll.startsAt + previous.roll.duration > Date.now())
-    throw new ConvexError("Your dice are still rolling.");
+  if (previous && previous.roll.startsAt + rollCooldownMs > Date.now())
+    throw new ConvexError("Wait two seconds before another roll.");
   if (
     args.faces.length !== dicePoolCount(dice) ||
     args.faces.some((n,index) => !Number.isInteger(n) || n < 1 || n > dicePoolSides(dice)[index]!)

@@ -359,3 +359,46 @@ build, three clock-sync tests and full/hidden-3D immediate-first-click journeys
 passed. Persisted readback proved original animated motion on the first full-3D
 roll and zero graphics imports for hidden 3D. Details, limits and reproduction
 are in startup-performance.md. No physical-device performance claim is made.
+
+## Critical results and small interaction refinements
+
+Owner requested natural power 19/20 and single-d20 20 success labels, and double
+ones / single-d20 1 failure labels. Modifiers and the bonus d4 do not determine
+crits; multiple-d20 pools receive no crit treatment. The natural power success
+reference is the canonical Compendium `en/books/heroes/md/rule/dice/natural-19-20.md`,
+“Success With a Reward”. Failure and d20 labels are standalone owner display
+policy. Existing totals, tiers and resolution remain; no extra actions are applied.
+The pure `criticalResult` and `criticalLabel` helpers are exported by
+`powerroller/format`. Tray flashes, saved history and accessible descriptions
+derive labels from natural faces. Success/failure backgrounds, badges and totals
+use the existing green/red palette. Short synthesized rising/falling result cues
+play at reveal time alongside the recorded clacks, through the saved sound toggle
+and existing cancellation/Safari lifecycle.
+
+Both lightness sliders now capture taps and drags anywhere on the track, clamp
+outside drags, release canceled pointers and retain native keyboard input. The
+customization preview has a soft oval shadow beneath its transparent canvas.
+The shadow does not capture pointer input or change geometry or materials.
+
+Owner also requested follow-up rolls after two seconds. Frontend and component
+share `rollCooldownMs`, measured from the previous throw's synchronized start;
+animation duration no longer determines the lock. Pending submissions and
+connection/readiness checks remain. A follow-up replaces that player's tray
+presentation while retaining both history events and original retry receipts.
+History now prefixes results with dice notation (`1d20 | 4` or
+`2d10 | 3 + 9 = 12`), including an enabled bonus d4. Single unmodified dice do
+not repeat their face as an equation. `rollDiceNotation` is exported by
+`powerroller/format`; detailed accessible descriptions name the same pool.
+
+Accepted checks: typecheck, production build and 17 focused unit/backend tests
+passed. Chromium verified persisted cached crit labels, natural/modifier/bonus
+exclusions, narrow history containment, actual planner/renderer success/failure
+flashes, ordinary reset and four non-silent real AudioContext cues. Phone touch
+checks verified both slider tracks, endpoints, cancellation and keyboard input.
+The preview shadow was visually checked. Mock-clock backend readback proved
+1,999ms rejection and exact 2,000ms acceptance during a five-second animation,
+both history events, credential refusal and idempotent retries. Physical-device
+audio, VoiceOver/NVDA and animation checks remain pending as previously agreed.
+Chromium also observed Roll re-enabled 2,090ms after the persisted throw's start,
+before its 3,633ms motion ended, and checked notation across power, d20, bonus
+d4, multiple dice and a single unmodified d6 in cached history.

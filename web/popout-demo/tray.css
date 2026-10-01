@@ -9,7 +9,7 @@ body.mini-tray { margin: 0; }
   .v2 .dice-card .stage { flex: 1; height: auto; min-height: 150px; margin: 0; border-radius: 16px; }
   .v2 .dice-card .controls { flex: none; display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; margin: 0; gap: 8px; }
   .v2 .dice-card .power-modifiers { flex: 0 1 auto; }
-  .v2 .stage-label { top: 24px; left: 12px; right: 148px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .v2 .stage-label { top: 12px; left: 14px; }
   .v2 .mini-settings-trigger {
     position: absolute; top: 12px; right: 12px; z-index: 3;
     width: 36px; height: 36px; padding: 7px; border-radius: 999px;

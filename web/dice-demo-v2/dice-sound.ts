@@ -32,7 +32,7 @@ export function diceImpacts(motion: Motion | undefined, count: number): DiceImpa
 }
 
 /** Recorded landing clacks, scheduled against the tray's recorded physics. */
-export function createDiceSound() {
+export function createDiceSound(makeCriticalCue: typeof criticalCue = criticalCue) {
   let context: AudioContext | undefined, enabled = false, disposed = false;
   let criticalVolume = 0.7;
   let noises: AudioBuffer[] = [];
@@ -100,7 +100,7 @@ export function createDiceSound() {
     if (!context) return;
     let buffer = cues.get(result);
     if (!buffer) {
-      const samples = criticalCue(context.sampleRate, result);
+      const samples = makeCriticalCue(context.sampleRate, result);
       buffer = context.createBuffer(1, samples.length, context.sampleRate);
       buffer.getChannelData(0).set(samples);
       cues.set(result, buffer);

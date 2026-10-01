@@ -14,7 +14,7 @@ try {
         source.start = (...args) => {
           if (source.buffer?.duration > .3) {
             const samples = source.buffer.getChannelData(0);
-            window.demoCues.push({ rms: Math.sqrt(samples.reduce((sum, value) => sum + value * value, 0) / samples.length),
+            window.demoCues.push({ duration: source.buffer.duration, rms: Math.sqrt(samples.reduce((sum, value) => sum + value * value, 0) / samples.length),
               beginning: Array.from(samples.slice(0, 128)) });
           }
           return start(...args);
@@ -37,6 +37,8 @@ try {
   const cues = await page.evaluate(() => window.demoCues);
   expect(cues).toHaveLength(2);
   expect(cues.every(cue => cue.rms > .08)).toBe(true);
+  expect(cues[0].duration).toBeCloseTo(.95);
+  expect(cues[1].duration).toBeCloseTo(1.3);
   expect(cues[0].beginning).not.toEqual(cues[1].beginning);
   await page.getByRole('slider', { name: /Crit volume/ }).fill('35');
   await expect(page.locator('#demo-volume-value')).toHaveText('35%');
@@ -47,5 +49,5 @@ try {
   expect(await page.evaluate(() => window.demoCues.length)).toBe(2);
   expect(await page.evaluate(() => Object.fromEntries(Object.entries(localStorage)))).toEqual(before);
   expect(errors).toEqual([]);
-  console.log('PASS: built Tailscale HTTPS demo loads; alternating natural crit/fail use original renderer and distinct non-silent cues; volume/mute work; preferences unchanged; no startup errors.');
+  console.log('PASS: built Tailscale HTTPS demo loads; alternating natural crit/fail use sword-draw/dark-impact audition buffers; volume/mute work; preferences unchanged; no startup errors.');
 } finally { await browser.close(); }

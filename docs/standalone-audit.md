@@ -402,3 +402,14 @@ audio, VoiceOver/NVDA and animation checks remain pending as previously agreed.
 Chromium also observed Roll re-enabled 2,090ms after the persisted throw's start,
 before its 3,633ms motion ended, and checked notation across power, d20, bonus
 d4, multiple dice and a single unmodified d6 in cached history.
+
+## Remember selected dice
+
+Owner reversed the earlier decision to leave dice selection unsaved. The last
+menu choice (Power roll or d4/d6/d8/d10/d12/d20) now uses existing browser
+preferences and their memory fallback. The choice restores across reloads,
+visits and table changes. Missing or invalid stored choices default to Power
+roll. Dice count, bonus d4 and modifiers still reset as previously requested.
+Typecheck, build and nine existing storage tests passed. Chromium verified d20
+restoration on reload and in a new tab, restored Power selection and safe fallback
+from a malformed stored choice.

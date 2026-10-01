@@ -319,7 +319,7 @@ function useMenuScrollLock(open: boolean) {
   }, [open]);
 }
 
-type SelectedDice = 'power' | 4 | 6 | 8 | 10 | 12 | 20;
+type SelectedDice = NonNullable<SitePreferences['selectedDice']>;
 const diceChoices: ReadonlyArray<{ value: SelectedDice; label: string }> = [
   { value: 'power', label: 'Power roll (2d10)' },
   ...([20, 12, 10, 8, 6, 4] as const).map(value => ({ value, label: `d${value}` })),
@@ -448,7 +448,7 @@ function DiceRoom() {
   }, [profile]);
   const connection = useConvexConnectionState();
   const [presenceError, setPresenceError] = useState('');
-  const [selectedDice, setSelectedDice] = useState<SelectedDice>('power');
+  const selectedDice = preferences.selectedDice ?? 'power';
   const [bonusD4, setBonusD4] = useState(false);
   const [pointerPicker, setPointerPicker] = useState(false);
   const [diceCount, setDiceCount] = useState(1),
@@ -1233,7 +1233,7 @@ function DiceRoom() {
                       aria-checked={selectedDice === choice.value}
                       key={choice.value}
                       onClick={() => {
-                        setSelectedDice(choice.value);
+                        changePreferences({ ...preferencesRef.current, selectedDice: choice.value });
                         if (choice.value === 'power' || choice.value === 4) setBonusD4(false);
                         setChoosingDice(false);
                         dicePicker.current?.focus();

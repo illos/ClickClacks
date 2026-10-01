@@ -201,3 +201,21 @@ A focused Chromium raster check confirmed all numeral pixels fit inside every
 triangular face for Original, Serif, Modern, Rune and Gothic. The texture sheet
 and a 430×932 rendered phone roll were visually inspected. Production build
 passed. Geometry, vertex result mapping and physical motion are unchanged.
+
+## Leaving tables and mobile controls
+
+The social menu has Leave table, which removes membership and the current dice
+track through the existing leave API and opens a fresh solo table. Joining a
+different table also removes old membership. Invalid/unavailable short codes
+leave the current table intact. Started heartbeat/profile writes finish before
+leaving, and new ones pause during the transition. Current profile and local
+accessibility preferences carry across room remounts; dice selection remains
+unsaved as requested.
+
+Focused two-viewer browser verification passed old-room membership/track
+readback, no reconnection after the 10-second heartbeat interval, isolated solo
+history, saved new-room reload, retained name/design, and rejoining the original
+table with archived history. The lightness slider now has a 44px-high touch area
+and a wider, taller handle. Existing color-wheel checks passed; mobile layout
+was visually inspected. Pressing Roll closes an open dice picker immediately.
+Typecheck and production build passed.

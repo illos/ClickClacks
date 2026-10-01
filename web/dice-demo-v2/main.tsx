@@ -66,7 +66,14 @@ function useRoller() { const value = useContext(RollerContext); if (!value) thro
 export function PowerRoller(options: PowerRollerOptions) {
   const [activeRoom, setActiveRoom] = useState(options.roomKey);
   useEffect(() => setActiveRoom(options.roomKey), [options.roomKey]);
-  const value = { ...options, roomKey: activeRoom, onJoin: (key: string) => { setActiveRoom(key); options.onJoin?.(key); } };
+  const [activeProfile, setActiveProfile] = useState(options.profile);
+  const [activePreferences, setActivePreferences] = useState(options.preferences);
+  useEffect(() => setActiveProfile(options.profile), [options.profile]);
+  useEffect(() => setActivePreferences(options.preferences), [options.preferences]);
+  const value = { ...options, roomKey: activeRoom, profile: activeProfile, preferences: activePreferences,
+    onProfile: (profile: Profile) => { setActiveProfile(profile); options.onProfile?.(profile); },
+    onPreferences: (preferences: SitePreferences) => { setActivePreferences(preferences); options.onPreferences?.(preferences); },
+    onJoin: (key: string) => { setActiveRoom(key); options.onJoin?.(key); } };
   return <div className="powerroller"><ConvexProvider client={options.client}><RollerContext.Provider value={value}><DiceRoom key={activeRoom} /></RollerContext.Provider></ConvexProvider></div>;
 }
 type Clock = { offset: number; uncertainty: number };
@@ -389,6 +396,10 @@ function DiceRoom() {
   const [joinInput, setJoinInput] = useState('');
   const socialDialog = useRef<HTMLDialogElement>(null);
   const [joinError, setJoinError] = useState('');
+  const [changingTable, setChangingTable] = useState(false);
+  const changingTableRef = useRef(false);
+  const heartbeatPending = useRef<Promise<unknown> | null>(null);
+  const customizePending = useRef<Promise<unknown> | null>(null);
   const [shareError, setShareError] = useState('');
   const customization = useRef<HTMLDialogElement>(null);
   const backdropPointer = useRef<number | null>(null);
@@ -521,6 +532,7 @@ function DiceRoom() {
     sampleFaces = useAction(demo.sampleFaces);
   const chooseName = useMutation(demoV2.randomName);
   const clearSharedTray = useMutation(demoV2.clearTray);
+  const leave = useMutation(demoV2.leave);
   const join = useMutation(demoV2.join),
     customize = useMutation(demoV2.customize),
     throwDice = useMutation(demoV2.throwDice),
@@ -590,10 +602,10 @@ function DiceRoom() {
   useEffect(() => {
     let cancelled = false;
     async function heartbeat() {
-      if (!identityReady || !nameReady || document.hidden || !connection.isWebSocketConnected)
+      if (changingTableRef.current || heartbeatPending.current || !identityReady || !nameReady || document.hidden || !connection.isWebSocketConnected)
         return;
       try {
-        await join({
+        const request = join({
           key: roomKey,
           viewer,
           credential,
@@ -601,10 +613,14 @@ function DiceRoom() {
           ready,
           uncertainty: clockRef.current?.uncertainty ?? 10000,
         });
+        heartbeatPending.current = request;
+        await request;
         if (!cancelled) setPresenceError('');
       } catch (e) {
         if (!cancelled && !document.hidden && client.connectionState().isWebSocketConnected)
           setPresenceError(displayError(e, credential));
+      } finally {
+        heartbeatPending.current = null;
       }
     }
     void heartbeat();
@@ -783,19 +799,49 @@ function DiceRoom() {
   useEffect(() => {
     if (!joined || profile === initial || !profile.name.trim()) return;
     const timer = setTimeout(() => {
-      void customize({
+      if (changingTableRef.current) return;
+      const request = customize({
         key: roomKey,
         viewer,
         credential,
         name: profile.name,
         style: profile.style,
-      }).catch(e => setError(displayError(e, credential)));
+      });
+      customizePending.current = request;
+      void request.catch(e => { if (!changingTableRef.current) setError(displayError(e, credential)); })
+        .finally(() => { if (customizePending.current === request) customizePending.current = null; });
     }, 300);
     return () => clearTimeout(timer);
   }, [profile, initial, joined, viewer, credential, customize]);
   const ownRoll = ownTrack?.roll;
   const busy =
-    pending || !!(ownRoll && clock && now + clock.offset < ownRoll.startsAt + ownRoll.duration);
+    changingTable || pending || !!(ownRoll && clock && now + clock.offset < ownRoll.startsAt + ownRoll.duration);
+  async function changeTable(next: string) {
+    if (changingTableRef.current) return;
+    if (next === roomKey || next.toUpperCase() === room?.code) {
+      socialDialog.current?.close();
+      return;
+    }
+    changingTableRef.current = true;
+    setChangingTable(true);
+    setJoinError('');
+    try {
+      if (next.length === 8) {
+        const destination = await client.query(demoV2.view, { key: next });
+        if (!destination.code || destination.expired) throw new Error('That table is unavailable or has expired.');
+      }
+      // Finish any already-started heartbeat before removing this membership.
+      await heartbeatPending.current?.catch(() => {});
+      await customizePending.current?.catch(() => {});
+      if (room?.code && !room.expired) await leave({ key: roomKey, viewer, credential });
+      socialDialog.current?.close();
+      options.onJoin?.(next);
+    } catch (error) {
+      changingTableRef.current = false;
+      setChangingTable(false);
+      setJoinError(displayError(error, credential));
+    }
+  }
   async function clearDice() {
     setClearing(true);
     setError('');
@@ -811,6 +857,7 @@ function DiceRoom() {
     }
   }
   async function perform() {
+    setChoosingDice(false);
     setPending(true);
     setError('');
     const request: NonNullable<typeof retryThrow.current> = retryThrow.current ?? {
@@ -1305,7 +1352,7 @@ function DiceRoom() {
               setJoinError('Enter an eight-character room code or room link.');
               return;
             }
-            options.onJoin?.(key);
+            void changeTable(key);
           }}
         >
           <label htmlFor={`${instanceId}-join-table-input`}>Join a table</label>
@@ -1315,12 +1362,13 @@ function DiceRoom() {
               aria-label="Room code or link"
               placeholder="Room code or link"
               value={joinInput}
+              disabled={changingTable}
               onChange={event => {
                 setJoinInput(event.target.value);
                 setJoinError('');
               }}
             />
-            <button type="submit" className="primary" disabled={!joinInput.trim()}>
+            <button type="submit" className="primary" disabled={pending || changingTable || !joinInput.trim()}>
               Join
             </button>
           </div>
@@ -1330,6 +1378,11 @@ function DiceRoom() {
             </p>
           )}
         </form>
+        <button type="button" className="leave-table" disabled={!room?.code || changingTable || pending}
+          onClick={() => void changeTable(crypto.randomUUID())}>
+          {changingTable ? 'Leaving table…' : 'Leave table'}
+        </button>
+        <p className="leave-table-note">Leave this table and continue rolling on your own.</p>
       </dialog>
       <dialog
         ref={customization}

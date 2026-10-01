@@ -46,8 +46,13 @@ export function createDiceSound() {
   async function unlock() {
     if (!enabled || disposed) return;
     try {
-      context ??= new AudioContext();
-      if (context.state === 'suspended') await context.resume();
+      if (!context || context.state === 'closed') {
+        context = new AudioContext();
+        noise = undefined;
+      }
+      // Safari uses 'interrupted' after app/tab switching or screen locking.
+      // Resume every recoverable non-running state on the current user gesture.
+      if (context.state !== 'running') await context.resume();
     } catch { /* Audio is cosmetic; unsupported/blocked devices can still roll. */ }
   }
   function strike(at: number, strength: number, die: number, owner: string, density: number) {

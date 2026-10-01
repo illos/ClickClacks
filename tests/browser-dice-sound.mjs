@@ -12,7 +12,7 @@ try {
       constructor(...args){super(...args);window.audioContexts.push(this);}
       createBufferSource(){
         const source=super.createBufferSource(),start=source.start.bind(source),stop=source.stop.bind(source);
-        source.start=(when,...args)=>{window.audioStarts.push({when,current:this.currentTime,mono:performance.now()});return start(when,...args);};
+        source.start=(when,...args)=>{const data=source.buffer.getChannelData(0);window.audioStarts.push({when,current:this.currentTime,mono:performance.now(),peak:Math.max(...data.map(Math.abs)),rms:Math.sqrt(data.reduce((sum,v)=>sum+v*v,0)/data.length)});return start(when,...args);};
         source.stop=(...args)=>{window.audioStops++;return stop(...args);};return source;
       }
     };
@@ -38,6 +38,20 @@ try {
   await toggle.click();await page.reload();await expect(toggle).toHaveAttribute('aria-pressed','true');
   await expect(page.getByRole('button',{name:'Roll',exact:true})).toBeEnabled({timeout:30000});
   expect(await page.evaluate(()=>window.audioStarts.length)).toBe(0); // No historical playback.
+  await page.getByRole('button',{name:'Roll',exact:true}).click();
+  await expect.poll(()=>page.evaluate(()=>window.audioStarts.length),{timeout:20000}).toBeGreaterThan(0);
+  expect(await page.evaluate(()=>window.audioStarts.every(s=>Number.isFinite(s.rms)&&s.rms>0.01&&s.peak<=0.901))).toBe(true);
+  // Real suspend/resume, with Safari's state name simulated on the same context.
+  await page.evaluate(async()=>{
+    const ctx=window.audioContexts.at(-1);await ctx.suspend();
+    const resume=ctx.resume.bind(ctx);let interrupted=true;
+    Object.defineProperty(ctx,'state',{configurable:true,get:()=>interrupted?'interrupted':'running'});
+    ctx.resume=async()=>{await resume();interrupted=false;};
+  });
+  const afterReload=await page.evaluate(()=>window.audioStarts.length);
+  await expect(page.getByRole('button',{name:'Roll',exact:true})).toBeEnabled({timeout:20000});
+  await page.getByRole('button',{name:'Roll',exact:true}).click();
+  await expect.poll(()=>page.evaluate(()=>window.audioStarts.length),{timeout:20000}).toBeGreaterThan(afterReload);
   await page.getByRole('button',{name:'Customize dice',exact:true}).click();
   await page.getByRole('tab',{name:'Design',exact:true}).click();
   const pixel=async name=>page.getByRole('button',{name,exact:true}).locator('canvas').evaluate(canvas=>{
@@ -47,5 +61,5 @@ try {
   expect(frost[1]).toBeGreaterThan(frost[0]);expect(solid[0]).toBe(solid[1]);
   await page.screenshot({path:'/tmp/powerroller-frosted-swatch.png'});
   expect(errors).toEqual([]);
-  console.log('PASS: real AudioContext live-roll scheduling; mute; local persistence; no historical playback; right-aligned separate tray actions; Frosted gradient; no page errors');
+  console.log('PASS: real AudioContext live-roll scheduling; roll after reload; interrupted-context recovery; non-silent finite waveform; mute; local persistence; no historical playback; right-aligned separate tray actions; Frosted gradient; no page errors');
 } finally {await browser.close();}

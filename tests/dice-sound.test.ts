@@ -39,3 +39,22 @@ it('schedules against the tray clock once, skips history, and stops pending audi
   audio.setEnabled(true); audio.play({...roll,id:'new'},100,false); doc.hidden=true;listeners.get('visibilitychange')!();expect(sources[1].stop).toHaveBeenCalledOnce();
   audio.dispose();expect(listeners.size).toBe(0);
 });
+
+it('resumes Safari interruption on a gesture and recreates a closed context', async () => {
+  vi.stubGlobal('document', { addEventListener: vi.fn(), removeEventListener: vi.fn() });
+  const contexts: Context[] = [];
+  class Context {
+    state = 'interrupted';
+    resume = vi.fn(async () => { this.state = 'running'; });
+    close = vi.fn(async () => {});
+    constructor() { contexts.push(this); }
+  }
+  vi.stubGlobal('AudioContext', Context);
+  const audio = createDiceSound(); audio.setEnabled(true);
+  await audio.unlock(); expect(contexts[0]!.resume).toHaveBeenCalledOnce();
+  contexts[0]!.state = 'interrupted';
+  await audio.unlock(); expect(contexts[0]!.resume).toHaveBeenCalledTimes(2);
+  contexts[0]!.state = 'closed';
+  await audio.unlock(); expect(contexts).toHaveLength(2); expect(contexts[1]!.state).toBe('running');
+  audio.dispose();
+});

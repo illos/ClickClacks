@@ -960,7 +960,7 @@ function DiceRoom() {
     setProfile(old => ({ ...old, style: { ...old.style, ...patch } }));
   }
   return (
-    <main onPointerDown={unlockSound} onKeyDown={unlockSound} className={`lab v2${preferences.highContrast ? ' high-contrast' : ''}`}>
+    <main onPointerDown={unlockSound} onPointerUp={unlockSound} onKeyDown={unlockSound} className={`lab v2${preferences.highContrast ? ' high-contrast' : ''}`}>
       <div className="roll-area">
         <header className="lab-header">
           <h1 className="power-title">Power Roller</h1>

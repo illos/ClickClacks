@@ -256,3 +256,19 @@ sustain a broader midrange crack, with a 3ms secondary contact and more low-body
 noise. The impact retains a fast attack, peak headroom and pool attenuation.
 Three focused sound tests, typecheck and production build passed. Sound character
 still relies on owner listening on the target device.
+
+## Audio interruption recovery
+
+Reported silence exposed an ignored browser state: unlock only resumed suspended
+contexts, while iPhone Safari also uses interrupted after backgrounding or screen
+locking. Unlock now resumes all non-running recoverable states and recreates a
+closed context with a fresh buffer. Touch release also requests unlock, alongside
+the Roll click and keyboard paths. MDN documents the Safari interrupted state:
+https://developer.mozilla.org/en-US/docs/Web/API/BaseAudioContext/state
+This is a confirmed code gap; the owner's device-specific cause is not yet proven.
+
+Four focused sound tests and typecheck passed. Expanded Chromium checks passed
+real fresh-roll scheduling after preference reload, recovery from a real suspended
+context with Safari's interrupted state simulated, finite non-silent waveform and
+peak headroom, mute, historical silence, layout, and swatch checks. Production
+build passed. Physical iPhone confirmation remains pending.

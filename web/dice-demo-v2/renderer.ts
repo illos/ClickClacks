@@ -157,9 +157,9 @@ export function createRoomTray(
     const roll = lane.roll!;
     const motion = roll.motion!;
     const stride = roll.faces.length * 7;
-    const vertices = dieModel(roll.dice).vertices;
     for (let i = 0; i < roll.faces.length; i++) {
       const die = lane.dice[i]!;
+      const vertices = dieModel(roll.dice, i).vertices;
       const last = motion.samples.length / stride - 1;
       const cursor = (reduced ? 1 : t) * last;
       const from = Math.floor(cursor),
@@ -194,8 +194,8 @@ export function createRoomTray(
     let left = Infinity,
       right = -Infinity,
       bottom = -Infinity;
-    for (const die of lane.dice)
-      for (const vertex of dieModel(lane.roll?.dice).vertices) {
+    for (const [index, die] of lane.dice.entries())
+      for (const vertex of dieModel(lane.roll?.dice, index).vertices) {
         projected.copy(vertex).applyMatrix4(die.matrixWorld).project(camera);
         const x = ((projected.x + 1) * width) / 2,
           y = ((1 - projected.y) * height) / 2;

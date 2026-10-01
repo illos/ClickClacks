@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+import { dicePoolSides } from '../../shared/dice';
 import { Quaternion } from 'three';
 import { numberingOrientation, simulateThrow } from './physics';
 import { modelNumberingOrientation } from './dice-models';
@@ -13,7 +14,7 @@ function prepare(scene: ThrowScene) {
   // Cosmetic motion is independent of supplied results. Each throw gets a fresh seed.
   prepared ??= simulateThrow(
     crypto.getRandomValues(new Uint32Array(1))[0]!,
-    scene.dice?.kind === 'dice' ? Array(scene.dice.count).fill(scene.dice.sides) : [10, 10],
+    scene.dice?.kind === 'dice' ? dicePoolSides(scene.dice) : [10, 10],
     scene,
   );
 }

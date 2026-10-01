@@ -24,7 +24,7 @@ it('resting mixed hulls decode large tracks and exclude own, cleared, faded and 
   const members = [{ id: 'peer' }] as Participant[];
   const scene = restingScene([roll], members, 'me', 2500);
   expect(scene.obstacles).toHaveLength(10);
-  expect(scene.obstacles![0]!.dice).toEqual(roll.dice);
+  expect(scene.obstacles![0]!.dice).toEqual({ kind: 'dice', sides: 20, count: 1 });
   expect(scene.obstacles![0]!.position.every(Number.isFinite)).toBe(true);
   expect(restingScene([roll], members, 'peer', 2500).obstacles).toHaveLength(0);
   expect(restingScene([roll], [], 'me', 2500).obstacles).toHaveLength(0);

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import { estimateClock, type ClockSample } from '../dice-demo/model';
+import { estimateClock } from '../dice-demo/model';
 
 /** Clock actions cannot be retried by Convex like mutations. Resume starts a fresh sample batch. */
 export function startClockSync(
@@ -46,13 +46,14 @@ export function startClockSync(
     }
     const batch = ++generation;
     try {
-      const samples: ClockSample[] = [];
-      for (let i = 0; i < 7; i++) {
+      // Independent clock actions share the socket; don't pay seven serial RTTs.
+      // Keep the original seven samples and fastest-three estimator.
+      const samples = await Promise.all(Array.from({ length: 7 }, async () => {
         const start = performance.now(),
           server = await sample();
-        if (stopped || batch !== generation || document.hidden) return;
-        samples.push({ start, end: performance.now(), server });
-      }
+        return { start, end: performance.now(), server };
+      }));
+      if (stopped || batch !== generation || document.hidden) return;
       if (!connected()) throw new Error('Connection changed');
       update(estimateClock(samples));
       failures = 0;

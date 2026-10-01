@@ -341,3 +341,21 @@ lifecycle tests and Chromium audio acceptance passed. Browser checks exercised
 actual WAV decoding and a non-silent bounded waveform, saved toggle, mute,
 historical silence, interrupted-context resume and fresh decoding after simulated
 tab return. Physical iPhone playback and subjective listening remain user checks.
+
+## Startup performance
+
+Owner requested a faster visit-to-enabled-Roll time. Independent clock samples
+now run concurrently, retaining all seven samples and the original fastest-three
+estimator. Fonts download alongside renderer imports. The site supplies the
+same classical name pool locally through the existing nameProvider extension,
+removing the initial naming RPC. Initial membership publishes ready state in
+one mutation; pending heartbeat readiness updates are queued. Roll waits for
+acknowledged ready membership, and first-roll preparation reads the current tray
+rather than a graphics flag captured before server requests completed.
+
+Controlled compressed-build Chromium mobile comparison: median 2.789 → 2.064
+seconds (26% improvement), three fresh contexts per build. Typecheck, production
+build, three clock-sync tests and full/hidden-3D immediate-first-click journeys
+passed. Persisted readback proved original animated motion on the first full-3D
+roll and zero graphics imports for hidden 3D. Details, limits and reproduction
+are in startup-performance.md. No physical-device performance claim is made.

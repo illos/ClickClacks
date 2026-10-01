@@ -418,6 +418,7 @@ function DiceRoom() {
   const [changingTable, setChangingTable] = useState(false);
   const changingTableRef = useRef(false);
   const heartbeatPending = useRef<Promise<unknown> | null>(null);
+  const hasJoined = useRef(false);
   const customizePending = useRef<Promise<unknown> | null>(null);
   const [shareError, setShareError] = useState('');
   const customization = useRef<HTMLDialogElement>(null);
@@ -627,8 +628,14 @@ function DiceRoom() {
   useEffect(() => {
     let cancelled = false;
     async function heartbeat() {
-      if (changingTableRef.current || heartbeatPending.current || !identityReady || !nameReady || document.hidden || !connection.isWebSocketConnected)
+      // A faster clock batch can finish during the initial join. Publish its ready
+      // state after that join instead of dropping the update until the 10s timer.
+      if (heartbeatPending.current) await heartbeatPending.current.catch(() => {});
+      if (cancelled || changingTableRef.current || heartbeatPending.current || !identityReady || !nameReady || document.hidden || !connection.isWebSocketConnected)
         return;
+      // First membership can wait for the concurrent clock batch and be ready in
+      // one mutation. Later reconnects still publish an unready existing member.
+      if (!hasJoined.current && !ready) return;
       try {
         const request = join({
           key: roomKey,
@@ -640,6 +647,7 @@ function DiceRoom() {
         });
         heartbeatPending.current = request;
         await request;
+        hasJoined.current = true;
         if (!cancelled) setPresenceError('');
       } catch (e) {
         if (!cancelled && !document.hidden && client.connectionState().isWebSocketConnected)
@@ -715,12 +723,13 @@ function DiceRoom() {
       return;
     }
     void Promise.all([
-      import('../dice-demo/fonts'),
+      // Fonts can download while the larger renderer modules are still loading.
+      import('../dice-demo/fonts').then(fonts => fonts.loadDiceFonts()),
       import('./renderer'),
       import('../dice-demo/prepare-throw'),
       import('./resting-scene'),
     ])
-      .then(async ([fonts, graphicsModule, physics, resting]) => {
+      .then(([failed, graphicsModule, physics, resting]) => {
         if (cancelled) return;
         currentPlanner = physics.createThrowPlanner();
         planner.current = currentPlanner;
@@ -733,8 +742,6 @@ function DiceRoom() {
           .catch(() => {
             if (!cancelled) setPhysicsReady(true);
           });
-        const failed = await fonts.loadDiceFonts();
-        if (cancelled) return;
         if (failed.length) {
           setError(
             'Dice fonts could not load. Rolls remain available as text; reload to retry 3D.',
@@ -820,7 +827,8 @@ function DiceRoom() {
     buttonChannels[0]! * 0.2126 + buttonChannels[1]! * 0.7152 + buttonChannels[2]! * 0.0722 > 0.179
       ? '#000'
       : '#fff';
-  const joined = room?.participants.some(p => p.id === viewer);
+  const ownParticipant = room?.participants.find(p => p.id === viewer);
+  const joined = !!ownParticipant;
   useEffect(() => {
     if (!joined || profile === initial || !profile.name.trim()) return;
     const timer = setTimeout(() => {
@@ -912,7 +920,9 @@ function DiceRoom() {
         });
       if (
         !request.motion &&
-        graphics &&
+        // Read the current tray after the server requests, not the graphics state
+        // captured when Roll was clicked during startup.
+        tray.current &&
         !preferences.hidden &&
         planner.current &&
         makeRestingScene.current
@@ -1166,7 +1176,7 @@ function DiceRoom() {
                         : 'Roll'
                 }
                 aria-busy={pending || clearing}
-                disabled={clearing || !ready || !joined || busy || room?.expired}
+                disabled={clearing || !ready || !ownParticipant?.ready || busy || room?.expired}
                 onClick={() => void perform()}
               >
                 Roll

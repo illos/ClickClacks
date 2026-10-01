@@ -547,3 +547,28 @@ shared with the main page and persisted readback, 360×320 icon spacing and
 scrollable settings, reopen defaults, and PiP-originated join/leave switching the
 main table with old/new membership readback. No page errors. Reused the peer's
 accepted iframe menu proof; no backend change or deployment.
+
+
+### Profile synchronization feedback repair (2026-10-01)
+
+User reported continuous color alternation after dragging the color wheel on
+Helium, Zen and iOS Safari, with discrete clicks unaffected. `2b98d63` introduced
+an incoming profile effect for PiP synchronization alongside the existing
+outgoing effect that saved every profile state change. Received snapshots could
+therefore be emitted back through the browser-storage/host pipeline.
+
+`4e224b4` removes that outgoing effect. Only local design/name changes and generated
+initial names notify the host; incoming host/storage/PiP snapshots update the
+profile and its immediate ref without emitting a save. Pointer handlers read the
+current ref so rapid moves retain the latest local value. No color-wheel layout,
+color math or backend behavior changed.
+
+Before the fix, a real external storage update caused an unwanted profile echo
+(writer count 41→42). The exact sustained flicker was not reproduced on the local
+Chromium host. After the fix, `tests/browser-profile-sync.mjs` passed against the
+built combined release: real captured drag plus 100 queued moves settled at
+`#4edc23`, 41 writes stayed at 41 after release; parent/PiP received external
+name/color changes without extra writes; generated/local names persisted; one
+local name edit emitted one write under StrictMode; reload restored final values.
+Both builds and typecheck passed. The narrow native mini-settings journey passed
+again with the repaired handlers and restored counter position.

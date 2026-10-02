@@ -95,3 +95,25 @@ the transport binds modifiers across controllers. Retired submissions also have
 a generation-specific pending count, and an idle timer releases local motion and
 expired requests. Source review passed `f106934`; coordinator runtime evidence
 above proves those repairs, including the hidden-opener case.
+
+
+## Publication — 2026-10-02
+
+The owner approved publication after final Test and QC acceptance. Source
+`0c711b1` was merged into standalone main and pushed to `illos/ClickClacks`.
+The complete app build used `pnpm build:cloudflare` with the dedicated public
+backend `https://nautical-partridge-636.convex.cloud`; it exited 0 and includes
+build commit `0c711b10212f`. Wrangler 4.134.0 deployed `wrangler.bugs.jsonc`
+successfully, preserving the app's bug-reporting bindings.
+
+- Canonical app: <https://dice.clickclacks.app/>.
+- Worker version: `47f8ca1d-7efe-41c8-8475-6cbc22753a66`.
+- Deployment also reported the legacy `app.clickclacks.app` binding.
+- Build/deployment logs:
+  `/srv/presidium/home/projects/powerroller/test-artifacts/automatic-publication-0c711b1/`.
+
+Publication reused the accepted tests above and changed only the frontend;
+the dedicated Convex deployment continues providing presence and shared play.
+The feature worktree and local/remote branch were retired safely after main
+was pushed. The independently approved README prose commit `4e88591` was also
+merged and pushed; its changes are documentation only.

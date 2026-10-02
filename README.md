@@ -388,7 +388,3 @@ and the sword-draw result cue comes from
 [CPhT Fluke's Sword Draw Sound Effect](https://www.youtube.com/watch?v=BQV5rbBMjCQ).
 Both are used with their creators' permission. See the
 [audio credits](web/dice-demo-v2/audio/README.md) for permission and asset details.
-
-Draw Steel helpers retain their rules citations. No game artwork, catalogs or
-reference corpus are distributed, and the corpus is not required to build or
-run the project.

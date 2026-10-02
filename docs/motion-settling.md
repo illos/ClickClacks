@@ -24,4 +24,17 @@ Authoring: the actual worker's deterministic regression passed 3/3. Cosmetic see
 The regression checks original supplied faces `[2, 9]`, warm-path reuse, exhaustion
 after three attempts, later-job recovery and no retry for an unrelated failure.
 Typecheck passed after restoring ignored generated client files in the worktree.
-Coordinator browser and final QC acceptance are pending.
+Coordinator acceptance at runtime `42c47cb` with reviewed fixture `01b6c6c`:
+worker/planner tests 7/7, controller fallback 1/1 selected, typecheck/build exit 0,
+and the normal automatic-mode browser journey PASS. The real seeded worker browser
+test passed both recovery and exhaustion, preserving sampled faces and exactly
+one logical roll, with no authority RPC or backend result for local rolling.
+Exhaustion produced the notice after acceptance. Both page-error checks passed.
+The original test fixture's dynamic import lost its initial message; the reviewed
+static-import fixture installs its handler before message delivery. Production
+code stayed unchanged between these test tips.
+
+Final QC accepted this repair on 2026-10-02. Full evidence remains outside Git at
+`test-artifacts/motion-recovery-42c47cb/RESULT.md`. Three attempts improve settling
+recovery while preserving a bounded text fallback; every scene is not guaranteed
+to settle.

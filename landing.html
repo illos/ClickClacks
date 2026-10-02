@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#111415" />
+    <meta name="robots" content="noindex" />
+    <meta name="description" content="Roll together in real time with Click Clacks. Customize your 3D dice, share a table with friends, or bring the open-source dice framework to your own project." />
+    <link rel="icon" type="image/svg+xml" href="/web/branding/click-clacks-mark.svg" />
+    <link rel="stylesheet" href="/web/landing/style.css" />
+    <title>Click Clacks — Your dice. Everyone’s table.</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header wrap">
+      <a class="brand" href="#" aria-label="Click Clacks home"><img src="/web/branding/click-clacks-mark.svg" alt="" width="36" height="36" /><span>CLICK CLACKS</span></a>
+      <nav aria-label="Main navigation">
+        <a class="nav-detail" href="#customize">Make it yours</a>
+        <a class="nav-detail" href="#build">Build with it</a>
+        <a class="button button-small" href="https://illos.github.io/powerroller/">Jump in <span aria-hidden="true">↗</span></a>
+      </nav>
+    </header>
+    <main id="main">
+      <section class="hero wrap" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span> ONLINE DICE. SHARED MOMENTS.</p>
+          <h1 id="hero-title">Your dice.<br /><span>Everyone’s table.</span></h1>
+          <p class="intro">A little more character. A lot more clatter.<br />Roll together in real time, with 3D dice made your way.</p>
+          <div class="hero-actions"><a class="button" href="https://illos.github.io/powerroller/">Jump in <span aria-hidden="true">↗</span></a><a class="text-link" href="#customize">Try the customizer <span aria-hidden="true">↓</span></a></div>
+          <p class="hero-note">Free to roll. Open source. Made for your table.</p>
+        </div>
+        <div class="video-placeholder" role="img" aria-label="Intro video placeholder. A future video will show friends rolling together with customized dice.">
+          <div class="video-topline"><span><span class="live-dot" aria-hidden="true"></span> THE TABLE IS YOURS</span><span class="video-dots" aria-hidden="true">● ● ●</span></div>
+          <img class="hero-wordmark" src="/web/branding/click-clacks.svg" alt="" width="640" height="280" />
+          <div class="video-center"><span class="play-symbol" aria-hidden="true">▶</span><span>INTRO VIDEO</span><small>A glimpse of the good rolls to come.</small></div>
+          <div class="video-bottomline"><span>REAL DICE ENERGY. ANYWHERE.</span><span aria-hidden="true">01 / PLAY</span></div>
+        </div>
+      </section>
+      <section class="together wrap" aria-labelledby="together-title">
+        <div class="section-heading"><p class="eyebrow">01 / ROLL TOGETHER</p><h2 id="together-title">Different places.<br />Same <em>“did you see that?”</em></h2><p>Send a room link, gather your people, and roll. Everyone at the table sees the action together, with a shared history to keep the story straight.</p></div>
+        <div class="shared-table" aria-label="Illustration of a shared table, not a live room">
+          <div class="table-caption"><span><span class="live-dot" aria-hidden="true"></span> ONE TABLE. ALL YOUR PEOPLE.</span><small>ILLUSTRATION</small></div>
+          <div class="players"><div><span class="player-die mint" aria-hidden="true">20</span><strong>You</strong><small>At your desk</small></div><span class="connection" aria-hidden="true"></span><div><span class="player-die pink" aria-hidden="true">12</span><strong>A friend</strong><small>On the sofa</small></div><span class="connection" aria-hidden="true"></span><div><span class="player-die lilac" aria-hidden="true">10</span><strong>Another friend</strong><small>Across the world</small></div></div>
+          <p>One link brings the table together.</p>
+        </div>
+      </section>
+      <section id="customize" class="customize-section" aria-labelledby="customize-title">
+        <div class="wrap">
+          <div class="customize-heading"><div><p class="eyebrow">02 / MAKE IT YOURS</p><h2 id="customize-title">A die with<br /><span>your name on it.</span></h2></div><p>Pick a color. Change the ink. Find your finish.<br />Go on, give this one a spin.</p></div>
+          <div id="customizer-root"><p class="customizer-loading">Loading the live dice customizer…</p></div>
+          <noscript><p>The live customizer needs JavaScript. You can still <a href="https://illos.github.io/powerroller/">open the roller</a> or explore the source below.</p></noscript>
+        </div>
+      </section>
+      <section id="build" class="build-section wrap" aria-labelledby="build-title">
+        <div class="section-heading"><p class="eyebrow">03 / BUILD SOMETHING GOOD</p><h2 id="build-title">Your project.<br />Our clacks.</h2><p>Click Clacks is an open-source TypeScript dice framework. Use its dice engine, React components, and 3D presentation in your own project—or put the hosted roller in an iframe.</p><a class="text-link" href="https://github.com/illos/powerroller">Explore on GitHub <span aria-hidden="true">↗</span></a></div>
+        <div class="integration-panel"><div class="integration-tabs" role="group" aria-label="Integration example"><button type="button" aria-pressed="true" data-example="iframe">Embed the roller</button><button type="button" aria-pressed="false" data-example="framework">Use the framework</button></div><div class="code-window"><p class="code-label" id="code-label">A little dice. Right in your app.</p><pre id="embed-code"><code>&lt;iframe
+  src="https://illos.github.io/powerroller/"
+  title="Click Clacks dice roller"
+  width="100%"
+  height="640"
+&gt;&lt;/iframe&gt;</code></pre><pre id="framework-code" hidden><code>import { generatePool } from 'clickclacks/dice';
+
+// Pure dice engine. Your UI, your rules.
+const dice = generatePool([
+  { sides: 20, count: 1 }
+]);</code></pre><a class="integration-docs" href="https://github.com/illos/powerroller#embed-without-adopting-the-site">Read the integration guide <span aria-hidden="true">↗</span></a></div><p class="integration-note">MIT licensed · TypeScript · React + Three.js · Optional Convex backend</p></div>
+      </section>
+      <aside class="support wrap"><span class="support-star" aria-hidden="true">✳</span><div><h3>Good things grow with a little support.</h3><p>Star the repo, share it with your group, or help make the next version better.</p></div><a class="text-link" href="https://github.com/illos/powerroller">Support on GitHub <span aria-hidden="true">↗</span></a></aside>
+      <section class="last-call wrap" aria-labelledby="last-call-title"><p class="eyebrow">YOUR NEXT GOOD ROLL STARTS HERE</p><h2 id="last-call-title">Less setup.<br /><span>More clack.</span></h2><a class="button" href="https://illos.github.io/powerroller/">Jump in <span aria-hidden="true">↗</span></a></section>
+    </main>
+    <footer class="site-footer wrap"><a class="brand" href="#" aria-label="Back to top"><img src="/web/branding/click-clacks-mark.svg" alt="" width="28" height="28" /><span>CLICK CLACKS</span></a><p>Made for the love of the roll.</p><a href="https://github.com/illos/powerroller">GitHub <span aria-hidden="true">↗</span></a></footer>
+    <script type="module" src="/web/landing/main.tsx"></script>
+  </body>
+</html>

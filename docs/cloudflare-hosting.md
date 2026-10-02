@@ -70,6 +70,32 @@ Dev and production usage in the same team share its allowance. Use the current
 has hard caps; Starter is an optional pay-as-you-go upgrade, not part of this
 preparation.
 
+## Preparation validation
+
+The assigned Test coordinator accepted runtime configuration `f4aaece`:
+
+- Offline frozen install and root-path build passed; 39 static files include
+  both tray URLs, fonts, worker and notices.
+- Pinned Wrangler `4.134.0` dry-run passed. The original compatibility date
+  `2026-10-02` exceeded its bundled local runtime; `f4aaece` corrects it to
+  supported date `2026-09-24` without a tooling upgrade.
+- Nine local route/MIME/cache probes passed. HTML/notices revalidate and
+  fingerprinted assets carry the one-year immutable header.
+- Chromium root and PiP loaded with controls visible and no page errors or
+  failed requests. The initial PiP probe's harness event wait was corrected
+  to inspect existing context pages; the corrected probe passed.
+- Independent read-only review found no concrete issues. All test-owned
+  servers and the fixture worktree were removed.
+
+Evidence is outside Git at `test-artifacts/cloudflare-hosting-4062d5c/RESULT.md`.
+These are local routing/load checks, not measured hosting speed gains or proof
+of a Cloudflare/DNS/production-backend cutover.
+
+The available Cloudflare token can access the Blackgate Studio account, but
+its zone lookup returned no accessible `clickclacks.app` zone. Domain onboarding
+or access to its existing zone is still needed. The destination Convex team and
+app hostname are also not yet selected.
+
 ## Cutover sequence
 
 1. Choose the app hostname and Cloudflare account; verify ownership/access to

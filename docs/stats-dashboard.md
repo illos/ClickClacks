@@ -118,3 +118,17 @@ The dashboard is at <https://stats.clickclacks.app>. Sign in with an existing em
 records stayed in the isolated backend/D1. No live acceptance or post-publication
 suite was run. Publication logs are outside Git in
 `powerroller/test-artifacts/stats-publication-b383599/`.
+
+## Registration closed — 2026-10-02
+
+Owner requested closure after creating their account. Candidate `239d310`
+restricts the password provider to sign-in and removes account creation from the
+form. Existing users, credentials, sessions and auth keys are retained.
+
+Focused coordinator acceptance and final QC passed: two persisted auth checks,
+typecheck and stats build exit 0; same private backend/origin with a real account
+and session seeded on the preceding version. The exact browser runner confirmed
+new-email and existing-email registration refusal, retained prior session,
+wrong-password refusal, original-password sign-in, reload and dashboard readback.
+No live verification or broad suite was run. Evidence is outside Git in
+`powerroller/test-artifacts/stats-signin-239d310/RESULT.md`.

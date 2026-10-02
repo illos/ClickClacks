@@ -76,7 +76,23 @@ main with `VITE_CONVEX_URL=https://nautical-partridge-636.convex.cloud`. Stats b
 
 ## Acceptance
 
-Focused authoring checks and coordinator acceptance/publication are recorded below
-when complete. Required runtime proof includes real password sign-up/sign-in,
-anonymous rejection, traffic deduplication/countries, persisted multiplayer
-expiry/duration, UTC boundaries, demo exclusion and a readable narrow dashboard.
+Accepted candidate `0d0e851` on 2026-10-02; final QC PASS. The coordinator ran a
+detached private backend and three local Workers sharing disposable D1:
+
+- Focused stats: **9/9 passed**, 363 ms. Changed Worker/schema regressions:
+  **13/13 passed**, 427 ms (bug reports, canonical pages and V2 dice backend).
+- Typecheck, private auth configuration/codegen and all three builds: **exit 0**.
+- Exact `tests/browser-stats.mjs`: **exit 0**. Real account creation, password
+  sign-in, incorrect-password refusal, anonymous API 401 and reload persistence;
+  actual entry beacons, cookie refresh deduplication, country US, persisted
+  multiplayer summaries, demo exclusion and unclipped 1280/360px screenshots.
+- Natural presence expiry: **exit 0**, persisted session duration **29,906 ms**
+  (observed closed after 40,052 ms). Backend and authenticated Worker summaries
+  agree. An earlier diagnostic used a nonexistent field; its corrected targeted
+  rerun supplies this evidence.
+
+UTC day/month rollover and distinct browser period counts were proven against
+persisted convex-test/SQLite state. Real wall-clock midnight and live-site
+acceptance were not run. Artifacts are outside Git in
+`powerroller/test-artifacts/stats-0d0e851/RESULT.md`; private services were stopped.
+Publication reuses these results and requires only builds/deployment records.

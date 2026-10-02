@@ -127,6 +127,9 @@ function Demo() {
           phase('cato-joining');
           await controller.join(code.current!);
           if (signal.aborted) break;
+          await until(() => !!root.querySelector(`.join-log-entry[data-participant="${cato.identity.viewer}"]`));
+          phase('cato-joined');
+          await pause(900);
           phase('cato-roll');
           const roll = await controller.roll({ dice: { kind: 'dice', sides: 4, count: 2 } }, async (faces, dice) => {
             if (signal.aborted) return undefined;

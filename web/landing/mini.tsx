@@ -20,8 +20,8 @@ const visitor = identity();
 root.dataset.viewer = visitor.viewer;
 root.dataset.room = roomKey;
 const actors: { identity: Identity; profile: Profile }[] = [
-  { identity: identity(), profile: { name: 'Alex', style: { color: '#6edbc0', ink: '#142d26', pattern: 'frosted', font: 'modern' } } },
-  { identity: identity(), profile: { name: 'Sam', style: { color: '#eaa0b3', ink: '#492233', pattern: 'marble', font: 'serif' } } },
+  { identity: identity(), profile: { name: 'Ariadne', style: { color: '#6edbc0', ink: '#142d26', pattern: 'frosted', font: 'modern' } } },
+  { identity: identity(), profile: { name: 'Cato', style: { color: '#eaa0b3', ink: '#492233', pattern: 'marble', font: 'serif' } } },
 ];
 const visitorProfile: Profile = { name: 'You', style: { color: '#b5a4df', ink: '#34284a', pattern: 'speckle', font: 'gothic' } };
 const client = backend ? new ConvexReactClient(backend) : undefined;

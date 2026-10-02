@@ -15,6 +15,10 @@ The menu holds for 1200ms before copying and three seconds after confirmation.
 Chat typing uses 70ms per character; the pasted code holds for 1400ms, followed
 by a 300ms send press, a 1400ms sent hold, 1400ms of Cato typing and a 2200ms reply hold.
 The chat is a local illustration and does not contact Discord or send any external message.
+The script waits for the real `.join-log-entry[data-participant]` row for Cato,
+then holds it for 900ms before requesting his roll. Join notices use the same
+`historySince` boundary as rolls, so each repeat starts with an empty log.
+Both the interactive hero and the sharing illustration use Ariadne and Cato.
 The result remains visible briefly. Cato leaves, the tray clears, and the
 visible log resets before the next cycle. One table is reused across cycles;
 the host's presentation boundary hides older accepted history without deleting

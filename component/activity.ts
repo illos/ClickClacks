@@ -3,13 +3,13 @@ import {mutation, query} from "./_generated/server";
 import {makeFunctionReference} from "convex/server";
 import {v} from "convex/values";
 import {gameplayStats} from "./activityTables";
-import {emptyGameplay, type GameplayStats} from "../shared/stats";
+import {emptyGameplay, validPeriodKey, type GameplayStats} from "../shared/stats";
 import {updateActivity} from "./lib/activity";
 
 export const summary = query({
   args: {period: v.string()}, returns: v.object({totals: gameplayStats, startedAt: v.union(v.number(), v.null())}),
   handler: async (ctx, {period}) => {
-    if (!/^(all|day:\d{4}-\d{2}-\d{2}|month:\d{4}-\d{2})$/.test(period)) throw new Error("Invalid stats period.");
+    if (!validPeriodKey(period)) throw new Error("Invalid stats period.");
     const docs = await ctx.db.query("activityTotals").withIndex("by_period_shard", q => q.eq("period", period)).take(16);
     const totals = emptyGameplay();
     for (const doc of docs) for (const field of Object.keys(totals) as (keyof GameplayStats)[])

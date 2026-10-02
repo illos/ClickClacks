@@ -6,7 +6,7 @@ import {backend, componentBackend} from "./fixtures/table";
 import {emptyGameplay, type GameplayStats} from "../../shared/stats";
 const summary = makeFunctionReference<"query", {period: string}, {totals: GameplayStats; startedAt: number | null}>("activity:summary");
 const flush = makeFunctionReference<"mutation", {}, number>("activity:flush");
-const authenticatedSummary = makeFunctionReference<"query", {period: "day" | "month" | "all"}, {totals: GameplayStats; startedAt: number | null}>("stats:summary");
+const authenticatedSummary = makeFunctionReference<"query", {period: string}, {totals: GameplayStats; startedAt: number | null}>("stats:summary");
 const key = "12345678-1234-1234-1234-123456789010";
 const a = "12345678-1234-1234-1234-123456789011";
 const b = "12345678-1234-1234-1234-123456789012";
@@ -79,4 +79,5 @@ test("automated demo rooms are excluded and unauthenticated readers cannot obtai
   const readback = await host.withIdentity({subject: `${user}|test-session`}).query(authenticatedSummary, {period: "all"});
   expect(readback.totals).toEqual(emptyGameplay());
   expect(JSON.stringify(readback)).not.toContain("example.com");
+  await expect(host.withIdentity({subject: `${user}|test-session`}).query(authenticatedSummary, {period: "day:2026-02-30"})).rejects.toThrow("Invalid stats period");
 });

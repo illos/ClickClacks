@@ -2,8 +2,8 @@
 import {ConvexHttpClient} from "convex/browser";
 import {makeFunctionReference} from "convex/server";
 import {trafficSummary, type MetricsDatabase} from "./metrics";
-import type {GameplayStats, StatsPeriod, StatsSnapshot} from "../shared/stats";
-const summary = makeFunctionReference<"query", {period: StatsPeriod}, {totals: GameplayStats; startedAt: number | null}>("stats:summary");
+import {periodKey, type GameplayStats, type StatsPeriod, type StatsSnapshot} from "../shared/stats";
+const summary = makeFunctionReference<"query", {period: string}, {totals: GameplayStats; startedAt: number | null}>("stats:summary");
 type StatsEnv = {ASSETS: {fetch(request: Request): Promise<Response>}; METRICS: MetricsDatabase; CONVEX_URL: string};
 export default {
   async fetch(request: Request, env: StatsEnv) {
@@ -15,13 +15,14 @@ export default {
     if (!token) return Response.json({error: "Sign in to view stats."}, {status: 401, headers});
     const period = url.searchParams.get("period") ?? "day";
     if (!["day", "month", "all"].includes(period)) return Response.json({error: "Invalid stats period."}, {status: 400, headers});
+    // One snapshot boundary for both sources, even when auth/query spans midnight.
+    const now = Date.now();
     const client = new ConvexHttpClient(env.CONVEX_URL);
     client.setAuth(token);
     let gameplay;
-    try {gameplay = await client.query(summary, {period: period as StatsPeriod});}
+    try {gameplay = await client.query(summary, {period: periodKey(period as StatsPeriod, now)});}
     catch {return Response.json({error: "Could not verify your sign-in. Sign in again or retry."}, {status: 401, headers});}
     try {
-      const now = Date.now();
       const traffic = await trafficSummary(env.METRICS, period as StatsPeriod, now);
       const dates = [traffic.startedAt, gameplay.startedAt].filter((date): date is number => date !== null);
       const snapshot: StatsSnapshot = {period: period as StatsPeriod, generatedAt: now, ...traffic,

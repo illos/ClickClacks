@@ -8,6 +8,13 @@ export function periodKeys(time: number) {
 export function periodKey(period: StatsPeriod, time: number) {
   return period === "day" ? `day:${dayOf(time)}` : period === "month" ? `month:${monthOf(time)}` : "all";
 }
+export function validPeriodKey(key: string) {
+  if (key === "all") return true;
+  if (/^month:\d{4}-(0[1-9]|1[0-2])$/.test(key)) return true;
+  if (!/^day:\d{4}-\d{2}-\d{2}$/.test(key)) return false;
+  const date = key.slice(4), time = Date.parse(date);
+  return Number.isFinite(time) && dayOf(time) === date;
+}
 export const demoRoomPrefix = "de000000-";
 export const newDemoRoomKey = () => demoRoomPrefix + crypto.randomUUID().slice(9);
 export function emptyGameplay() {

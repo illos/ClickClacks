@@ -79,3 +79,13 @@ Worker. The app's shared logo revision awaits that separate publication.
 
 The interactive hero roller has the brief “Try it live” prompt below it.
 The non-interactive sharing illustration has no separate caption or narration.
+
+Caption revision `00f384a` was merged into main, pushed and published on
+2026-10-02. It removes the sharing caption and narrated paragraph, and adds
+“Try it live” beneath the interactive hero roller. The landing build also carries
+forward the previously accepted shared motion-settling fix from `8a54404`.
+Source review accepted the copy-only changes; no additional tests ran.
+Required landing build and Wrangler 4.134.0 deploy exited 0. Landing Worker:
+`a62c003b-dc2c-4106-a423-f553051561f7`. Logs are outside Git at
+`test-artifacts/hero-caption-publication-00f384a/`. The app Worker remains
+`66f954e1-d2bc-41ef-b286-98852ba68585`; demo browser checks stay held for owner review.

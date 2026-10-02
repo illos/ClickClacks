@@ -13,7 +13,7 @@ try {
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.goto(url);
-    await expect(page.getByRole('heading', { name: 'A collaborative dice roller' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Your dice. Everyone’s table.' })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.locator('#customize').scrollIntoViewIfNeeded();
     await expect(page.locator('.landing-preview canvas')).toBeVisible();

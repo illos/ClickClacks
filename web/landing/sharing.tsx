@@ -13,8 +13,8 @@ const client = backend ? new ConvexReactClient(backend) : undefined;
 const root = document.getElementById('root')!;
 const roomKey = crypto.randomUUID();
 const identity = (): Identity => ({ viewer: crypto.randomUUID(), credential: crypto.randomUUID() + crypto.randomUUID() });
-const alex = { identity: identity(), profile: { name: 'Alex', style: { color: '#6edbc0', ink: '#142d26', pattern: 'frosted', font: 'modern' } } satisfies Profile };
-const sam = { identity: identity(), profile: { name: 'Sam', style: { color: '#eaa0b3', ink: '#492233', pattern: 'marble', font: 'serif' } } satisfies Profile };
+const ariadne = { identity: identity(), profile: { name: 'Ariadne', style: { color: '#6edbc0', ink: '#142d26', pattern: 'frosted', font: 'modern' } } satisfies Profile };
+const cato = { identity: identity(), profile: { name: 'Cato', style: { color: '#eaa0b3', ink: '#492233', pattern: 'marble', font: 'serif' } } satisfies Profile };
 root.dataset.room = roomKey;
 
 // The host iframe is inert and ignores pointers. Also reject trusted input when
@@ -29,9 +29,9 @@ function Demo() {
   const [active, setActive] = useState(parent === window);
   const [historySince, setHistorySince] = useState(Infinity);
   const [status, setStatus] = useState('');
-  const [chat, setChat] = useState<{ stage: 'typing' | 'pasted' | 'sending' | 'sent' | 'sam-typing' | 'sam-replied'; text: string; code: string } | null>(null);
+  const [chat, setChat] = useState<{ stage: 'typing' | 'pasted' | 'sending' | 'sent' | 'cato-typing' | 'cato-replied'; text: string; code: string } | null>(null);
   const code = useRef<string | undefined>(undefined);
-  const latestAlex = useRef<string | undefined>(undefined);
+  const latestAriadne = useRef<string | undefined>(undefined);
   const cleanupPending = useRef<Promise<void>>(Promise.resolve());
   useEffect(() => {
     let parentVisible = parent === window;
@@ -53,7 +53,7 @@ function Demo() {
     const abort = new AbortController();
     const signal = abort.signal;
     const planner = createThrowPlanner();
-    const controller = createController({ transport: reactTransport(client), key: roomKey, ...sam });
+    const controller = createController({ transport: reactTransport(client), key: roomKey, ...cato });
     const pause = (milliseconds: number) => new Promise<void>((resolve, reject) => {
       if (signal.aborted) { reject(signal.reason); return; }
       const cancelled = () => { clearTimeout(timer); reject(signal.reason); };
@@ -85,11 +85,11 @@ function Demo() {
           setHistorySince(Infinity);
           phase('ready');
           await until(() => !!code.current && !!rollButton() && !rollButton()!.disabled);
-          const previous = latestAlex.current;
+          const previous = latestAriadne.current;
           await pause(1200);
-          phase('alex-roll');
+          phase('ariadne-roll');
           rollButton()!.click();
-          await until(() => latestAlex.current !== previous);
+          await until(() => latestAriadne.current !== previous);
           await pause(900);
           phase('sharing-tap');
           await tap(button('Open social menu')!);
@@ -102,7 +102,7 @@ function Demo() {
           await pause(3000);
           button('Close social menu')!.click();
           phase('chat-invite');
-          const invitation = 'Sam, join the game!';
+          const invitation = 'Cato, join the game!';
           setChat({ stage: 'typing', text: '', code: '' });
           await pause(600);
           for (let length = 1; length <= invitation.length; length++) {
@@ -117,22 +117,22 @@ function Demo() {
           await pause(300);
           setChat({ stage: 'sent', text: invitation, code: code.current! });
           await pause(1400);
-          phase('sam-chat-typing');
-          setChat({ stage: 'sam-typing', text: invitation, code: code.current! });
+          phase('cato-chat-typing');
+          setChat({ stage: 'cato-typing', text: invitation, code: code.current! });
           await pause(1400);
-          phase('sam-chat-reply');
-          setChat({ stage: 'sam-replied', text: invitation, code: code.current! });
+          phase('cato-chat-reply');
+          setChat({ stage: 'cato-replied', text: invitation, code: code.current! });
           await pause(2200);
           setChat(null);
-          phase('sam-joining');
+          phase('cato-joining');
           await controller.join(code.current!);
           if (signal.aborted) break;
-          phase('sam-roll');
+          phase('cato-roll');
           const roll = await controller.roll({ dice: { kind: 'dice', sides: 4, count: 2 } }, async (faces, dice) => {
             if (signal.aborted) return undefined;
             return (await planner.prepareThrow(faces, { dice })).motion;
           });
-          await until(() => !!root.querySelector(`[data-log-key="${sam.identity.viewer}:${roll.id}"]`));
+          await until(() => !!root.querySelector(`[data-log-key="${cato.identity.viewer}:${roll.id}"]`));
           phase('result');
           await pause(2500);
           await controller.leave();
@@ -164,17 +164,17 @@ function Demo() {
   }, [active]);
 
   if (!client) return <p className="sharing-status">The live demonstration is unavailable.</p>;
-  const invitationSent = chat && ['sent', 'sam-typing', 'sam-replied'].includes(chat.stage);
+  const invitationSent = chat && ['sent', 'cato-typing', 'cato-replied'].includes(chat.stage);
   return <>
-    {active && <ClickClacks client={client} roomKey={roomKey} identity={alex.identity} profile={alex.profile}
+    {active && <ClickClacks client={client} roomKey={roomKey} identity={ariadne.identity} profile={ariadne.profile}
       preferences={{ theme: 'dark', selectedDice: 12, motion: 'full', sound: false, hidden: false, highContrast: false, announcements: 'off' }}
       historySince={historySince}
       copyText={async () => { /* Show the real copy confirmation without changing a visitor's clipboard. */ }}
       onRoom={value => { code.current = value; root.dataset.room = value; }}
       roomLink={value => `https://dice.clickclacks.app/?room=${encodeURIComponent(value)}`}
       onRoll={(_code, roll) => {
-        if (roll.roller === alex.identity.viewer && !(roll as DeliveredRoll).historical) {
-          latestAlex.current = roll.id;
+        if (roll.roller === ariadne.identity.viewer && !(roll as DeliveredRoll).historical) {
+          latestAriadne.current = roll.id;
           setHistorySince(roll.startsAt);
         }
       }} />}
@@ -183,12 +183,12 @@ function Demo() {
       <div className="chat-messages">
         {invitationSent && <div className="chat-message">
           <span className="chat-avatar">A</span>
-          <div><div className="chat-author">Alex <span>Just now</span></div><p>{chat.text}<br /><code>{chat.code}</code></p></div>
+          <div><div className="chat-author">Ariadne <span>Just now</span></div><p>{chat.text}<br /><code>{chat.code}</code></p></div>
         </div>}
-        {chat.stage === 'sam-typing' && <p className="chat-typing">Sam is typing…</p>}
-        {chat.stage === 'sam-replied' && <div className="chat-message">
-          <span className="chat-avatar chat-sam">S</span>
-          <div><div className="chat-author chat-sam">Sam <span>Just now</span></div><p>Got it, joining now!</p></div>
+        {chat.stage === 'cato-typing' && <p className="chat-typing">Cato is typing…</p>}
+        {chat.stage === 'cato-replied' && <div className="chat-message">
+          <span className="chat-avatar chat-cato">C</span>
+          <div><div className="chat-author chat-cato">Cato <span>Just now</span></div><p>Got it, joining now!</p></div>
         </div>}
       </div>
       <div className="chat-composer">

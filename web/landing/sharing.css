@@ -30,6 +30,6 @@ body { margin: 0; }
 .chat-sending .chat-send { color: #142d26; background: #6edbc0; transform: scale(.92); }
 
 .chat-message + .chat-message { margin-top: 18px; }
-.chat-avatar.chat-sam { background: #eaa0b3; color: #492233; }
-.chat-author.chat-sam { color: #eaa0b3; }
+.chat-avatar.chat-cato { background: #eaa0b3; color: #492233; }
+.chat-author.chat-cato { color: #eaa0b3; }
 .chat-typing { margin: 18px 0 0 50px; color: #afb6c5; font-size: 13px; }

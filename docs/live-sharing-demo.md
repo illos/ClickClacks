@@ -5,17 +5,17 @@ Click Clacks app. The square iframe runs at 720 × 720 and scales to its website
 column, to the left of the section copy (above it on narrow screens). It uses the existing component, renderer, roll lifecycle and dedicated
 Powerroller backend. Each page load has an isolated table and two fresh identities.
 
-The repeating sequence is Alex rolling 1d12, waiting a beat, opening Sharing
+The repeating sequence is Ariadne rolling 1d12, waiting a beat, opening Sharing
 with a tap ripple, copying the code, and closing the menu after three seconds.
-An example chat card then types Alex's invitation, pastes the actual table code,
-and shows the message being sent. Sam types and replies ‘Got it, joining now!’
+An example chat card then types Ariadne's invitation, pastes the actual table code,
+and shows the message being sent. Cato types and replies ‘Got it, joining now!’
 before the card closes and he joins the actual table and rolls 2d4. Sharing opens
-1200ms after Alex's result is observed, including the final 300ms tap indicator.
+1200ms after Ariadne's result is observed, including the final 300ms tap indicator.
 The menu holds for 1200ms before copying and three seconds after confirmation.
 Chat typing uses 70ms per character; the pasted code holds for 1400ms, followed
-by a 300ms send press, a 1400ms sent hold, 1400ms of Sam typing and a 2200ms reply hold.
+by a 300ms send press, a 1400ms sent hold, 1400ms of Cato typing and a 2200ms reply hold.
 The chat is a local illustration and does not contact Discord or send any external message.
-The result remains visible briefly. Sam leaves, the tray clears, and the
+The result remains visible briefly. Cato leaves, the tray clears, and the
 visible log resets before the next cycle. One table is reused across cycles;
 the host's presentation boundary hides older accepted history without deleting
 backend records. Ordinary app consumers retain their existing full log.
@@ -27,7 +27,7 @@ copy handler show confirmation without altering visitors' clipboards. The normal
 app keeps its browser clipboard implementation.
 
 The iframe loads only when visible. Its script and app subscriptions stop when
-offscreen or when the page is hidden; Sam's in-flight work settles before his
+offscreen or when the page is hidden; Cato's in-flight work settles before his
 controller leaves and disposes. The sequence restarts when visible again. Audio
 is explicitly muted. Unavailable backend connections show a reconnecting notice.
 

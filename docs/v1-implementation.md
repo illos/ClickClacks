@@ -18,7 +18,8 @@ This implements the authorized cleanup, frontend performance and backend cost pl
 - Current results, recordings, receipts and browser history expire at the original
   one-hour request deadline. Minimal retry tombstones remain until room expiry.
   Cleanup remains bounded/indexed; legacy V1 expiry is covered, and pre-upgrade
-  full tracks are normalized in bounded batches so old 24-hour/absent deadlines
+  full tracks are normalized two at a time with shared read-limit headroom, so
+  old 24-hour/absent deadlines
   do not leave recordings indefinitely. Leave-by-code resolves
   the canonical key before deleting its persisted track.
 - Pure contracts/codecs/preferences and cosmetic names live in `shared`. UI authority,

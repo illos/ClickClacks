@@ -96,13 +96,14 @@ export function simulateThrow(seed: number, results: number[], scene: ThrowScene
     faces: hullFaces,
   });
   for (const obstacle of scene.obstacles ?? []) {
+    const obstacleScale = obstacle.scale ?? scale;
     const obstacleModel = dieModel(obstacle.dice);
     const obstacleShape =
-      !obstacle.dice && (!scene.dice || scene.dice.kind === 'power')
+      obstacleScale === scale && !obstacle.dice && (!scene.dice || scene.dice.kind === 'power')
         ? shape
         : new ConvexPolyhedron({
             vertices: obstacleModel.vertices.map(
-              p => new Vec3(p.x * scale, p.y * scale, p.z * scale),
+              p => new Vec3(p.x * obstacleScale, p.y * obstacleScale, p.z * obstacleScale),
             ),
             faces: obstacleModel.faces.map(face =>
               face.points.map(p =>

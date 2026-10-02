@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { createRoomTray } from '../dice-demo-v2/renderer';
+import { trayDieScale } from '../dice-demo-v2/dice-size';
 import { createThrowPlanner } from '../dice-demo/prepare-throw';
 import { loadDiceFonts } from '../dice-demo/fonts';
 import { createDiceSound } from '../dice-demo-v2/dice-sound';
@@ -63,7 +64,7 @@ rollButton.addEventListener('click', async () => {
   const faces = success ? [9, 10] : [1, 1];
   status.textContent = 'Rolling…';
   try {
-    const [{ motion }] = await Promise.all([planner.prepareThrow(faces, { scale: .65, obstacles: [], dice }), unlocked]);
+    const [{ motion }] = await Promise.all([planner.prepareThrow(faces, { scale: trayDieScale(), obstacles: [], dice }), unlocked]);
     if (disposed || !tray) return;
     const duration = (motion.samples.length / (faces.length * 7) - 1) * motion.stepMs;
     const total = faces[0]! + faces[1]!;
@@ -83,7 +84,7 @@ rollButton.addEventListener('click', async () => {
 });
 
 void Promise.all([
-  loadDiceFonts(), planner.warmThrows({ scale: .65, obstacles: [], dice }),
+  loadDiceFonts(), planner.warmThrows({ scale: trayDieScale(), obstacles: [], dice }),
 ]).then(() => {
   if (disposed) return;
   tray = createRoomTray(host, () => {

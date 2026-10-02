@@ -8,6 +8,7 @@ import { progress } from '../dice-demo/model';
 import { revealDelay, trayOpacity, type Participant, type ParticipantRoll } from './model';
 import { criticalResult, criticalLabel } from '../../lib/critical';
 import type { Timing } from '../dice-demo/renderer';
+import { trayDieScale } from './dice-size';
 type Lane = {
   group: THREE.Group;
   dice: THREE.Group[];
@@ -144,7 +145,8 @@ export function createRoomTray(
         disposeGroup(old);
       }
       lane.dice.forEach(d => {
-        d.scale.multiplyScalar(1.3);
+        // Models are authored at half scale; match this roll's collision hull.
+        d.scale.multiplyScalar(trayDieScale(lane.roll?.faces.length) / 0.5);
         d.visible = false;
         lane.group.add(d);
       });
@@ -193,7 +195,7 @@ export function createRoomTray(
       const h = Math.max(0, die.position.y - 0.5);
       const shadow = lane.shadows[i]!;
       shadow.position.set(die.position.x + h * 0.45, -0.025, die.position.z - h * 0.3);
-      shadow.scale.setScalar(1.3 * (1 + h * 0.45));
+      shadow.scale.setScalar((die.scale.x / 0.5) * (1 + h * 0.45));
       (shadow.material as THREE.MeshBasicMaterial).opacity = 0.65 / (1 + h * 1.5);
     }
   }

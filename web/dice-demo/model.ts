@@ -20,6 +20,8 @@ export type DiceConfig = {
   bonusD4?: boolean;
 };
 export type RestingDie = {
+  /** Original roll scale; omitted obstacles inherit the new throw's scale. */
+  scale?: number;
   position: number[];
   rotation: number[];
   dice?: DiceConfig;

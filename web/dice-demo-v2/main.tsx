@@ -20,7 +20,7 @@ import { ThemeSwitcher, ThemeOptions } from './theme-controls';
 import { makeFunctionReference } from 'convex/server';
 import { createController, type Identity, type Profile, type DeliveredRoll } from '../../lib/client';
 import { displayError, redactError } from '../../lib/errors';
-import { genericModifierValue, rollCooldownMs } from '../../shared/dice';
+import { dicePoolCount, genericModifierValue, rollCooldownMs } from '../../shared/dice';
 import { describeRoll, rollDiceNotation } from '../../lib/format';
 import { criticalResult, criticalLabel } from '../../lib/critical';
 import {
@@ -34,6 +34,7 @@ import {
 import { demo } from '../dice-demo/api';
 import type { createThrowPlanner } from '../dice-demo/prepare-throw';
 import type { restingScene } from './resting-scene';
+import { trayDieScale } from './dice-size';
 import { packMotion, unpackTrack } from '../dice-demo/motion-codec';
 import { type Style, type Motion, type DiceConfig } from '../dice-demo/model';
 import type { SitePreferences, CachedRoll } from '../site/storage';
@@ -834,7 +835,7 @@ function DiceRoom() {
         planner.current = currentPlanner;
         makeRestingScene.current = resting.restingScene;
         void currentPlanner
-          .warmThrows({ scale: 0.65, obstacles: [] })
+          .warmThrows({ scale: trayDieScale(), obstacles: [] })
           .then(() => {
             if (!cancelled) setPhysicsReady(true);
           })
@@ -904,6 +905,7 @@ function DiceRoom() {
       members,
       viewer,
       now + clock.offset,
+      dicePoolCount(diceConfig),
     );
     void planner.current.warmThrows({ ...scene, dice: diceConfig }).catch(() => {
       /* Throw preparation retries on click. */
@@ -1066,6 +1068,7 @@ function DiceRoom() {
           members,
           viewer,
           performance.now() + (clockRef.current?.offset ?? 0),
+          request.faces.length,
         );
         try {
           request.motion = (

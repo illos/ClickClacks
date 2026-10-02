@@ -4,6 +4,7 @@ import { Quaternion } from 'three';
 import { dieConfigForIndex, dieModel } from '../web/dice-demo/dice-models';
 import { simulateThrow } from '../web/dice-demo/physics';
 import { restingScene } from '../web/dice-demo-v2/resting-scene';
+import { trayDieScale } from '../web/dice-demo-v2/dice-size';
 import { packMotion, unpackMotion } from '../web/dice-demo/motion-codec';
 import type { DiceConfig } from '../web/dice-demo/model';
 import type { Participant, ParticipantRoll } from '../web/dice-demo-v2/model';
@@ -11,7 +12,7 @@ const sides = [6, 8, 10, 12, 20] as const;
 function settled(config: DiceConfig, results: number[]) {
   for (let seed = 1; seed <= 8; seed++) {
     try {
-      return simulateThrow(seed, results, { dice: config, scale: 0.65 });
+      return simulateThrow(seed, results, { dice: config, scale: trayDieScale(results.length) });
     } catch (error) {
       if (!String(error).includes('did not settle')) throw error;
     }
@@ -94,7 +95,7 @@ describe('bonus d4 physical presentation', () => {
           q = new Quaternion().fromArray(obstacle.rotation);
         const bottom = Math.min(
           ...model.vertices.map(
-            vertex => vertex.clone().applyQuaternion(q).y * 0.65 + obstacle.position[1]!,
+            vertex => vertex.clone().applyQuaternion(q).y * obstacle.scale! + obstacle.position[1]!,
           ),
         );
         expect(bottom).toBeGreaterThan(-0.06);
@@ -114,7 +115,7 @@ describe('bonus d4 physical presentation', () => {
           .normalize()
           .multiply(new Quaternion().fromArray(motion.offsets, index * 4));
       for (const vertex of model.vertices) {
-        const world = vertex.clone().applyQuaternion(pose).multiplyScalar(0.65);
+        const world = vertex.clone().applyQuaternion(pose).multiplyScalar(trayDieScale(config.count + 1));
         expect(Math.abs(world.x + final[index * 7]!)).toBeLessThan(5.15);
         expect(Math.abs(world.z + final[index * 7 + 2]!)).toBeLessThan(3.4);
       }
@@ -147,7 +148,7 @@ describe('bonus d4 physical presentation', () => {
           .normalize()
           .multiply(new Quaternion().fromArray(motion.offsets, i * 4));
       for (const vertex of model.vertices) {
-        const world = vertex.clone().applyQuaternion(pose).multiplyScalar(0.65);
+        const world = vertex.clone().applyQuaternion(pose).multiplyScalar(trayDieScale(config.count + 1));
         expect(Math.abs(world.x + final[i * 7]!)).toBeLessThan(5.15);
         expect(Math.abs(world.z + final[i * 7 + 2]!)).toBeLessThan(3.4);
       }

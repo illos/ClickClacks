@@ -30,10 +30,12 @@ journey passed with local zero-RPC rolls, shared persisted results and the full
 ten-minute solo return. QC accepted these results and carried them to `6d07e55`.
 Full evidence is retained outside Git at `test-artifacts/join-log-40b8512/RESULT.md`.
 
-Earlier automatic-mode runs intermittently accepted logical results without
-cosmetic motion after a canvas became visible. This remains a separate preparation
-or readiness investigation. A warmed baseline passing does not prove the identical
-failure predated this change, and a warmup is not a fix.
+Earlier automatic-mode runs intermittently missed the tray result after a canvas
+became visible. Their post-timeout motion inspection was inconclusive because
+local history discards expired motion. A separate immediate worker trace later
+confirmed a nonsettling simulation and logical acceptance without motion; see
+[the settling investigation](motion-settling.md). A warmed baseline passing does
+not prove the identical failure predated this change, and a warmup is not a fix.
 
 Published app source `6d07e55` on 2026-10-02, Worker
 `d7810618-1639-4ec2-9d54-81b23f9911f1`, at `https://dice.clickclacks.app/`.

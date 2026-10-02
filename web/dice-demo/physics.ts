@@ -13,6 +13,7 @@ import * as THREE from 'three';
 import { faceForResult, faces, vertices } from './d10';
 import { dieConfigForIndex, dieModel, modelNumberingOrientation } from './dice-models';
 import type { DiceConfig, Motion, ThrowScene } from './model';
+import { UnsettledThrowError } from './throw-settling';
 
 /** Seeded cosmetic parameters only. Results never come from the physics world. */
 function generator(seed: number) {
@@ -237,7 +238,7 @@ export function simulateThrow(seed: number, results: number[], scene: ThrowScene
       break;
     }
   }
-  if (!settled) throw new Error('This throw did not settle. Try another throw.');
+  if (!settled) throw new UnsettledThrowError();
   const offsets = bodies.flatMap((body, i) =>
     throwNumberingOrientation(
       new THREE.Quaternion(

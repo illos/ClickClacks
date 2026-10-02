@@ -902,15 +902,18 @@ function DiceRoom() {
       if (localRolls || customizeTimer.current || customizePending.current ||
           !matches(ownParticipant) || !matches(profileRef.current))
         await controller.profile({ name: profile.name, style: profile.style });
+      let presentationFailed = false;
       await controller.roll(request, async (faces, dice) => {
         // Read current graphics after authority sampling; initial loading and a
         // missing cosmetic worker must never change the accepted logical result.
         if (!tray.current || preferences.hidden || !planner.current || !makeRestingScene.current) return undefined;
         const scene = makeRestingScene.current(tracks.current.values(), members, viewer,
           performance.now() + (clockRef.current?.offset ?? 0), faces.length);
-        return (await planner.current.prepareThrow(faces, { ...scene, dice })).motion;
+        try { return (await planner.current.prepareThrow(faces, { ...scene, dice })).motion; }
+        catch { presentationFailed = true; return undefined; }
       });
       if (delivery.current !== controller) return;
+      if (presentationFailed) setError('3D motion could not be prepared. Your roll was saved as text.');
       retryThrow.current = null;
       setEdges(current => current === edges ? 0 : current);
       setBanes(current => current === banes ? 0 : current);

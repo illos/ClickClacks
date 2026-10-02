@@ -3,6 +3,7 @@ import { dicePoolSides } from '../../shared/dice';
 import { Quaternion } from 'three';
 import { throwNumberingOrientation, simulateThrow } from './physics';
 import type { Motion, ThrowScene } from './model';
+import { prepareSettledThrow } from './throw-settling';
 
 let prepared: Motion | undefined;
 let preparedKey = '';
@@ -11,11 +12,11 @@ function prepare(scene: ThrowScene) {
   if (key !== preparedKey) prepared = undefined;
   preparedKey = key;
   // Cosmetic motion is independent of supplied results. Each throw gets a fresh seed.
-  prepared ??= simulateThrow(
+  prepared ??= prepareSettledThrow(() => simulateThrow(
     crypto.getRandomValues(new Uint32Array(1))[0]!,
     scene.dice ? dicePoolSides(scene.dice) : [10, 10],
     scene,
-  );
+  ));
 }
 self.onmessage = (event: MessageEvent<{ id: number; faces?: number[]; scene?: ThrowScene }>) => {
   const { id, faces, scene = {} } = event.data;

@@ -8,6 +8,7 @@ const browser = await chromium.launch();
 try {
   const page = await browser.newPage();
   const errors = []; page.on('pageerror', error => errors.push(error.message));
+  await page.clock.install();
   await page.goto(new URL('tests/fixtures/presence-recovery.html', process.env.URL).href);
   const roll = page.getByRole('button', { name: 'Roll', exact: true });
   const clear = page.getByRole('button', { name: 'Clear tray', exact: true });
@@ -21,15 +22,22 @@ try {
   expect((await readEvents()).rolls).toHaveLength(1);
   await expect(clear).toBeEnabled();
 
-  // Same-client mutations are serialized: Leave reaches the real backend first,
-  // then Clear fails while the browser still shows its previous membership.
-  await page.evaluate(async () => {
-    const leaving = window.fixture.leave();
-    document.querySelector('button[aria-label="Clear tray"]').click();
-    await leaving;
-  });
-  const reconnect = page.getByText('Reconnect to this room before throwing.', { exact: true });
+  // Suspend browser timers while real backend time expires membership. Keep the
+  // private session intact so authority rejects stale membership, not credentials.
+  await page.clock.pauseAt(new Date());
+  const suspendedAt = Date.now();
+  await new Promise(resolve => setTimeout(resolve, 32500));
+  const staleSeenAt = (await member()).seenAt;
+  const backendNow = await http.action(makeFunctionReference('diceDemo:clock'), {});
+  expect(staleSeenAt).toBeLessThanOrEqual(backendNow - 30000);
+  await clear.click();
+  const reconnect = page.getByRole('alert').filter({ hasText: 'Reconnect to this room before throwing.' });
   await expect(reconnect).toBeVisible({ timeout: 5000 });
+  await expect(reconnect.getByRole('button', { name: 'Reload', exact: true })).toBeVisible();
+  // Resume browser time at the elapsed wall time, as after a suspended page.
+  await page.clock.fastForward(Date.now() - suspendedAt);
+  await page.clock.resume();
+  await expect.poll(async () => (await member())?.seenAt, { timeout: 20000 }).toBeGreaterThan(staleSeenAt);
   await expect.poll(async () => (await member())?.ready, { timeout: 20000 }).toBe(true);
   await expect(reconnect).toHaveCount(0, { timeout: 20000 });
   await expect(roll).toBeEnabled();
@@ -40,7 +48,7 @@ try {
   // Another UNAUTHORIZED error has a different cause; a heartbeat must retain it.
   const seenAt = (await member()).seenAt;
   await page.evaluate(() => window.fixture.failNextClear()); await clear.click();
-  const unrelated = page.getByText('Invalid private session credential.', { exact: true });
+  const unrelated = page.getByRole('alert').filter({ hasText: 'Invalid private session credential.' });
   await expect(unrelated).toBeVisible();
   await expect.poll(async () => (await member())?.seenAt, { timeout: 20000 }).toBeGreaterThan(seenAt);
   await expect(unrelated).toBeVisible(); expect(errors).toEqual([]);

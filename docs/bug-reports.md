@@ -39,13 +39,13 @@ global exact submission quota. No geographic permission prompt is used.
 ## Reading and triage from Presidium
 
 Obtain the support-reader token through the host secret mechanism. Run from this
-checkout (or use `pnpm --dir /path/to/checkout bugs ...`):
+checkout (or use `pnpm --dir /path/to/checkout run bugs ...`):
 
 ```sh
-pnpm bugs list --status new --json
-pnpm bugs show REPORT_ID --json
-pnpm bugs update REPORT_ID --status in-progress --revision 0 --owner THREAD_ID
-pnpm bugs update REPORT_ID --status resolved --revision 1 --owner THREAD_ID --commit FIX_SHA --body-file /path/to/evidence.md
+pnpm run bugs list --status new --json
+pnpm run bugs show REPORT_ID --json
+pnpm run bugs update REPORT_ID --status in-progress --revision 0 --owner THREAD_ID
+pnpm run bugs update REPORT_ID --status resolved --revision 1 --owner THREAD_ID --commit FIX_SHA --body-file /path/to/evidence.md
 ```
 
 `BUG_REPORT_READ_TOKEN` permits list/show; `BUG_REPORT_WRITE_TOKEN` permits

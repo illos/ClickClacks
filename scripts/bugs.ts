@@ -19,7 +19,7 @@ export async function runBugs(args = process.argv.slice(2), request = fetch) {
   const [command, id] = positionals;
   if (!["list", "show", "submit", "update"].includes(command))
     throw new Error(
-      "Usage: pnpm bugs list [--status new] | show ID | submit --body-file FILE | update ID --status STATUS --revision N [--owner THREAD_ID] [--commit SHA] [--body-file NOTES]",
+      "Usage: pnpm run bugs list [--status new] | show ID | submit --body-file FILE | update ID --status STATUS --revision N [--owner THREAD_ID] [--commit SHA] [--body-file NOTES]",
     );
   const base = new URL(
     values.url ??

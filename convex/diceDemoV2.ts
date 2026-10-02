@@ -4,7 +4,7 @@ import {v,type Infer} from "convex/values";
 import {query,mutation,action,internalMutation,internalQuery} from "./_generated/server";
 import {components} from "./_generated/api";
 import {demoMotion,demoReceipt,demoRoll,demoViewer,demoParticipantStyle} from "../component/diceDemoTables";
-import {diceConfiguration,roomPolicy,participant,participantRoll,semanticRoll} from "../component/diceDemoV2Tables";
+import {diceConfiguration,roomPolicy,participant,participantRoll,semanticRoll,trackMetadataResult} from "../component/diceDemoV2Tables";
 const demoStyle = demoParticipantStyle;
 const randomNameReturns=v.string();
 export const randomName=mutation({args:{},returns:randomNameReturns,handler:async(ctx,args):Promise<Infer<typeof randomNameReturns>>=>ctx.runMutation(components.powerroller.diceDemoV2.randomName,args)});
@@ -104,3 +104,18 @@ const setPolicyReturns=v.null();
 export const setPolicy=internalMutation({args:{ key: v.string(), policy: roomPolicy },returns:setPolicyReturns,handler:async(ctx,args):Promise<Infer<typeof setPolicyReturns>>=>ctx.runMutation(components.powerroller.diceDemoV2.setPolicy,args)});
 const leaveReturns=v.null();
 export const leave=mutation({args:{key:v.string(),viewer:v.string(),credential:v.string()},returns:leaveReturns,handler:async(ctx,args):Promise<Infer<typeof leaveReturns>>=>ctx.runMutation(components.powerroller.diceDemoV2.leave,args)});
+
+// Typed additive endpoints also compile against an older local generated binding.
+// Deployment/codegen generates the same references; the installed mount stays fixed.
+const compactApi = components.powerroller.diceDemoV2 as typeof components.powerroller.diceDemoV2 & {
+  trackMetadata: import("convex/server").FunctionReference<"query", "public", { key: string; viewer: string }, Infer<typeof trackMetadataResult>>;
+  motion: import("convex/server").FunctionReference<"query", "public", { key: string; viewer: string; rollId: string }, Infer<typeof demoMotion> | null>;
+};
+export const trackMetadata = query({
+  args: { key: v.string(), viewer: v.string() }, returns: trackMetadataResult,
+  handler: (ctx, args): Promise<Infer<typeof trackMetadataResult>> => ctx.runQuery(compactApi.trackMetadata, args),
+});
+export const motion = query({
+  args: { key: v.string(), viewer: v.string(), rollId: v.string() }, returns: v.union(v.null(), demoMotion),
+  handler: (ctx, args): Promise<Infer<typeof demoMotion> | null> => ctx.runQuery(compactApi.motion, args),
+});

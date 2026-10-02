@@ -14,6 +14,9 @@ export const expired = mutation({
       "diceDemoV2Tracks",
       "diceDemoV2Presentations",
       "diceDemoV2Sessions",
+      "diceDemoV2TrackMetadata",
+      "diceDemoV2PlaybackReceipts",
+      "diceDemoRooms",
     ] as const) {
       const docs = await ctx.db
         .query(table)
@@ -21,7 +24,7 @@ export const expired = mutation({
           q.gt("expiresAt", 0).lte("expiresAt", now),
         )
         .take(
-          table === "diceDemoV2Rooms"
+          table === "diceDemoV2Rooms" || table === "diceDemoRooms"
             ? 1
             : (table === "diceDemoV2Tracks" || table === "diceDemoV2Presentations")
               ? 8
@@ -29,7 +32,7 @@ export const expired = mutation({
         );
       more ||=
         docs.length ===
-        (table === "diceDemoV2Rooms"
+        (table === "diceDemoV2Rooms" || table === "diceDemoRooms"
           ? 1
           : (table === "diceDemoV2Tracks" || table === "diceDemoV2Presentations")
             ? 8
@@ -58,6 +61,7 @@ export const expired = mutation({
       } else
         await ctx.db.patch(receipt._id, {
           roll: undefined,
+          fingerprint: undefined,
           faces: [],
           expiresAt: receipt.roomExpiresAt,
         });

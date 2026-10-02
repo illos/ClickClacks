@@ -15,7 +15,7 @@ export const sampleFaces=action({args:{
     dice: v.optional(diceConfiguration),
   },returns:sampleFacesReturns,handler:async(ctx,args):Promise<Infer<typeof sampleFacesReturns>>=>ctx.runAction(components.powerroller.diceDemo.sampleFaces,args)});
 const clockReturns=v.number();
-export const clock=action({args:{},returns:clockReturns,handler:async(ctx,args):Promise<Infer<typeof clockReturns>>=>ctx.runAction(components.powerroller.diceDemo.clock,args)});
+export const clock=action({args:{},returns:clockReturns,handler:async(ctx,args):Promise<Infer<typeof clockReturns>>=>Date.now()});
 const viewReturns=v.union(
     v.null(),
     v.object({

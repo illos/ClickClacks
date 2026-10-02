@@ -49,6 +49,7 @@ export const participantRoll = v.object({
   revealAt: v.optional(v.number()),
   roller: v.string(),
   name: v.string(),
+  historyExpiresAt: v.optional(v.number()),
   // Optional for existing demo throws; new throws store their accepted modifier and outcome.
   power: v.optional(
     v.object({
@@ -61,7 +62,19 @@ export const participantRoll = v.object({
 });
 const { motion: _motion, ...semanticFields } = participantRoll.fields;
 export const semanticRoll = v.object(semanticFields);
+export const trackMetadataResult = v.union(v.null(), v.object({
+  roll: semanticRoll, activeRolls: v.array(semanticRoll), receipts: v.array(demoReceipt),
+}));
 export const diceDemoV2Tables = {
+  diceDemoV2TrackMetadata: defineTable({
+    key: v.string(), viewer: v.string(), roll: semanticRoll,
+    firstSequence: v.number(), expiresAt: v.number(),
+  }).index("by_room_viewer", ["key", "viewer"]).index("by_expiry", ["expiresAt"]),
+  diceDemoV2PlaybackReceipts: defineTable({
+    key: v.string(), roller: v.string(), rollId: v.string(), viewer: v.string(),
+    sample: demoReceipt, expiresAt: v.number(),
+  }).index("by_roll_viewer", ["key", "roller", "rollId", "viewer"])
+    .index("by_expiry", ["expiresAt"]),
   diceDemoV2Presentations: defineTable({
     key: v.string(), viewer: v.string(), id: v.string(),
     motion: demoMotion, expiresAt: v.number(),
@@ -92,7 +105,8 @@ export const diceDemoV2Tables = {
     .index("by_request", ["key", "viewer", "id"])
     .index("by_expiry", ["expiresAt"])
     .index("by_key_sequence", ["key", "sequence"])
-    .index("by_key", ["key"]),
+    .index("by_key", ["key"])
+    .index("by_room_viewer_sequence", ["key", "viewer", "sequence"]),
   diceDemoV2Rooms: defineTable({
     key: v.string(),
     sequence: v.optional(v.number()),

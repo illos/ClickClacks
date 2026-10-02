@@ -16,33 +16,25 @@ import {
 } from "./diceDemoTables";
 import { resolveEdgeBane, tierOf } from "../shared/resolve/index";
 import {
-  defaultDice,
   rollCooldownMs,
   dicePoolSides,
   dicePoolCount,
   genericModifier,
   naturalDiceTotal,
-  validateDiceConfiguration,
   type DiceConfiguration,
 } from "../shared/dice";
 import { validateMotion } from "./lib/recordedMotion";
 import { recordedRevealDelay } from "../shared/timing";
-import { sha256, toHex } from "./lib/sha256";
+import { validKey, codePattern, profile, config, validCredential, defaultPolicy, semanticFingerprint } from "./lib/roomPolicy";
 import {
   participant,
   participantRoll,
   semanticRoll,
   diceConfiguration,
   roomPolicy,
+  trackMetadataResult,
 } from "./diceDemoV2Tables";
 
-const validKey = (key: string) => {
-  if (
-    !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(key)
-  )
-    throw authorityError("INVALID_REQUEST","Invalid room link.");
-};
-const codePattern = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/;
 async function room(ctx: MutationCtx | QueryCtx, key: string) {
   const code = key.trim().toUpperCase();
   if (codePattern.test(code))
@@ -105,34 +97,6 @@ export const randomName = mutation({
     defaultNames[Math.floor(Math.random() * defaultNames.length)]!,
 });
 
-function profile(name: string, style: { color: string; ink: string }) {
-  if (
-    !name.trim() ||
-    name.length > 32 ||
-    !/^#[a-f0-9]{6}$/i.test(style.color) ||
-    !/^#[a-f0-9]{6}$/i.test(style.ink)
-  )
-    throw authorityError("INVALID_REQUEST","Choose a name and valid dice colors.");
-}
-const defaultPolicy = {
-  capacity: 8,
-  ttlMs: 86400000,
-  receiptTtlMs: 3600000,
-  maxRolls: 2000,
-  minRollIntervalMs: 250,
-};
-function config(dice?: DiceConfiguration) {
-  try {
-    const checked = validateDiceConfiguration(dice ?? defaultDice);
-    return { kind: checked.kind, sides: checked.sides, count: checked.count, ...(checked.bonusD4?{bonusD4:true}:{}) };
-  } catch (e) {
-    throw authorityError("INVALID_REQUEST",(e as Error).message);
-  }
-}
-function validCredential(credential: string) {
-  if (credential.length < 32 || credential.length > 256)
-    throw authorityError("UNAUTHORIZED","Use your private session credential.");
-}
 async function member(
   ctx: MutationCtx | QueryCtx,
   key: string,
@@ -197,26 +161,35 @@ export const track = query({
       )
       .unique();
     if (!current) return null;
+    const compact = await compactCurrent(ctx, found.key, args.viewer);
+    if (!compact || compact.expiresAt <= Date.now()) return null;
+    const receipts = await playbackReceipts(ctx, found.key, args.viewer, current.roll.id, current.receipts);
     // At most eight compact overlapping results travel with the latest path.
     // Fetch another path separately: returning eight full recordings can exceed
     // Convex's one-megabyte function result limit for large dice pools.
-    const presentations = await ctx.db.query("diceDemoV2Presentations")
-      .withIndex("by_room_viewer", q => q.eq("key", found.key).eq("viewer", args.viewer).gte("_creationTime", current._creationTime))
+    const metadata = await ctx.db.query("diceDemoV2TrackMetadata")
+      .withIndex("by_room_viewer", q => q.eq("key", found.key).eq("viewer", args.viewer)).unique();
+    const requests = await ctx.db.query("diceDemoV2Requests")
+      .withIndex("by_room_viewer_sequence", q => q.eq("key", found.key).eq("viewer", args.viewer).gte("sequence", metadata?.firstSequence ?? compact.firstSequence))
       .order("desc").take(8);
     const activeRolls = [];
-    for (const presentation of presentations) {
-      if (presentation.expiresAt <= Date.now() || (presentation.motion.version ?? 1) !== 1) continue;
-      const request = await ctx.db.query("diceDemoV2Requests")
-        .withIndex("by_request", q => q.eq("key", found.key).eq("viewer", args.viewer).eq("id", presentation.id))
-        .unique();
-      const roll = request?.roll;
+    for (const request of requests) {
+      const roll = request.roll;
       if (!roll || request.expiresAt <= Date.now() || roll.startsAt + roll.duration + 5600 <= Date.now()) continue;
-      if (args.rollId === roll.id)
-        return { roll: { ...roll, motion: presentation.motion }, receipts: roll.id === current.roll.id ? current.receipts : [] };
+      if (args.rollId === roll.id) {
+        const presentation = await ctx.db.query("diceDemoV2Presentations")
+          .withIndex("by_request", q => q.eq("key", found.key).eq("viewer", args.viewer).eq("id", roll.id)).unique();
+        if (!presentation || presentation.expiresAt <= Date.now() || (presentation.motion.version ?? 1) !== 1) return null;
+        return { roll: { ...roll, motion: presentation.motion }, receipts: roll.id === current.roll.id ? receipts : [] };
+      }
       activeRolls.push(roll);
     }
     if (args.rollId !== undefined) return null;
-    return { roll: current.roll, receipts: current.receipts, activeRolls: activeRolls.reverse() };
+    // New tracks are compact; legacy consumers still receive the latest recording.
+    const presentation = !current.roll.motion ? await ctx.db.query("diceDemoV2Presentations")
+      .withIndex("by_request", q => q.eq("key", found.key).eq("viewer", args.viewer).eq("id", current.roll.id)).unique() : null;
+    const motion = presentation && presentation.expiresAt > Date.now() && (presentation.motion.version ?? 1) === 1 ? presentation.motion : current.roll.motion;
+    return { roll: { ...current.roll, ...(motion ? { motion } : {}) }, receipts, activeRolls: activeRolls.reverse() };
   },
 });
 export const join = mutation({
@@ -334,25 +307,6 @@ export const customize = mutation({
     return null;
   },
 });
-function semanticFingerprint(args: {
-  dice?: DiceConfiguration;
-  faces: number[];
-  edges?: number;
-  banes?: number;
-}) {
-  return toHex(
-    sha256(
-      new TextEncoder().encode(
-        JSON.stringify({
-          dice: config(args.dice),
-          faces: args.faces,
-          edges: args.edges ?? 0,
-          banes: args.banes ?? 0,
-        }),
-      ),
-    ),
-  );
-}
 async function requestReceipt(
   ctx: MutationCtx | QueryCtx,
   args: {
@@ -558,7 +512,9 @@ async function acceptThrow(
       : undefined;
   const startsAt = Date.now() + lead,
     sequence = (found.sequence ?? 0) + 1;
+  const expiresAt=receipt?.expiresAt ?? Math.min(found.expiresAt,Date.now()+(found.policy??defaultPolicy).receiptTtlMs);
   const roll = {
+    historyExpiresAt: expiresAt,
     id: args.id,
     roller: owner.id,
     name: owner.name,
@@ -579,22 +535,27 @@ async function acceptThrow(
       startsAt +
       recordedRevealDelay({ faces: args.faces, motion: args.motion, duration }),
   };
+  const {motion,...compactRoll}=roll;
   if (previous)
     await ctx.db.patch(previous._id, {
-      roll,
+      roll: compactRoll,
       receipts: [],
-      expiresAt: found.expiresAt,
+      expiresAt,
     });
   else
     await ctx.db.insert("diceDemoV2Tracks", {
       key: found.key,
       viewer: args.viewer,
-      roll,
+      roll: compactRoll,
       receipts: [],
-      expiresAt: found.expiresAt,
+      expiresAt,
     });
-  const {motion,...compactRoll}=roll;
-  const expiresAt=receipt?.expiresAt ?? Math.min(found.expiresAt,Date.now()+(found.policy??defaultPolicy).receiptTtlMs);
+  const metadata = await ctx.db.query("diceDemoV2TrackMetadata")
+    .withIndex("by_room_viewer", q => q.eq("key", found.key).eq("viewer", args.viewer)).unique();
+  if (metadata) await ctx.db.patch(metadata._id, { roll: compactRoll, expiresAt });
+  else await ctx.db.insert("diceDemoV2TrackMetadata", {
+    key: found.key, viewer: args.viewer, roll: compactRoll, firstSequence: sequence, expiresAt,
+  });
   if(motion) await ctx.db.insert("diceDemoV2Presentations",{
     key:found.key,viewer:args.viewer,id:args.id,motion,expiresAt,
   });
@@ -647,32 +608,31 @@ export const receipt = mutation({
   },
   returns: v.null(),
   handler: async (ctx, { key, credential, roller, sample }) => {
-    await member(ctx, key, sample.viewer, credential);
-    const found = await room(ctx, key);
+    const { found } = await member(ctx, key, sample.viewer, credential);
     if (
       !found ||
       found.expiresAt <= Date.now() ||
       !found.participants.some((p) => p.id === sample.viewer)
     )
       return null;
-    const current = await ctx.db
-      .query("diceDemoV2Tracks")
-      .withIndex("by_room_viewer", (q) =>
-        q.eq("key", found.key).eq("viewer", roller),
-      )
-      .unique();
-    if (!current || current.roll.id !== sample.roll) return null;
-    if (
-      Object.values(sample).some(
-        (n) => typeof n === "number" && !Number.isFinite(n),
-      )
-    )
-      throw authorityError("INVALID_REQUEST","Invalid timing sample.");
-    await ctx.db.patch(current._id, {
-      receipts: [
-        ...current.receipts.filter((p) => p.viewer !== sample.viewer),
-        sample,
-      ].slice(-8),
+    const current = await ctx.db.query("diceDemoV2TrackMetadata")
+      .withIndex("by_room_viewer", q => q.eq("key", found.key).eq("viewer", roller)).unique();
+    // A pre-upgrade track has no metadata. This bounded compatibility read is
+    // removed automatically by the next accepted roll or normal expiry.
+    const legacy = !current ? await ctx.db.query("diceDemoV2Tracks")
+      .withIndex("by_room_viewer", q => q.eq("key", found.key).eq("viewer", roller)).unique() : null;
+    const roll = current?.roll ?? legacy?.roll;
+    if (!roll || roll.id !== sample.roll || (roll.historyExpiresAt ?? legacy?.expiresAt ?? 0) <= Date.now()) return null;
+    if (Object.values(sample).some(n => typeof n === "number" && !Number.isFinite(n)))
+      throw authorityError("INVALID_REQUEST", "Invalid timing sample.");
+    const existing = await ctx.db.query("diceDemoV2PlaybackReceipts")
+      .withIndex("by_roll_viewer", q => q.eq("key", found.key).eq("roller", roller).eq("rollId", sample.roll).eq("viewer", sample.viewer)).unique();
+    // A late zero-frame delivery fallback must not replace real renderer timing.
+    if (existing && existing.sample.frames > 0 && sample.frames === 0) return null;
+    const expiresAt = roll.historyExpiresAt ?? Math.min(found.expiresAt, roll.startsAt + 3600000);
+    if (existing) await ctx.db.patch(existing._id, { sample, expiresAt });
+    else await ctx.db.insert("diceDemoV2PlaybackReceipts", {
+      key: found.key, roller, rollId: sample.roll, viewer: sample.viewer, sample, expiresAt,
     });
     return null;
   },
@@ -695,6 +655,9 @@ export const clearTray = mutation({
         )
         .unique();
       if (track) await ctx.db.delete(track._id);
+      const metadata = await ctx.db.query("diceDemoV2TrackMetadata")
+        .withIndex("by_room_viewer", q => q.eq("key", found.key).eq("viewer", participant.id)).unique();
+      if (metadata) await ctx.db.delete(metadata._id);
     }
     return null;
   },
@@ -770,7 +733,12 @@ export const setPolicy = mutation({
     ])
       if (!Number.isSafeInteger(value) || value < min || value > max)
         throw authorityError("INVALID_REQUEST","Invalid room policy.");
-    await ctx.db.patch(found._id, { policy: p, expiresAt: found._creationTime + p.ttlMs });
+    const expiresAt = found._creationTime + p.ttlMs;
+    await ctx.db.patch(found._id, { policy: p, expiresAt });
+    const metadata = await ctx.db.query("diceDemoV2TrackMetadata")
+      .withIndex("by_room_viewer", q => q.eq("key", found.key)).take(32);
+    for (const track of metadata) if (track.expiresAt > expiresAt)
+      await ctx.db.patch(track._id, { expiresAt });
     return null;
   },
 });
@@ -781,10 +749,91 @@ export const leave = mutation({
   returns:v.null(),
   handler:async(ctx,args)=>{
     const {found,session}=await member(ctx,args.key,args.viewer,args.credential);
-    const ownTrack=await ctx.db.query("diceDemoV2Tracks").withIndex("by_room_viewer",q=>q.eq("key",args.key).eq("viewer",args.viewer)).unique();
+    const ownTrack=await ctx.db.query("diceDemoV2Tracks").withIndex("by_room_viewer",q=>q.eq("key",found.key).eq("viewer",args.viewer)).unique();
     if(ownTrack) await ctx.db.delete(ownTrack._id);
+    const metadata = await ctx.db.query("diceDemoV2TrackMetadata")
+      .withIndex("by_room_viewer", q => q.eq("key", found.key).eq("viewer", args.viewer)).unique();
+    if (metadata) await ctx.db.delete(metadata._id);
     await ctx.db.delete(session._id);
     await ctx.db.patch(found._id,{participants:found.participants.filter(p=>p.id!==args.viewer)});
     return null;
   },
 });
+
+/** Resolve code aliases; canonical UUID clients avoid the presence-bearing room read. */
+async function capabilityKey(ctx: QueryCtx, key: string) {
+  if (codePattern.test(key.trim().toUpperCase())) return (await room(ctx, key))?.key ?? null;
+  validKey(key);
+  return key;
+}
+async function playbackReceipts(ctx: QueryCtx | MutationCtx, key: string, roller: string, rollId: string,
+  legacy: import("convex/values").Infer<typeof demoReceipt>[] = []) {
+  const docs = await ctx.db.query("diceDemoV2PlaybackReceipts")
+    .withIndex("by_roll_viewer", q => q.eq("key", key).eq("roller", roller).eq("rollId", rollId)).take(32);
+  const samples = new Map(legacy.map(sample => [sample.viewer, sample]));
+  for (const doc of docs) if (doc.expiresAt > Date.now()) samples.set(doc.viewer, doc.sample);
+  return [...samples.values()].slice(-32);
+}
+/** Compact latest/overlap subscription; contains no recording buffers. */
+export const trackMetadata = query({
+  args: { key: v.string(), viewer: v.string() }, returns: trackMetadataResult,
+  handler: async (ctx, args) => {
+    const key = await capabilityKey(ctx, args.key);
+    if (!key) return null;
+    const current = await compactCurrent(ctx, key, args.viewer);
+    if (!current || current.expiresAt <= Date.now()) return null;
+    const docs = await ctx.db.query("diceDemoV2Requests")
+      .withIndex("by_room_viewer_sequence", q => q.eq("key", key).eq("viewer", args.viewer).gte("sequence", current.firstSequence))
+      .order("desc").take(8);
+    const activeRolls = docs.flatMap(doc => doc.roll && doc.expiresAt > Date.now() &&
+      doc.roll.startsAt + doc.roll.duration + 5600 > Date.now() ? [doc.roll] : []).reverse();
+    return { roll: current.roll, activeRolls,
+      receipts: await playbackReceipts(ctx, key, args.viewer, current.roll.id) };
+  },
+});
+/** Immutable recording lookup, independently fetched when a roll ID changes. */
+export const motion = query({
+  args: { key: v.string(), viewer: v.string(), rollId: v.string() },
+  returns: v.union(v.null(), demoMotion),
+  handler: async (ctx, args) => {
+    const key = await capabilityKey(ctx, args.key);
+    if (!key) return null;
+    const current = await compactCurrent(ctx, key, args.viewer);
+    if (!current || current.expiresAt <= Date.now()) return null;
+    const request = await ctx.db.query("diceDemoV2Requests")
+      .withIndex("by_request", q => q.eq("key", key).eq("viewer", args.viewer).eq("id", args.rollId)).unique();
+    if (!request?.roll || request.expiresAt <= Date.now() || (request.sequence ?? 0) < current.firstSequence) return null;
+    const presentation = await ctx.db.query("diceDemoV2Presentations")
+      .withIndex("by_request", q => q.eq("key", key).eq("viewer", args.viewer).eq("id", args.rollId)).unique();
+    return presentation && presentation.expiresAt > Date.now() && (presentation.motion.version ?? 1) === 1 ? presentation.motion : null;
+  },
+});
+
+/** Pre-upgrade compatibility lasts until the next accepted roll or one-hour expiry. */
+async function compactCurrent(ctx: QueryCtx, key: string, viewer: string) {
+  const metadata = await ctx.db.query("diceDemoV2TrackMetadata")
+    .withIndex("by_room_viewer", q => q.eq("key", key).eq("viewer", viewer)).unique();
+  if (metadata) return metadata;
+  const legacy = await ctx.db.query("diceDemoV2Tracks")
+    .withIndex("by_room_viewer", q => q.eq("key", key).eq("viewer", viewer)).unique();
+  if (!legacy) return null;
+  const request = await ctx.db.query("diceDemoV2Requests")
+    .withIndex("by_request", q => q.eq("key", key).eq("viewer", viewer).eq("id", legacy.roll.id)).unique();
+  const expiresAt = legacy.roll.historyExpiresAt ?? (request?.roll ? request.expiresAt : Math.min(legacy.expiresAt ?? Infinity, legacy.roll.startsAt + 3600000));
+  const { motion: _motion, ...roll } = legacy.roll;
+  return { roll: { ...roll, historyExpiresAt: expiresAt }, firstSequence: await legacyFirstSequence(ctx, legacy), expiresAt };
+}
+async function legacyFirstSequence(ctx: QueryCtx, track: import("./_generated/dataModel").Doc<"diceDemoV2Tracks">) {
+  // Existing pre-upgrade recordings need this bounded compatibility lookup once;
+  // new tracks use the explicit sequence boundary and never read these buffers.
+  const docs = await ctx.db.query("diceDemoV2Presentations")
+    .withIndex("by_room_viewer", q => q.eq("key", track.key).eq("viewer", track.viewer).gte("_creationTime", track._creationTime))
+    .order("desc").take(8);
+  let first = track.roll.sequence ?? 0;
+  for (const doc of docs) {
+    const request = await ctx.db.query("diceDemoV2Requests")
+      .withIndex("by_request", q => q.eq("key", track.key).eq("viewer", track.viewer).eq("id", doc.id)).unique();
+    if (request?.sequence !== undefined && request.roll && request.expiresAt > Date.now()) first = Math.min(first, request.sequence);
+  }
+  return first;
+}

@@ -59,5 +59,5 @@ export const diceDemoTables = {
     viewers: v.array(demoViewer),
     roll: v.union(v.null(), demoRoll),
     receipts: v.array(demoReceipt),
-  }).index('by_key', ['key']),
+  }).index('by_key', ['key']).index('by_expiry', ['expiresAt']),
 };

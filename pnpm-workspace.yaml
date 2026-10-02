@@ -1,2 +1,5 @@
 allowBuilds:
   esbuild: true
+
+patchedDependencies:
+  'three@0.186.1': 'patches/three@0.186.1.patch'

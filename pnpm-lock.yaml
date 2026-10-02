@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  three@0.186.1: 8329c48bb8303cb9299c35cbecdcfddf0a24b8de5f771201d654e3e0117dda18
+
 importers:
 
   .:
@@ -25,7 +28,7 @@ importers:
         version: 19.3.0(react@19.3.0)
       three:
         specifier: 0.186.1
-        version: 0.186.1
+        version: 0.186.1(patch_hash=8329c48bb8303cb9299c35cbecdcfddf0a24b8de5f771201d654e3e0117dda18)
     devDependencies:
       '@playwright/test':
         specifier: 1.63.0
@@ -1181,7 +1184,7 @@ snapshots:
 
   std-env@4.3.0: {}
 
-  three@0.186.1: {}
+  three@0.186.1(patch_hash=8329c48bb8303cb9299c35cbecdcfddf0a24b8de5f771201d654e3e0117dda18): {}
 
   tinybench@2.9.0: {}
 

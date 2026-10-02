@@ -82,3 +82,25 @@ it('bonus d4 participates in stable controller fingerprints while false and omit
   await expect(controller.roll({id:'normal',dice:{kind:'dice',sides:20,count:1,bonusD4:false}})).resolves.toBeDefined();
   await controller.dispose();
 });
+
+it('reuses injected clock and avoids catch-up queries for unchanged heartbeat cursors',async()=>{
+ clock();const f=fake(),c=createController({transport:f.transport,key:'room',identity,profile,clockEstimate:()=>({offset:25,uncertainty:2})});
+ await c.observe();const calls=f.call.mock.calls.filter(([name])=>name==='diceDemoV2:events').length;
+ expect(f.call.mock.calls.some(([name])=>name==='diceDemo:clock')).toBe(false);
+ f.fireRoom();await flush();expect(f.call.mock.calls.filter(([name])=>name==='diceDemoV2:events')).toHaveLength(calls);
+ expect(c.clock()).toBe(100025);await c.dispose();
+});
+
+it('hydrates overlapping compact tracks once and drops motion replies superseded by a clear',async()=>{
+ clock();const first=record('compact-a'),second=record('compact-b',2),f=fake([first,second]);
+ let nextTrack!:(value:any)=>void;let release!:(value:any)=>void;
+ const original=f.transport.call;f.transport.compactTracks=true;
+ f.transport.call=vi.fn(async(method,args)=>method==='diceDemoV2:motion'?new Promise(resolve=>{release=resolve;}):original(method,args));
+ const originalWatch=f.transport.watch;f.transport.watch=(method,args,next,error)=>{if(method==='diceDemoV2:trackMetadata')nextTrack=next;return originalWatch(method,args,next,error);};
+ const c=createController({transport:f.transport,key:'room',identity,profile}),track=vi.fn();c.on('track',track);await c.observe();
+ nextTrack({roll:first,activeRolls:[first],receipts:[]});nextTrack(null);release({seed:1,stepMs:16,samples:[],offsets:[]});await flush();
+ expect(track).not.toHaveBeenCalled();
+ nextTrack({roll:first,activeRolls:[first],receipts:[]});await flush();expect(track.mock.calls[0][0].activeRolls[0].id).toBe(first.id);
+ expect((f.transport.call as ReturnType<typeof vi.fn>).mock.calls.filter(([name])=>name==='diceDemoV2:motion')).toHaveLength(1);
+ await c.dispose();
+});

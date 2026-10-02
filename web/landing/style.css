@@ -79,8 +79,7 @@ h2 em { font-style: normal; color: var(--pink); }
 .stage-topline, .stage-bottomline { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 22px 26px; font-size: 9px; letter-spacing: .1em; color: var(--muted); z-index: 1; }
 .stage-topline .live-dot { margin-right: 6px; }
 .stage-bottomline button { padding: 7px 12px; border: 1px solid #455456; background: transparent; font-size: 10px; border-radius: 4px; color: #c8d0ce; }
-.landing-preview { width: 100%; min-height: 380px; flex: 1; position: relative; touch-action: none; cursor: grab; }
-.landing-preview:active { cursor: grabbing; }
+.landing-preview { width: 100%; min-height: 380px; flex: 1; position: relative; pointer-events: none; touch-action: auto; cursor: default; }
 .landing-preview canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .landing-preview::before { content: ''; position: absolute; width: 30%; height: 8%; bottom: 7%; left: 35%; background: radial-gradient(ellipse, #0008, transparent 70%); pointer-events: none; }
 .preview-status { position: absolute; inset: 38% 12% auto; text-align: center; font-size: 14px; line-height: 1.8; color: var(--muted); pointer-events: none; }
@@ -134,8 +133,32 @@ code { font-family: ui-monospace, monospace; }
 .site-footer { border-top: 1px solid var(--line); padding-block: 28px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .site-footer .brand { font-size: 10px; }
 .site-footer p, .site-footer > a { font-size: 11px; color: var(--muted); margin: 0; }
+.customize-layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); align-items: center; gap: 48px; }
+.customize-heading { display: block; margin-bottom: 0; }
+.customize-heading > p { margin-top: 24px; }
+#customizer-root { min-width: 0; }
+.customizer { grid-template-columns: minmax(0, 1fr) 300px; }
+.die-stage { min-height: 360px; height: 360px; align-self: center; }
+.landing-preview { min-height: 240px; }
+.customizer-controls { padding: 24px; }
+.color-wheel { width: min(160px, 100%); margin: 18px auto; }
+.control-title { margin-bottom: 18px; }
+.finish-controls { margin-top: 18px; }
+.presets { padding-top: 18px; }
+.footer-links { display: flex; gap: 28px; color: var(--muted); font-size: 12px; }
+.footer-links a:hover { color: var(--mint); }
 @media (min-width: 1600px) { .site-header { height: 130px; } .site-header .brand { font-size: 18px; } .site-header .brand img { width: 48px; height: 48px; } .site-header nav { font-size: 18px; gap: 48px; } .site-header .button-small { font-size: 18px; padding: 17px 24px; } .hero { min-height: calc(100svh - 130px); } }
 @media (max-width: 1000px) { .wrap, .site-header.wrap, .hero.wrap { width: calc(100% - 64px); } .hero { gap: 30px; } .hero-actions { gap: 16px; flex-wrap: wrap; } .together, .build-section { gap: 40px; } .customizer { grid-template-columns: 1fr 330px; } .customizer-controls { padding: 25px; } .players > div { min-width: 78px; } }
 @media (max-width: 760px) { .wrap, .site-header.wrap, .hero.wrap { width: calc(100% - 40px); } .site-header { height: 86px; } nav { gap: 12px; } .nav-detail { display: none; } .brand { font-size: 11px; gap: 8px; } .hero { grid-template-columns: 1fr; min-height: 0; padding-block: 38px 65px; gap: 38px; } .hero-tray { height: 420px; } .hero-actions .button { padding: 17px 24px; gap: 28px; } h1 { font-size: clamp(42px, 8.5vw, 62px); } .hero-copy { max-width: 540px; } .intro { font-size: 15px; } .together, .build-section { grid-template-columns: 1fr; gap: 38px; padding-block: 60px; } .section-heading > p:not(.eyebrow) { max-width: 540px; } .customize-section { padding-block: 60px; } .customize-heading { display: block; margin-bottom: 30px; } .customize-heading > p { margin-top: 20px; } .customizer { grid-template-columns: 1fr; } .die-stage { min-height: 390px; } .landing-preview { min-height: 280px; } .customizer-controls { border-left: 0; border-top: 1px solid #3b4849; padding: 26px; } .color-wheel { width: 200px; margin: 24px auto; } .customizer-controls .color-slider { grid-template-columns: 70px minmax(0, 1fr); } .customizer-note { font-size: 11px; } .support { flex-wrap: wrap; gap: 15px; } .support > div { flex: 1; } .support > a { margin-left: 47px; } .last-call { padding-block: 75px; } .site-footer { flex-wrap: wrap; gap: 14px; } .site-footer p { order: 3; width: 100%; } }
 @media (max-width: 380px) { .wrap, .site-header.wrap, .hero.wrap { width: calc(100% - 32px); } .site-header .brand span { font-size: 9px; } .button-small { padding: 10px 12px; gap: 12px; } .hero-actions { align-items: flex-start; gap: 20px; } .players > div { min-width: 80px; } .players small { font-size: 8px; } .table-caption { font-size: 8px; } .customizer-controls { padding: 20px; } .stage-topline, .stage-bottomline { padding-inline: 18px; } .code-window { padding: 18px; } pre { font-size: 11px; } }
+@media (max-width: 1100px) { .customize-layout { grid-template-columns: 230px minmax(0, 1fr); gap: 32px; } .customizer { grid-template-columns: minmax(0, 1fr) 270px; } }
+@media (max-width: 900px) { .customize-layout { grid-template-columns: 1fr; } .customizer { grid-template-columns: minmax(0, 1fr) 300px; } }
+@media (max-width: 760px) { .customizer { grid-template-columns: 1fr; } .customize-heading { margin-bottom: 0; } .die-stage { height: 280px; min-height: 280px; } .landing-preview { min-height: 180px; } .color-wheel { width: min(160px, 100%); margin: 18px auto; } .footer-links { gap: 20px; } }
+@media (max-width: 380px) { .footer-links { gap: 14px; font-size: 11px; } }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .button { transition: none; } .button:hover { transform: none; } }
+
+/* Use the app’s wordmark for both landing-page brand links. */
+.site-header .brand img { width: 170px; height: auto; }
+.site-footer .brand img { width: 110px; height: auto; }
+@media (min-width: 1600px) { .site-header .brand img { width: 210px; } }
+@media (max-width: 760px) { .site-header .brand img { width: 130px; } }

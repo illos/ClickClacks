@@ -3,3 +3,7 @@
 body { margin: 0; }
 .demo-notice { position: absolute; z-index: 4; inset: auto 16px 64px; padding: 10px 14px; border: 1px solid #455254; border-radius: 6px; background: #1b2223; font-size: 11px; line-height: 1.6; }
 .demo-notice a { color: #6edbc0; }
+
+/* Landing demo controls; the full roller keeps its settings menu. */
+body.mini-tray .mini-settings-trigger { display: none; }
+body.mini-tray .sound-toggle { right: 12px; }

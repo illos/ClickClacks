@@ -144,3 +144,8 @@ Phone popup screenshots were visually inspected. All test-owned services and
 checkouts were removed. Local authoring typecheck and Worker dry-run also passed.
 
 Release results are recorded below after publication.
+
+The release credential-routing delta `99f1713` received source QC PASS and
+Test coordinator PASS: three focused CLI authentication tests and typecheck,
+both exit 0. The prior runtime and browser evidence was reused. Logs are at
+`/srv/presidium/home/projects/powerroller/test-artifacts/bug-auth-99f1713-{focused,typecheck}.log`.

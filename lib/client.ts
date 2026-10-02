@@ -130,6 +130,7 @@ export function createController(options: {
     let key = options.key, profile = options.profile, epoch = 0, joined = false, disposed = false;
     let cursor = 0, offset = 0, uncertainty = 10000;
     let canonicalCode: string | null = null;
+    let canonicalKey: string | undefined;
     let roomStop: (() => void) | undefined, heartbeat: ReturnType<typeof setInterval> | undefined;
     let refreshing: Promise<void> | undefined, refreshAgain = false;
     const tracks = new Map<string, () => void>(), visible = new Set<string>();
@@ -139,6 +140,7 @@ export function createController(options: {
     const local = options.clock ?? Date.now;
     const clockEstimate = () => options.clockEstimate?.() ?? { offset, uncertainty };
     const now = () => local() + clockEstimate().offset;
+    const recordingKey = () => transport.compactTracks ? canonicalKey ?? key : key;
     const trackMethod = transport.compactTracks ? 'diceDemoV2:trackMetadata' : 'diceDemoV2:track';
     const motions = new Map<string, Promise<Motion | undefined>>();
     const motionBytes = new Map<string, number>();
@@ -180,7 +182,7 @@ export function createController(options: {
         const id = recordKey(roll);
         let pending = motions.get(id);
         if (!pending) {
-            pending = transport.call('diceDemoV2:motion', { key, viewer: roll.roller, rollId: roll.id }).then(value => { const motion = value && (value.version ?? 1) === 1 ? unpackMotion(value) : undefined; if (!disposed && motions.get(id) === pending) {
+            pending = transport.call('diceDemoV2:motion', { key: recordingKey(), viewer: roll.roller, rollId: roll.id }).then(value => { const motion = value && (value.version ?? 1) === 1 ? unpackMotion(value) : undefined; if (!disposed && motions.get(id) === pending) {
                 motionBytes.set(id, byteSize(motion));
                 motionExpiry.set(id, roll.historyExpiresAt ?? roll.startsAt + 3600000);
                 trimMotions();
@@ -264,10 +266,22 @@ export function createController(options: {
             emit('clear', owner);
         }
     }
+    function captureCanonicalKey(value: RoomSnapshot) {
+        const previousRecordingKey = recordingKey();
+        canonicalKey = value.canonicalKey ?? canonicalKey;
+        if (recordingKey() !== previousRecordingKey) {
+            for (const [owner, stop] of tracks) {
+                stop();
+                trackVersions.set(owner, (trackVersions.get(owner) ?? 0) + 1);
+            }
+            tracks.clear();
+        }
+    }
     function updateRoom(value: RoomSnapshot, version: number) {
         if (!valid(version))
             return;
         canonicalCode = value.code;
+        captureCanonicalKey(value);
         emit('room', value);
         const active = new Set(value.participants.map(member => member.id));
         for (const [owner, stop] of tracks)
@@ -282,7 +296,7 @@ export function createController(options: {
             }
         for (const owner of active)
             if (!tracks.has(owner))
-                tracks.set(owner, transport.watch(trackMethod, { key, viewer: owner }, value => updateTrack(owner, value, version), error => { if (valid(version))
+                tracks.set(owner, transport.watch(trackMethod, { key: recordingKey(), viewer: owner }, value => updateTrack(owner, value, version), error => { if (valid(version))
                     fail(error); }));
         if (value.cursor !== undefined && value.cursor > cursor)
             void catchup().catch(fail);
@@ -292,7 +306,9 @@ export function createController(options: {
         const view = await transport.call('diceDemoV2:view', { key: currentKey }) as RoomSnapshot;
         if (!valid(version))
             return;
-        const latest = await Promise.all(view.participants.map(async (member) => ({ owner: member.id, track: await transport.call(trackMethod, { key: currentKey, viewer: member.id }) as Track | null })));
+        captureCanonicalKey(view);
+        const currentRecordingKey = recordingKey();
+        const latest = await Promise.all(view.participants.map(async (member) => ({ owner: member.id, track: await transport.call(trackMethod, { key: currentRecordingKey, viewer: member.id }) as Track | null })));
         if (!valid(version))
             return;
         const currentOwners = new Set(latest.filter(record => record.track?.roll).map(record => record.owner));
@@ -408,6 +424,7 @@ export function createController(options: {
                 motionExpiry.clear();
                 cursor = 0;
                 canonicalCode = null;
+                canonicalKey = undefined;
                 key = nextKey;
             }
             emit('status', 'connecting');

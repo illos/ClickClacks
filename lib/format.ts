@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import type { ParticipantRoll } from '../web/dice-demo-v2/model';
+import type { ParticipantRoll } from '../shared/room';
 import { criticalResult } from './critical';
 import { naturalDiceTotal } from '../shared/dice';
 export { criticalResult, criticalLabel, type CriticalResult, type CriticalRoll } from './critical';

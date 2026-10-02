@@ -346,16 +346,20 @@ function DiceRoom() {
   }, [room?.code]);
   const tracks = useRef(new Map<string, ParticipantRoll>());
   const [trayRolls, setTrayRolls] = useState<
-    Record<string, Pick<ParticipantRoll, 'id' | 'roller' | 'startsAt' | 'duration'>>
+    Record<string, Pick<ParticipantRoll, 'id' | 'roller' | 'startsAt' | 'duration'> & { motionReady: boolean }>
   >({});
   const rememberTrack = useCallback((owner: string, roll: ParticipantRoll | null) => {
+    const liveClock = clockRef.current;
+    if (roll && liveClock && trayOpacity(roll, performance.now() + liveClock.offset) === 0) return;
     const key = roll ? `${owner}:${roll.id}` : null;
+    const retainedMotion = key ? tracks.current.get(key)?.motion : undefined;
+    if (roll && !roll.motion && retainedMotion) roll = { ...roll, motion: retainedMotion };
     if (roll) tracks.current.set(key!, roll);
     else for (const [id, value] of tracks.current) if (value.roller === owner) tracks.current.delete(id);
     setTrayRolls(old => {
-      if (key && old[key]?.id === roll?.id) return old;
+      if (key && old[key]?.id === roll?.id && old[key]?.motionReady === Boolean(roll?.motion)) return old;
       const next = { ...old };
-      if (roll) next[key!] = { id: roll.id, roller: owner, startsAt: roll.startsAt, duration: roll.duration };
+      if (roll) next[key!] = { id: roll.id, roller: owner, startsAt: roll.startsAt, duration: roll.duration, motionReady: Boolean(roll.motion) };
       else for (const [id, value] of Object.entries(next)) if (value.roller === owner) delete next[id];
       return next;
     });

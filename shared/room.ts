@@ -28,6 +28,8 @@ export type Room = {
   expired: boolean;
   participants: Participant[];
   code: string | null;
+  /** Canonical storage key; session and URL aliases remain unchanged. */
+  canonicalKey?: string;
   cursor?: number;
 };
 export function parseRoomKey(input: string): string | null {

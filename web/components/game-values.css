@@ -1,15 +1,9 @@
-@scope (:is(.clickclacks, .powerroller)) {
 /* SPDX-License-Identifier: MIT */
-/* Shared game-value presentation, including rule and character dialogs rendered in portals. */
-.roster-card-acting {
-  background: color-mix(in srgb, var(--primary) 7%, var(--card));
-  box-shadow: inset 3px 0 var(--primary);
-}
+@scope (:is(.clickclacks, .powerroller)) {
 [data-roll-modifier='edge'] {
   color: var(--roll-edge);
 }
-[data-roll-modifier='bane'],
-.table-malice {
+[data-roll-modifier='bane'] {
   color: var(--roll-bane);
 }
 button[data-roll-modifier] {
@@ -18,75 +12,7 @@ button[data-roll-modifier] {
 button[data-roll-modifier]:hover {
   background: color-mix(in srgb, currentColor 18%, var(--muted));
 }
-.heroic-resource {
-  color: var(--resource-color, var(--primary));
-  background: color-mix(in srgb, var(--resource-color, var(--primary)) 12%, var(--muted));
-}
-[data-resource='drama'] {
-  --resource-color: var(--resource-drama);
-}
-[data-resource='discipline'] {
-  --resource-color: var(--resource-discipline);
-}
-[data-resource='essence'] {
-  --resource-color: var(--resource-essence);
-}
-[data-resource='ferocity'] {
-  --resource-color: var(--resource-ferocity);
-}
-[data-resource='wrath'] {
-  --resource-color: var(--resource-wrath);
-}
-[data-resource='piety'] {
-  --resource-color: var(--resource-piety);
-}
-[data-resource='insight'] {
-  --resource-color: var(--resource-insight);
-}
-[data-resource='focus'] {
-  --resource-color: var(--resource-focus);
-}
-[data-resource='clarity'] {
-  --resource-color: var(--resource-clarity);
-}
-[data-stamina-fill] {
-  background: color-mix(in srgb, var(--stamina-from) var(--stamina-weight), var(--stamina-to));
-  transition:
-    width 280ms var(--motion-ease),
-    background-color 280ms var(--motion-ease);
-}
-.ability-result {
-  box-shadow:
-    inset 0 2px color-mix(in srgb, var(--primary) 65%, transparent),
-    inset 0 0 0 1px color-mix(in srgb, var(--primary) 16%, var(--border));
-}
-.power-roll-total {
-  font-size: 1.65em;
-  line-height: 1;
-  color: var(--primary);
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
-}
-[data-kind='ability.use'] [data-dice-chip='result'],
-[data-kind='ability.use'] [data-dice-chip='accent'],
-[data-power-roll] {
-  color: var(--primary);
-}
-.session-top-nav [role='status'] > [aria-hidden].bg-primary {
-  background: var(--roll-edge);
-}
-@media (prefers-reduced-motion: reduce) {
-  [data-stamina-fill] {
-    transition: none;
-  }
-}
-
 [data-roll-modifier] input {
   color: inherit;
 }
-
-.resource-identity {
-  color: var(--resource-color, var(--primary));
-}
-
 }

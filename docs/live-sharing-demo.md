@@ -44,3 +44,10 @@ landing build and Wrangler 4.134.0 deployment exited 0. Landing Worker version:
 published automatic-session version `47f8ca1d-7efe-41c8-8475-6cbc22753a66`.
 Publication logs are outside Git at
 `/srv/presidium/home/projects/powerroller/test-artifacts/sharing-live-publication-8a0bebd/`.
+
+The tap/chat revision `9a90d94` passed authoring typecheck and source review.
+It was merged into main, pushed, and published on 2026-10-02. Required landing
+build and Wrangler 4.134.0 deployment exited 0; landing Worker version is
+`5ad355ec-16c4-477e-97fb-f44160df0859`. Browser timing/layout checks remain held
+for owner viewing. Revision logs:
+`/srv/presidium/home/projects/powerroller/test-artifacts/sharing-chat-publication-9a90d94/`.

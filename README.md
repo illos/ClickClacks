@@ -41,6 +41,10 @@ the same controller and shared backend.
    directly or enter the code in their own Sharing menu.
 4. Set your name and dice appearance in the customization menu.
 
+To install the roller on a phone, open it in Safari and choose **Share → Add to
+Home Screen**, or choose **Install app** from Chrome’s menu on Android. The home
+screen icon uses the same artwork as the favicon. See [phone installation](docs/pwa-install.md).
+
 The hosted site uses guest sessions, so you can join without creating an account.
 Default tables last 24 hours and support eight active participants. Accepted
 roll history is retained by the backend for one hour. Clearing the tray clears

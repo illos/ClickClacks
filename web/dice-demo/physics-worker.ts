@@ -38,14 +38,8 @@ self.onmessage = (event: MessageEvent<{ id: number; faces?: number[]; scene?: Th
     );
     prepared = undefined;
     self.postMessage({ id, motion, planningMs: performance.now() - began });
-    // Refill after replying, while the shared throw is scheduled/playing.
-    setTimeout(() => {
-      try {
-        prepare(scene);
-      } catch {
-        /* The next request can retry. */
-      }
-    }, 0);
+    // Prewarming is explicitly scheduled by the client. An unconditional refill
+    // would race new scene/quantity intent and delay the next actual throw.
   } catch (error) {
     self.postMessage({ id, error: String(error) });
   }

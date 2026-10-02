@@ -28,7 +28,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "cli": "node scripts/cli.ts",
-    "build:landing": "node scripts/build-landing.mjs"
+    "build:landing": "node scripts/build-landing.mjs",
+    "bugs": "node scripts/bugs.ts"
   },
   "dependencies": {
     "cannon-es": "0.20.0",

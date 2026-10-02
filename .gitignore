@@ -9,3 +9,6 @@ convex/_generated/
 test-results/
 playwright-report/
 component/_generated/
+
+.wrangler/
+.dev.vars*

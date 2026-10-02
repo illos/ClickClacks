@@ -1,0 +1,33 @@
+{
+  "name": "clickclacks-app",
+  "main": "worker/index.ts",
+  "account_id": "462b5ee1e395c11b8523d6c38de0577a",
+  "compatibility_date": "2026-09-24",
+  "workers_dev": true,
+  "preview_urls": false,
+  "routes": [{ "pattern": "app.clickclacks.app", "custom_domain": true }],
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"],
+    "html_handling": "none",
+    "not_found_handling": "single-page-application",
+  },
+  "d1_databases": [
+    {
+      "binding": "BUG_REPORTS",
+      "database_name": "clickclacks-bug-reports",
+      // Local-only placeholder. Replace with the created D1 ID before publication.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "worker/migrations",
+    },
+  ],
+  "ratelimits": [
+    {
+      "name": "BUG_REPORT_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 5, "period": 60 },
+    },
+  ],
+  "triggers": { "crons": ["17 3 * * *"] },
+}

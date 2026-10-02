@@ -11,7 +11,7 @@ import {
   useState,
   type PointerEvent,
 } from 'react';
-import { Check, Copy, X, Users, Eraser, Volume2, VolumeX, PictureInPicture2, Settings, Link as LinkIcon } from 'lucide-react';
+import { Check, Copy, X, Users, Eraser, Volume2, VolumeX, PictureInPicture2, Settings, Link as LinkIcon, Bug } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import clickClacksLogo from '../branding/click-clacks.svg';
 import clickClacksLightLogo from '../branding/click-clacks-light.svg';
@@ -59,6 +59,7 @@ import { isBackdropPointer, useMenuScrollLock } from './dialog-lifecycle';
 import { historyDeadline, useDeadlineClock } from './history-lifecycle';
 import { createPlaybackReports } from './playback-reports';
 import { ErrorAlert } from './error-alert';
+import { scrubDiagnosticText, type BugContext } from '../../shared/bug-report';
 export type RollControls = { diceCount: number; bonusD4: boolean; edges: number; banes: number; readyAt?: number };
 export type ClickClacksOptions = {
   client: ConvexReactClient;
@@ -83,6 +84,8 @@ export type ClickClacksOptions = {
   /** Transient host synchronization; these controls are never saved to browser preferences. */
   controls?: RollControls;
   onControls?: (controls: RollControls) => void;
+  /** Host-owned private reporting; never sends data from the reusable component itself. */
+  onReportBug?: (context: BugContext) => void;
 };
 const RollerContext = createContext<ClickClacksOptions | null>(null);
 function useRoller() { const value = useContext(RollerContext); if (!value) throw new Error('Mount inside ClickClacks.'); return value; }
@@ -830,6 +833,23 @@ function DiceRoom() {
     const current = profileRef.current;
     changeProfile({ ...current, style: { ...current.style, ...patch } });
   }
+  function reportBug() {
+    if (!options.onReportBug) return;
+    const secrets = [credential, viewer, roomKey, room?.code ?? '', profile.name,
+      ...(room?.participants ?? []).flatMap(member => [member.id, member.name])];
+    const context: BugContext = {
+      surface: error ? 'error' : socializing ? 'table-menu' : customizing ? 'customization' : options.trayHistory ? 'tray' : 'roller',
+      selectedDice, diceCount, bonusD4, edges, banes, joined, expired: room?.expired, participants: room?.participants.length ?? 0,
+      connected: connection.isWebSocketConnected, ready, pending, clearing, historyReady,
+      clockOffset: clock?.offset, clockUncertainty: clock?.uncertainty, webgl: graphics && !fallback,
+      theme: preferences.theme, motion: preferences.motion, sound: preferences.sound, highContrast: preferences.highContrast,
+      ...profile.style, error: scrubDiagnosticText(error || presenceError || joinError, secrets),
+      recentRolls: rollLog.slice(0,5).map(roll => ({ faces: [...roll.faces], total: roll.total, modifier: roll.modifier })),
+    };
+    // Snapshot before closing any existing dialog.
+    options.onReportBug(context);
+    socialDialog.current?.close(); customization.current?.close();
+  }
   const customizationContent = <>
     {customizing && fontsReady && !preferences.hidden && (
       <DicePreview style={profile.style} preferences={preferences} />
@@ -842,13 +862,14 @@ function DiceRoom() {
     </fieldset>
     <ThemeOptions value={preferences.theme} onChange={theme => changePreferences({...preferences, theme})} />
     <AccessibilityControls preferences={preferences} onChange={changePreferences} />
-    {customizing && error && <ErrorAlert message={error} />}
+    {customizing && error && <ErrorAlert message={error} onReportBug={options.onReportBug ? reportBug : undefined} />}
   </>;
   return (
     <main onPointerDown={unlockSound} onPointerUp={unlockSound} onKeyDown={unlockSound} data-theme={colorTheme} className={`lab v2${preferences.highContrast ? ' high-contrast' : ''}`}>
       <div className="roll-area">
         <header className="lab-header">
           <h1 className="power-title"><img className="click-clacks-logo" src={colorTheme === 'light' ? clickClacksLightLogo : clickClacksLogo} alt="Click Clacks" width="640" height="280" /></h1>
+          {options.onReportBug && <button type="button" className="customize-trigger" aria-label="Report a bug" title="Report a bug" onClick={reportBug}><Bug aria-hidden /></button>}
           <ThemeSwitcher value={preferences.theme} onChange={theme => changePreferences({...preferences, theme})} />
           {options.onPopout && <button type="button" className="customize-trigger"
             aria-label={options.popoutActive ? 'Focus dice tray' : 'Pop out dice tray'}
@@ -1155,9 +1176,9 @@ function DiceRoom() {
 
       </RollLog>
       {createPortal(<span className="visually-hidden" role="status" aria-live="polite" aria-atomic="true">{announcement}</span>, (options.trayHistory && socializing ? socialDialog.current : customizing ? customization.current : socializing ? socialDialog.current : null) ?? host.current?.parentElement ?? document.body)}
-      {error && !customizing && !socializing && <ErrorAlert message={error} />}
+      {error && !customizing && !socializing && <ErrorAlert message={error} onReportBug={options.onReportBug ? reportBug : undefined} />}
       {options.popoutError && <p className="error" role="alert">{options.popoutError}</p>}
-      {presenceError && <ErrorAlert message={presenceError} />}
+      {presenceError && <ErrorAlert message={presenceError} onReportBug={options.onReportBug ? reportBug : undefined} />}
       {room?.expired && (
         <p className="error">
           This room has expired. <a href={import.meta.env.BASE_URL}>Start a new room</a>
@@ -1227,7 +1248,7 @@ function DiceRoom() {
             onChange={e => changeProfile({ ...profileRef.current, name: e.target.value })}
           />
         </label>
-        {socializing && error && <ErrorAlert message={error} />}
+        {socializing && error && <ErrorAlert message={error} onReportBug={options.onReportBug ? reportBug : undefined} />}
         <section className="menu-sharing" aria-label="Share table">
           <div>
             <label htmlFor={`${instanceId}-menu-table-code`}>Table code</label>
@@ -1320,6 +1341,7 @@ function DiceRoom() {
           {changingTable ? 'Leaving table…' : 'Leave table'}
         </button>
         <p className="leave-table-note">Leave this table and continue rolling on your own.</p>
+        {options.onReportBug && <button type="button" className="leave-table" onClick={reportBug}>Report a bug</button>}
         </div>
         {options.trayHistory && <div className="profile-dialog mini-settings-dice" role="tabpanel"
           id={`${instanceId}-settings-dice-panel`} aria-labelledby={`${instanceId}-settings-dice`}

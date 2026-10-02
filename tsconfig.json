@@ -27,6 +27,7 @@
     "lib",
     "scripts",
     "tests",
-    "vite.config.ts"
+    "vite.config.ts",
+    "worker"
   ]
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import { StrictMode, useEffect, useLayoutEffect, useState } from 'react';
+import { Component, type ReactNode, StrictMode, useEffect, useLayoutEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { makeFunctionReference } from 'convex/server';
 import { ConvexReactClient } from 'convex/react';
@@ -11,6 +11,9 @@ import { createTrayPopout, traySession } from './popout';
 import { loadPreferences, savePreferences, saveProfile, rememberRoom, cacheRoll, loadHistory } from './storage';
 import 'clickclacks/styles.css';
 import './style.css';
+import { captureBugDiagnostics, installBugDiagnostics } from './bug-diagnostics';
+import { BugReportDialog, type BugDraft } from './bug-report-dialog';
+import type { BugContext } from '../../shared/bug-report';
 import { applyDocumentTheme, useColorTheme } from '../dice-demo-v2/theme';
 
 const backend = import.meta.env.VITE_CONVEX_URL as string;
@@ -21,7 +24,7 @@ const saved = miniSession?.preferences ?? loadPreferences();
 const popout = createTrayPopout();
 const invite = new URLSearchParams(location.search).get('room');
 const initialRoom = miniSession?.roomKey ?? parseRoomKey(invite ?? '') ?? (saved.roomBackend === backend ? parseRoomKey(saved.room ?? '') : null) ?? crypto.randomUUID();
-function Site() {
+function Site({ onReportBug }: { onReportBug: (context: BugContext) => void }) {
   const [room, setRoom] = useState(initialRoom);
   const [identity, setIdentity] = useState<Identity | undefined>(miniSession?.identity);
   const [preferences, setPreferences] = useState(saved);
@@ -81,7 +84,7 @@ function Site() {
     return () => { active = false; };
   }, []);
   if (!identity) return null;
-  return <ClickClacks client={client} roomKey={room} identity={identity} profile={preferences.profile} preferences={preferences} nameProvider={randomClassicalName}
+  return <ClickClacks onReportBug={onReportBug} client={client} roomKey={room} identity={identity} profile={preferences.profile} preferences={preferences} nameProvider={randomClassicalName}
     trayHistory={document.getElementById('root')?.dataset.trayHistory === 'true'}
     onPopout={!miniSession && popout.supported ? () => void popout.open({identity, roomKey:room, preferences:loadPreferences(), controls, onControls:updateControls, onJoin:joinTable, roomLink}) : undefined}
     popoutActive={popoutActive} popoutError={popoutError}
@@ -92,4 +95,16 @@ function Site() {
     onJoin={joinTable} roomLink={roomLink}
     loadHistory={code => loadHistory(backend, code)} onRoll={(code, roll) => cacheRoll(backend, code, roll)} />;
 }
-createRoot(document.getElementById('root')!).render(<StrictMode><Site /></StrictMode>);
+class ReportBoundary extends Component<{ children: ReactNode; onReport: () => void }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() { return this.state.failed ? <div className="bug-report-fallback"><p>The app ran into a problem.</p><button type="button" onClick={this.props.onReport}>Report a bug</button><button type="button" onClick={() => location.reload()}>Reload</button></div> : this.props.children; }
+}
+function ReportHost() {
+  const [draft, setDraft] = useState<BugDraft | null>(null);
+  useEffect(() => installBugDiagnostics(), []);
+  function open(context: BugContext) { setDraft({ id: crypto.randomUUID(), diagnostics: captureBugDiagnostics(context) }); }
+  return <><ReportBoundary onReport={() => open({ surface: 'startup' })}><Site onReportBug={open} /></ReportBoundary>
+    <BugReportDialog draft={draft} onClose={() => { setDraft(null); document.querySelector<HTMLButtonElement>('[aria-label="Report a bug"]')?.focus(); }} /></>;
+}
+createRoot(document.getElementById('root')!).render(<StrictMode><ReportHost /></StrictMode>);

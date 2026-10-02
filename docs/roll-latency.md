@@ -39,11 +39,24 @@ collisions, cooldown, retry IDs and final results retain their existing behavior
 Compare candidate and baseline against the same backend and rendering environment
 before attributing a speedup. No physical-phone FPS or latency claim is implied.
 
-## Queued follow-up
+## Reconnect recovery follow-up
 
-After the performance work: the error “Reconnect to this room before throwing.”
-needs an adjacent Reload button, so the player can recover without browser controls.
-This is an owner-requested bug fix and has not yet been implemented.
+Implemented after the performance work: “Reconnect to this room before throwing.”
+now includes an adjacent Reload button in the main alert and dialog alerts. It
+reloads the button's own document, preserving the room URL and supporting an iframe
+or pop-out tray. A 44-pixel minimum target supports touch. The recovery alert is
+brought into view before painting inside long, scrollable dialogs without moving
+keyboard focus.
+
+Runtime `c791167` passed desktop main/social-dialog and mobile main recovery checks,
+keyboard activation, and the unrelated-error negative check. The phone customizer
+initially placed the action below its viewport. Targeted `1e1e1c9` checking then
+proved initial visibility, unchanged color-wheel focus, same-room reload, recovered
+Roll and a new result in the log; exit 0 and no page errors. TypeScript and
+independent read-only review passed. Checks used an isolated browser event fixture
+that passes coded errors through the existing displayError/state path; the fixture
+was not included in the production source. Evidence is outside Git under
+`test-artifacts/reconnect-reload-c791167/`, including `revised/` screenshots/JSON.
 
 ## Candidate acceptance
 

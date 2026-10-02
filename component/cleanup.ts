@@ -11,9 +11,12 @@ export const expired = mutation({
       more = false;
     // Normalize pre-upgrade full-motion rows in bounded, progressing batches.
     // Optional legacy expiresAt could otherwise leave a recording indefinitely.
+    // Share the 16 MiB read budget with room deletion and expiry: at most 26
+    // max-packed V2 paths (565,656 bytes each), plus one old V1 document that
+    // could contain a full 1 MiB packed payload, still leaves metadata headroom.
     const legacyTracks = await ctx.db.query("diceDemoV2Tracks")
-      .withIndex("by_history_expiry", q => q.eq("roll.historyExpiresAt", undefined)).take(4);
-    more ||= legacyTracks.length === 4;
+      .withIndex("by_history_expiry", q => q.eq("roll.historyExpiresAt", undefined)).take(2);
+    more ||= legacyTracks.length === 2;
     for (const track of legacyTracks) {
       const room = await ctx.db.query("diceDemoV2Rooms")
         .withIndex("by_key", q => q.eq("key", track.key)).unique();

@@ -23,7 +23,7 @@ Artifacts: `test-artifacts/live-roll-latency-2026-10-02/summary.json`,
 `visual-analysis.json`, screenshot frames and method/timestamp-only captures,
 outside Git.
 
-## Candidate changes
+## Implemented changes
 
 - Reuse the server's accepted recording in the existing bounded motion cache.
   Decode it once. If an earlier subscribed hydration is waiting on a download,
@@ -44,3 +44,37 @@ before attributing a speedup. No physical-phone FPS or latency claim is implied.
 After the performance work: the error “Reconnect to this room before throwing.”
 needs an adjacent Reload button, so the player can recover without browser controls.
 This is an owner-requested bug fix and has not yet been implemented.
+
+## Candidate acceptance
+
+Runtime candidate `a4badba` passed TypeScript checking, 23 focused client tests
+(including four new cache/clear/departure regressions) and independent read-only
+review. The first authoring typecheck lacked ignored Convex bindings; copying the
+unchanged generated bindings from main allowed the complete typecheck to pass.
+No backend implementation changed.
+
+The Test coordinator built baseline `d6cbaee` and candidate `a4badba` into separate
+private static previews, both using the dedicated live backend. Each used a fresh
+Chromium context, 1280×720 viewport, DPR 1, fixed solid/modern profile, device motion
+and OS reduced motion off. First visible was approximated from screencast changes
+in the dice region and checked against representative frames.
+
+| Roll | Baseline first visible | Candidate first visible |
+| --- | ---: | ---: |
+| Power first | 1600 ms | 883 ms |
+| Power warm | 1802 ms | 942 ms |
+| d20 first | 1227 ms | 1310 ms |
+| d20 warm | 1265 ms | 815 ms |
+
+The combined four-roll median is 1432.5→912.5 ms (about 36% lower). This is a small
+lab sample with network and throw variation; the first d20 was slightly slower,
+and it does not establish physical-phone performance or a population estimate.
+Ordinary unchanged profile saves fell from four of four taps to zero of four.
+Both browser runs exited 0 with no page errors.
+
+An immediate name edit plus bonus-d4 roll still sent its required profile write
+before sampling. The accepted name, `1d20 + 1d4` configuration and final result
+persisted across reload. Evidence and method are in
+`test-artifacts/latency-compare-a4badba/RESULT.md`, with per-source JSON and frames,
+outside Git. Accepted checks are reused for publication; the original one-hour
+soak remains on its older frozen V1 runtime and is not evidence for this patch.

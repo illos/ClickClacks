@@ -1077,3 +1077,11 @@
 @media (max-width: 650px) {
   .v2 .click-clacks-logo { width: 110px; }
 }
+.v2 .error-reload {
+  min-height: 44px;
+  margin-inline-start: 8px;
+  color: inherit;
+  background: transparent;
+  border-color: currentColor;
+  vertical-align: middle;
+}

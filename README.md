@@ -1,65 +1,151 @@
 # Click Clacks
 
-Click Clacks is the standalone dice roller published from `illos/ClickClacks`.
-The approved High Voltage branding changes the site name; package, API and browser-storage identifiers remain compatible.
+**Roll together, wherever your table is.** Click Clacks is a free, open source
+3D dice roller for tabletop games, with dedicated Draw Steel power rolls.
+Share a table link, customize your dice, and see each other's rolls and results
+in real time. [Convex](https://www.convex.dev/) powers the shared tables and
+keeps connected players in sync.
 
-[The version-one readiness plan](docs/v1-readiness-plan.md) combines the codebase
-cleanup review, measured frontend/database optimizations, selected one-hour history
-policy and collision investigation. It describes proposed work, not changes already shipped.
-
-Use the appearance icon in the top menu to choose **System**, **Light**, or **Dark**.
-System is the default and follows device changes live; an explicit choice is saved
-in this browser. Appearance is also available in Customize dice and the floating
-tray’s Dice settings. The main page and PiP share the preference. Dice colors,
-fonts, patterns, roll state and table history stay independent of the app theme.
-
-A free realtime dice roller for Draw Steel, with a reusable TypeScript library,
-optional React/Three presentation and an isolated Convex backend.
+You can use the hosted roller, run your own site, or build dice rolling into
+another app with the TypeScript library and reusable Convex component.
 
 [Website](https://clickclacks.app) · [Live roller](https://dice.clickclacks.app) · [Source](https://github.com/illos/ClickClacks)
 
-The default interface, materials, recorded physics, customization preview, social
-menus and compact log come from Salient commit
-`23cf9035b6e55d3e2e3a8198cba8c2320e7d205b` (V272). The standalone site adds the
-requested dice picker inside Roll: Power roll (2d10), d20, d12, diamond d10, d8,
-d6 and d4. The +1d4 toggle adds one bonus d4 to generic d6–d20 pools. Generic rolls support 1–20 base dice and numeric bonus/penalty controls; power rolls
-retain Edges, Banes and tiers. Generic dice bonus/penalty controls cycle through
-0, 2 and 5; the wire fields `edges` and `banes` remain stages 0–2. A bonus
-adds its stage value and a penalty subtracts its stage value, so equal stages
-cancel (stage 2 bonus and stage 1 penalty give +3). Clearing preserves the original shared tray behavior.
+[Features](#what-you-can-do) · [Run locally](#run-locally) ·
+[Contribute](#contribute) · [Embed](#embed-without-adopting-the-site)
 
-The floating tray has a settings cog with Sharing and Dice tabs. Its name, design
-and accessibility controls use the same settings as the main page. Joining or
-leaving a table switches the main page and closes the current floating tray;
-reopening uses that new table. Shared links open the full site.
+## What you can do
 
-On supported desktop browsers, the popout icon beside the customization and
-social icons opens a floating dice tray. It shares your table, player and current
-roll controls, with the six latest rolls behind the dice. The main log keeps its
-full history and fades only near the bottom of its scroll area.
+- **Roll the dice you need.** Choose d4, d6, d8, d10, d12 or d20 pools of
+  1–20 dice, or a percentile pair for d100. Add a bonus d4 to d6–d20 and
+  percentile rolls, and adjust generic bonuses and penalties.
+- **Make Draw Steel power rolls.** Roll 2d10 with Edge/Bane controls and tiered
+  results. The reusable library also offers Draw Steel interpretation helpers.
+- **Share a table.** Invite friends with a link or short table code. See who
+  is present, their dice designs, and their rolls in the log.
+- **Make the dice yours.** Choose body and ink colors, patterns and fonts,
+  with a live customization preview and saved browser preferences.
+- **Enjoy the clacks.** Watch 3D dice bounce and settle with recorded physics
+  and sound. Mute audio or choose reduced motion, text and contrast preferences.
+- **Keep the tray nearby.** On supported desktop browsers, open a floating
+  picture-in-picture tray with roll controls and the six latest rolls.
+- **Match your workspace.** Choose System, Light or Dark appearance; the main
+  page and floating tray share your preference.
+- **Build on it.** Use pure dice helpers, a renderer-free room controller,
+  optional React/Three.js presentation, or the same shared backend from a CLI.
 
-## Run your own site
+## Try your first shared table
 
-Use **Node 24.18.0** and **pnpm 11.5.3**.
+1. Open the [live roller](https://dice.clickclacks.app/).
+2. Choose dice using the picker beside **Roll**, then make a roll.
+3. Open **Sharing** and copy the table link or code. Friends can open the link
+   directly or enter the code in their own Sharing menu.
+4. Customize your name and dice so everyone can recognize your rolls.
+
+The hosted site uses guest sessions, so you can join without creating an account.
+Default tables last 24 hours and support eight active participants. Accepted
+roll history is retained by the backend for one hour. Clearing the tray clears
+everyone's current dice; it does not erase the backend's accepted-roll receipts.
+
+## How Convex powers real-time collaboration
+
+The frontend uses [Convex reactive queries](https://docs.convex.dev/realtime)
+to subscribe to table membership and each player's roll track. When stored state
+changes, Convex updates connected clients automatically. This lets players see
+new rolls, profile changes and shared clears without refreshing the page or
+building a separate WebSocket server.
+
+A shared roll follows this path:
+
+1. **Request.** The controller sends the dice configuration, guest credential
+   and a stable request ID to the Convex backend.
+2. **Generate and accept.** The server generates the faces and binds them to
+   that request. The client can prepare cosmetic motion, then submits the roll
+   for server validation and persistence. Retrying the same request reuses its
+   faces rather than rolling again.
+3. **Share.** Reactive subscriptions deliver the accepted result and recorded
+   motion to the table. Each participant has a separate track, so their throws
+   can be observed independently.
+4. **Reveal.** Clients use the shared server timestamp to coordinate when the
+   result enters the log. Graphics display the accepted faces; animation
+   completion does not decide the result. Text and headless clients use the
+   same result lifecycle.
+
+The backend lives in an isolated [Convex component](https://docs.convex.dev/components/overview),
+with its own room, session, request and presentation tables plus scheduled
+cleanup. The `convex/` directory exposes the site's public wrappers; `component/`
+contains the reusable backend. Host apps can install it into their own Convex
+project and enforce their own access policy at the wrapper boundary.
+
+Table links and codes grant read access. Each guest has a public viewer ID for
+attribution and a separate private credential for writes. Credentials are not
+included in shared room views or roll records. See [backend integration](docs/component.md)
+for the function flow and access boundaries.
+
+## Run locally
+
+You'll need **Node 24.18.0**, **pnpm 11.5.3**, Git, and your own Convex
+development project. The repository pins **Convex 1.45.0**.
+
+Fork the repository if you plan to contribute, then clone your fork (or clone
+the upstream repository to explore):
 
 ```sh
+git clone https://github.com/illos/ClickClacks.git
+cd ClickClacks
 pnpm install --frozen-lockfile
 cp .env.example .env.local
-pnpm exec convex dev
+env -u CONVEX_DEPLOY_KEY pnpm exec convex dev
 ```
 
-Select **your own Convex development project**. Code generation creates ignored
-bindings for the app and component. Set `VITE_CONVEX_URL` in `.env.local` to that
-project's public deployment URL, then:
+Follow the Convex prompts to create or select your development project. Leave
+that process running to sync backend changes and generate the ignored app and
+component bindings. Clearing an ambient `CONVEX_DEPLOY_KEY` ensures it does not
+silently select an unrelated deployment; on Windows, remove that variable from
+your shell before running `pnpm exec convex dev`.
+
+Set `VITE_CONVEX_URL` in `.env.local` to your project's public deployment URL:
+
+```dotenv
+VITE_CONVEX_URL=https://YOUR-DEPLOYMENT.convex.cloud
+```
+
+In a second terminal, start the frontend:
 
 ```sh
 pnpm dev
 ```
 
-Open `http://localhost:9591/powerroller/`. The frontend connects directly to
-Convex; the package supplies no default backend URL. A deployment key is a server
-secret, never a `VITE_*` value. When using a shell with an unrelated ambient
-`CONVEX_DEPLOY_KEY`, clear it before selecting or deploying this project's backend.
+Open [localhost:9591/powerroller/](http://localhost:9591/powerroller/).
+The `/powerroller/` path is retained for compatibility. The frontend connects
+directly to the Convex URL you configured. Deployment keys are server secrets
+and must never be placed in `VITE_*` variables.
+
+## Find your way around
+
+The stack is TypeScript, React, Vite, Three.js, cannon-es and Convex.
+
+| Directory | Start here for |
+| --- | --- |
+| [`lib/`](lib/) | Public dice, Draw Steel, controller, React and graphics entry points. |
+| [`shared/`](shared/) | Dice configurations, result contracts and shared interpretation. |
+| [`component/`](component/) | Convex schema, roll authority, sessions and cleanup. |
+| [`convex/`](convex/) | App-facing wrappers and component installation. |
+| [`web/`](web/) | Roller UI, 3D presentation, customization, floating tray and landing page. |
+| [`scripts/`](scripts/) | Headless CLI and build tooling. |
+| [`examples/`](examples/) | Plain TypeScript embedding and Convex integration examples. |
+| [`tests/`](tests/) | Focused library, controller and backend regression tests. |
+
+## Contribute
+
+Bug reports, documentation improvements and focused pull requests are welcome.
+Use [GitHub issues](https://github.com/illos/ClickClacks/issues) to describe a
+problem or discuss a larger change before building it. For bugs, include how to
+reproduce the issue, the expected result, and your browser/device when relevant.
+
+Create a branch in your fork, make the change, and open a pull request explaining
+what it fixes and how you checked it. Once Convex has generated the bindings,
+the repository's checks are:
 
 ```sh
 pnpm typecheck
@@ -67,20 +153,30 @@ pnpm test
 pnpm build
 ```
 
-`dist/` is generated output and must not be committed. GitHub Pages publication
-uses the repository's Actions workflow and the repository variable
-`VITE_CONVEX_URL`. The default asset base is `/powerroller/`; configure `CLICKCLACKS_BASE` (legacy `POWERROLLER_BASE` is also accepted)
-for another hosting path. Publish matching backend functions before a frontend
-that requires them.
+Keep fixes small and add a focused regression test when it catches a concrete
+failure. Preserve server-authoritative results and the existing UI/physics
+behavior. Draw Steel helpers retain their source citations; rule changes need
+source-backed expectations. Keep generated bindings, `dist/`, credentials and
+local session files out of commits.
 
-The build shares one asset graph between the main site and PiP tray. It also
-emits the old tray document under `dist/pip/` as a compatibility alias.
-Deploy the whole `dist/` directory. Set `CLICKCLACKS_BASE` (with a trailing slash)
-when building for a hosting path other than `/powerroller/`.
+For deeper context, see the [API coverage](docs/api-coverage.md),
+[version-one plan](docs/v1-readiness-plan.md) and
+[implementation record](docs/v1-implementation.md). These distinguish implemented
+capabilities from proposed work.
 
-The live Cloudflare roller uses `pnpm build:cloudflare` to build the same app
-at `/`. The static-assets configuration, publication record and backend/team steps
-are documented in [docs/cloudflare-hosting.md](docs/cloudflare-hosting.md).
+## Host your own site
+
+Build and deploy the frontend against your own Convex backend. GitHub Pages
+uses the repository's [Actions workflow](.github/workflows/pages.yml) and the
+repository variable `VITE_CONVEX_URL`. The default asset base is `/powerroller/`;
+set `CLICKCLACKS_BASE` with a trailing slash for another hosting path. The legacy
+`POWERROLLER_BASE` variable is also accepted.
+
+Deploy the whole `dist/` directory, which includes shared main/tray assets and
+the legacy `dist/pip/` document alias. Publish matching backend functions before
+a frontend that requires them. The live Cloudflare roller uses
+`pnpm build:cloudflare` to build at `/`; see the
+[Cloudflare hosting guide](docs/cloudflare-hosting.md) for configuration.
 
 ## Embed without adopting the site
 
@@ -109,8 +205,8 @@ needs component codegen before using `clickclacks/_generated/component.js`.
 | `clickclacks/draw-steel` | Cited Draw Steel resolution helpers and presets. |
 | `clickclacks/format` | Plain semantic descriptions. |
 | `clickclacks/client` | Instance-owned room controller and an explicit Convex transport. |
-| `clickclacks/three` | Optional original tray, fonts, physics utilities and isolated planners. |
-| `clickclacks/react` | The original interface as a mountable `ClickClacks` component. |
+| `clickclacks/three` | Optional 3D tray, fonts, physics utilities and isolated planners. |
+| `clickclacks/react` | The roller interface as a mountable `ClickClacks` component. |
 | `clickclacks/styles.css` | Explicit opt-in styles for that interface. |
 | `clickclacks/convex.config.js` | Isolated backend component installation. |
 
@@ -138,7 +234,9 @@ controller.on('available', roll => {
 });
 await controller.join();
 await controller.roll({id:crypto.randomUUID(),dice:{kind:'dice',sides:6,count:3}});
-await controller.dispose();
+
+// Keep the controller alive to receive this and other players' results.
+// When the host session ends, leave the table and dispose the controller.
 ```
 
 Preserve the same `id`, dice and modifiers when retrying an uncertain request.
@@ -239,27 +337,15 @@ and the session file. Use a separate file for another backend or participant.
 - Browser preferences and observed history are site-owned, bounded and
   origin-specific. Unavailable storage falls back to memory. The library does not
   secretly persist a host's session or rewrite its navigation.
-- App sounds are on by default; the existing sound button saves the local preference, including an explicit mute. Embedded hosts can supply their own sound preference; the landing demo stays muted by default. Clacks follow recorded bounce timing; reduced/hidden motion uses a result-reveal clack. Recorded clips are from [Gliz Caldo's Dice Roll Sound Effects](https://www.youtube.com/watch?v=F4Kxnv3Hzmk), used with the creator's permission; [audio provenance](web/dice-demo-v2/audio/README.md).
+- Sound is on by default; the sound button saves your preference, including mute.
+  Embedded hosts can supply their own sound preference. Clacks follow recorded
+  bounce timing; reduced/hidden motion uses a result-reveal clack.
 - Local motion/text/contrast preferences affect presentation. Shared result
   availability stays aligned with the common reveal timestamp. Real-device
   timing and actual VoiceOver/NVDA checks remain separate manual evidence; this
   repository does not claim WCAG conformance from automated tests alone.
 
-## Source and license
-
-Powerroller-owned code is **MIT** with the copyright owner's authorization.
-Dependencies keep their own licenses. Eczar, Sora, Caesar Dressing and New Rocker
-font subsets retain OFL notices in `web/dice-demo/fonts/`; builds ship
-`dice-font-licenses.txt`. No Salient catalog, monster names, game artwork or
-reference corpus is distributed. Implemented Draw Steel mechanics retain source
-citations; the corpus itself is not required to build or run the project.
-
-[The extraction record](docs/extraction.md) records the named source baseline and
-initial publication. Later standalone capabilities are described by this README
-and the current code. Salient is an independent consumer; this project does not
-modify its deployment, characters or campaign rules.
-
-## Naming compatibility
+## Compatibility for existing integrations
 
 The source package and new component installations use `clickclacks`; the React
 entry exports `ClickClacks` and retains `PowerRoller`/`PowerRollerOptions` aliases.
@@ -267,13 +353,8 @@ Existing consumers may install the source under an explicit dependency alias,
 for example `pnpm add 'powerroller@git+https://github.com/illos/ClickClacks.git#COMMIT'`.
 The community backend deliberately keeps its installed `powerroller` component
 namespace, and browser preferences, identities, channels and history keep their
-existing storage keys. Renaming does not create a new database or discard data.
-GitHub/Convex project metadata and the existing Pages path are unchanged until
-the hosting rename is coordinated. New builds accept `CLICKCLACKS_BASE`.
-
-The main page and PiP tray now share one production asset graph. The tray loads
-from `web/popout/tray.html`; the older `pip/web/popout/tray.html` URL is emitted
-as a compatible document using the same shared assets.
+existing storage keys. The default Pages path remains `/powerroller/`; new
+builds accept `CLICKCLACKS_BASE` for another hosting path.
 
 ### Graphics embedding and the pinned Three patch
 
@@ -303,3 +384,18 @@ use that alias in the copy path. Keep the patch in your repository rather than
 referencing `node_modules`, which is absent at the start of a clean install.
 See [pnpm patch registration](https://pnpm.io/cli/patch) and
 [the patch's ownership notes](patches/README.md).
+
+## License and credits
+
+Click Clacks code is released under the [MIT license](LICENSE).
+Dependencies keep their own licenses. Eczar, Sora, Caesar Dressing and New Rocker
+font subsets retain OFL notices in `web/dice-demo/fonts/`; builds ship
+`dice-font-licenses.txt`. Recorded audio comes from
+[Gliz Caldo's Dice Roll Sound Effects](https://www.youtube.com/watch?v=F4Kxnv3Hzmk),
+used with the creator's permission; see the [audio credits](web/dice-demo-v2/audio/README.md).
+
+The roller originated in Salient and became a standalone project.
+The [extraction record](docs/extraction.md) documents its source baseline and
+initial publication. Draw Steel helpers retain their rules citations; no game
+artwork, catalogs or reference corpus are distributed, and the corpus is not
+required to build or run the project.

@@ -5,7 +5,7 @@ import type { ParticipantRoll, Style } from 'clickclacks/client';
 export type Profile = { name: string; style: Style };
 export type SitePreferences = RollerPreferences & {profile?: Profile; room?: string; roomBackend?: string};
 const key = 'powerroller.preferences.v2';
-const defaults: SitePreferences = { theme: 'system', sound: false, selectedDice: 'power', motion: 'device', hidden: false, highContrast: false, announcements: 'all' };
+const defaults: SitePreferences = { theme: 'system', sound: true, selectedDice: 'power', motion: 'device', hidden: false, highContrast: false, announcements: 'all' };
 let preferenceMemoryOnly = false;
 let preferenceMemory: SitePreferences = { ...defaults };
 export function loadPreferences(): SitePreferences {
@@ -17,7 +17,7 @@ export function loadPreferences(): SitePreferences {
     const style = p?.profile?.style;
     const profile = typeof p?.profile?.name === 'string' && p.profile.name.trim() && p.profile.name.length <= 32 && /^#[a-f\d]{6}$/i.test(style?.color ?? '') && /^#[a-f\d]{6}$/i.test(style?.ink ?? '') && ['solid','speckle','marble','frosted'].includes(style?.pattern) && [undefined,'serif','modern','rune','gothic'].includes(style?.font)
       ? { name: p.profile.name, style: { color: style.color, ink: style.ink, pattern: style.pattern, ...(style.font ? {font:style.font} : {}) } } : undefined;
-    return { theme: ['system','light','dark'].includes(p?.theme) ? p.theme : 'system', sound: p?.sound === true, selectedDice: ['power','percentile',4,6,8,10,12,20].includes(p?.selectedDice) ? p.selectedDice : 'power', profile, room: typeof p?.room === 'string' ? p.room : undefined, roomBackend: typeof p?.roomBackend === 'string' ? p.roomBackend : undefined, motion: ['device','reduce','full'].includes(p?.motion) ? p.motion : 'device', hidden: p?.hidden === true, highContrast: p?.highContrast === true, announcements: ['all','mine','off'].includes(p?.announcements) ? p.announcements : 'all' };
+    return { theme: ['system','light','dark'].includes(p?.theme) ? p.theme : 'system', sound: typeof p?.sound === 'boolean' ? p.sound : defaults.sound, selectedDice: ['power','percentile',4,6,8,10,12,20].includes(p?.selectedDice) ? p.selectedDice : 'power', profile, room: typeof p?.room === 'string' ? p.room : undefined, roomBackend: typeof p?.roomBackend === 'string' ? p.roomBackend : undefined, motion: ['device','reduce','full'].includes(p?.motion) ? p.motion : 'device', hidden: p?.hidden === true, highContrast: p?.highContrast === true, announcements: ['all','mine','off'].includes(p?.announcements) ? p.announcements : 'all' };
   } catch { return { ...preferenceMemory }; }
 }
 export function savePreferences(preferences: SitePreferences) {

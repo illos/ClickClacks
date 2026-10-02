@@ -1052,6 +1052,10 @@
   padding: 0;
 }
 .v2 :is(.app-settings, .mini-settings-preferences) .accessibility-options select { max-width: 65%; }
+.v2 .sound-settings { display: block; margin: 20px 0; }
+.v2 .sound-settings legend { margin-bottom: 8px; font-size: 13px; font-weight: 500; }
+.v2 .sound-settings label { display: flex; align-items: center; justify-content: space-between; min-height: 44px; gap: 12px; }
+.v2 .sound-settings input[type='checkbox'] { width: 20px; height: 20px; flex: 0 0 20px; padding: 0; }
 .v2 .settings-links { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 20px; }
 .v2 .settings-links a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; color: inherit; text-decoration: underline; text-underline-offset: 3px; }
 .v2 .settings-links a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; border-radius: 2px; }

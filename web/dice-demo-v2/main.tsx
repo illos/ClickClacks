@@ -201,6 +201,11 @@ function DiceRoom() {
     setSavedPreferences(next);
     options.onPreferences?.(next);
   }
+  function changeSound(enabled: boolean) {
+    sound.current?.setEnabled(enabled && !options.popoutActive);
+    changePreferences({ ...preferences, sound: enabled });
+    if (enabled) unlockSound();
+  }
   const [identity] = useState(() => options.identity ?? { viewer: crypto.randomUUID(), credential: crypto.randomUUID() + crypto.randomUUID() });
   const { viewer, credential } = identity;
   const identityReady = true;
@@ -869,6 +874,11 @@ function DiceRoom() {
   </>;
   const settingsContent = <>
     <ThemeOptions value={preferences.theme} onChange={theme => changePreferences({...preferences, theme})} />
+    <fieldset className="sound-settings">
+      <legend>Audio</legend>
+      <label>Dice sounds<input type="checkbox" checked={preferences.sound === true}
+        onChange={event => changeSound(event.target.checked)} /></label>
+    </fieldset>
     <AccessibilityControls preferences={preferences} onChange={changePreferences} />
     {options.onReportBug && <button type="button" className="leave-table" onClick={reportBug}>Report a bug</button>}
     <nav className="settings-links" aria-label="Click Clacks links">
@@ -956,12 +966,7 @@ function DiceRoom() {
             <button type="button" className="sound-toggle"
               aria-label="Dice sounds" aria-pressed={preferences.sound === true}
               title={preferences.sound ? 'Mute dice sounds' : 'Enable dice sounds'}
-              onClick={() => {
-                const enabled = !preferences.sound;
-                sound.current?.setEnabled(enabled && !options.popoutActive);
-                changePreferences({ ...preferences, sound: enabled });
-                if (enabled) unlockSound();
-              }}>
+              onClick={() => changeSound(!preferences.sound)}>
               {preferences.sound ? <Volume2 aria-hidden /> : <VolumeX aria-hidden />}
             </button>
             {hasDice && (

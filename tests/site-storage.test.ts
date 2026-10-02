@@ -16,10 +16,21 @@ describe('site-owned persistence and private identity',()=>{
   localStorage.setItem('powerroller.preferences.v2',JSON.stringify({version:2,preferences:{profile,theme:'invalid'}}));
   expect(loadPreferences()).toMatchObject({theme:'system',profile});
  });
- it('defaults sound off and persists only an explicit boolean preference',()=>{
-  expect(loadPreferences().sound).toBe(false);
-  savePreferences({...loadPreferences(),sound:true});expect(loadPreferences().sound).toBe(true);
-  localStorage.setItem('powerroller.preferences.v2',JSON.stringify({version:2,preferences:{sound:'true'}}));expect(loadPreferences().sound).toBe(false);
+ it('defaults app sound on and preserves explicit mute across a fresh module load',async()=>{
+  expect(loadPreferences().sound).toBe(true);
+  savePreferences({...loadPreferences(),sound:false});
+  expect(JSON.parse(localStorage.getItem('powerroller.preferences.v2')!).preferences.sound).toBe(false);
+  vi.resetModules();
+  const reloaded = await import('../web/site/storage');
+  expect(reloaded.loadPreferences().sound).toBe(false);
+  reloaded.savePreferences({...reloaded.loadPreferences(),sound:true});
+  expect(reloaded.loadPreferences().sound).toBe(true);
+ });
+ it('uses the sound default when older settings omit sound or contain a non-boolean',()=>{
+  for (const sound of [undefined, 'false', 'true', null]) {
+   localStorage.setItem('powerroller.preferences.v2',JSON.stringify({version:2,preferences:{sound}}));
+   expect(loadPreferences().sound).toBe(true);
+  }
  });
  it('remembers the percentile picker choice without saving transient bonus or count controls',()=>{
   savePreferences({...loadPreferences(),selectedDice:'percentile'});expect(loadPreferences().selectedDice).toBe('percentile');

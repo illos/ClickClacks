@@ -1,21 +1,25 @@
 // SPDX-License-Identifier: MIT
 import { ConvexClient } from 'convex/browser';
+import type { ConvexReactClient } from 'convex/react';
 import { redactError } from './errors.ts';
 export { redactError, RollerError, type RollerErrorCode } from './errors.ts';
 import { makeFunctionReference } from 'convex/server';
 import { defaultDice, validateDiceConfiguration, type DiceConfiguration } from '../shared/dice.ts';
 import { recordedRevealDelay } from '../shared/timing.ts';
-import { estimateClock, type ClockSample, type Motion, type Style } from '../web/dice-demo/model.ts';
-import { packMotion, unpackRoll } from '../web/dice-demo/motion-codec.ts';
-import type { ParticipantRoll, Room, Track } from '../web/dice-demo-v2/model.ts';
+import { estimateClock, type ClockSample, type Motion, type Style } from '../shared/model.ts';
+import { packMotion, unpackRoll } from '../shared/motion-codec.ts';
+import type { ParticipantRoll, Room, Track } from '../shared/room.ts';
 
 export type { DiceConfiguration, Style, Motion, ParticipantRoll };
-export { parseRoomKey } from '../web/dice-demo-v2/model.ts';
+export { parseRoomKey } from '../shared/room.ts';
 export type Identity = { viewer:string; credential:string };
 export type Profile = { name:string; style:Style };
 export type DeliveredRoll = ParticipantRoll & { historical?:boolean };
 export type RoomSnapshot = Room & { cursor?:number };
+const queries = new Set(['diceDemoV2:view','diceDemoV2:track','diceDemoV2:trackMetadata','diceDemoV2:motion','diceDemoV2:events']);
 export interface Transport {
+  /** Opt into immutable motion-by-ID delivery; legacy custom transports remain supported. */
+  compactTracks?:boolean;
   call(method:string,args:Record<string,unknown>):Promise<any>;
   watch(method:string,args:Record<string,unknown>,next:(value:any)=>void,error:(error:Error)=>void):()=>void;
   close?():Promise<void>|void;
@@ -24,27 +28,43 @@ export interface Transport {
 export function convexTransport(url:string, supplied?:ConvexClient):Transport {
   const client=supplied??new ConvexClient(url);
   return {
+    compactTracks:true,
     call:(method,args)=>['diceDemo:clock','diceDemo:sampleFaces'].includes(method)
       ? client.action(makeFunctionReference<'action'>(method),args)
-      : ['diceDemoV2:view','diceDemoV2:track','diceDemoV2:events'].includes(method)
+      : queries.has(method)
         ? client.query(makeFunctionReference<'query'>(method),args)
         : client.mutation(makeFunctionReference<'mutation'>(method),args),
     watch:(method,args,next,error)=>client.onUpdate(makeFunctionReference<'query'>(method),args,next,error),
     close:()=>supplied?undefined:client.close(),
   };
 }
+/** Use the site's existing connection without owning or closing it. */
+export function reactTransport(client:ConvexReactClient):Transport {
+  return {
+    compactTracks:true,
+    call:(method,args)=>['diceDemo:clock','diceDemo:sampleFaces'].includes(method)
+      ? client.action(makeFunctionReference<'action'>(method),args)
+      : queries.has(method) ? client.query(makeFunctionReference<'query'>(method),args)
+      : client.mutation(makeFunctionReference<'mutation'>(method),args),
+    watch:(method,args,next,error)=>{
+      const query=client.watchQuery(makeFunctionReference<'query'>(method),args);
+      return query.onUpdate(()=>{try{const value=query.localQueryResult();if(value!==undefined)next(value);}catch(value){error(value instanceof Error?value:new Error(String(value)));}});
+    },
+  };
+}
 export type RollInput = { id?:string; dice?:DiceConfiguration; edges?:number; banes?:number };
 export type PresentationProvider = (faces:number[],dice:DiceConfiguration)=>Promise<Motion|undefined>;
 export type ClientEvents = {
   accepted:DeliveredRoll; available:DeliveredRoll; room:RoomSnapshot;
-  track:{owner:string;roll:DeliveredRoll|null}; clear:string;
+  track:{owner:string;roll:DeliveredRoll|null;activeRolls?:DeliveredRoll[]}; clear:string;
   status:'connecting'|'connected'|'interrupted'|'left'; error:Error;
 };
 type Request = { id:string; dice:DiceConfiguration; edges:number; banes:number; fingerprint:string; faces?:number[]; motion?:Motion; accepted?:ParticipantRoll };
 
 /** Instance-owned authority/delivery controller. Cosmetic presentation never determines availability. */
-export function createController(options:{transport:Transport;key:string;identity:Identity;profile:Profile;clock?:()=>number;requestId?:()=>string}) {
+export function createController(options:{transport:Transport;key:string;identity:Identity;profile:Profile;clock?:()=>number;clockEstimate?:()=>{offset:number;uncertainty:number};requestId?:()=>string}) {
   const transport:Transport={
+    compactTracks:options.transport.compactTracks,
     call:async(method,args)=>{try{return await options.transport.call(method,args);}catch(error){throw redactError(error,[options.identity.credential]);}},
     watch:(...args)=>options.transport.watch(...args),
     close:()=>options.transport.close?.(),
@@ -59,7 +79,20 @@ export function createController(options:{transport:Transport;key:string;identit
   const requests=new Map<string,Request>(), inFlight=new Map<string,Promise<ParticipantRoll>>();
   const listeners=new Map<keyof ClientEvents,Set<(value:any)=>void>>();
   const local=options.clock??Date.now;
-  const now=()=>local()+offset;
+  const clockEstimate=()=>options.clockEstimate?.()??{offset,uncertainty};
+  const now=()=>local()+clockEstimate().offset;
+  const trackMethod=transport.compactTracks?'diceDemoV2:trackMetadata':'diceDemoV2:track';
+  const motions=new Map<string,Promise<Motion|undefined>>();
+  const trackVersions=new Map<string,number>();
+  async function hydrate(roll:ParticipantRoll):Promise<ParticipantRoll>{
+    if(!transport.compactTracks||roll.motion)return unpackRoll(roll);
+    if((roll.historyExpiresAt??roll.startsAt+3600000)<=now())return roll;
+    const id=recordKey(roll);
+    let pending=motions.get(id);
+    if(!pending){pending=transport.call('diceDemoV2:motion',{key,viewer:roll.roller,rollId:roll.id}).then(value=>value??undefined).catch(error=>{motions.delete(id);throw error;});motions.set(id,pending);if(motions.size>32)motions.delete(motions.keys().next().value!);}
+    const motion=await pending;
+    return unpackRoll(motion?{...roll,motion}:roll);
+  }
   const session=()=>({key,viewer:options.identity.viewer,credential:options.identity.credential});
   const emit=<K extends keyof ClientEvents>(name:K,value:ClientEvents[K])=>listeners.get(name)?.forEach(listener=>listener(value));
   const fail=(value:unknown)=>{if(disposed)return;const error=redactError(value,[options.identity.credential]);emit('status','interrupted');emit('error',error);};
@@ -80,22 +113,30 @@ export function createController(options:{transport:Transport;key:string;identit
   }
   function updateTrack(owner:string,value:Track|null,version:number){
     if(!valid(version))return;
-    if(value?.roll){const roll=unpackRoll(value.roll);visible.add(owner);emit('track',{owner,roll});receive(roll,true);}
-    else if(visible.delete(owner)){emit('track',{owner,roll:null});emit('clear',owner);}
+    const revision=(trackVersions.get(owner)??0)+1;trackVersions.set(owner,revision);
+    if(value?.roll){
+      const rolls=value.activeRolls?.length?value.activeRolls:[value.roll];
+      void Promise.all(rolls.map(hydrate)).then(activeRolls=>{
+        if(!valid(version)||trackVersions.get(owner)!==revision)return;
+        const roll=activeRolls.find(item=>item.id===value.roll.id)??unpackRoll(value.roll);
+        visible.add(owner);emit('track',{owner,roll,activeRolls});
+        for(const item of activeRolls)receive(item,true);
+      }).catch(fail);
+    }else if(visible.delete(owner)){emit('track',{owner,roll:null});emit('clear',owner);}
   }
   function updateRoom(value:RoomSnapshot,version:number){
     if(!valid(version))return;
     canonicalCode=value.code;emit('room',value);
     const active=new Set(value.participants.map(member=>member.id));
     for(const [owner,stop] of tracks)if(!active.has(owner)){stop();tracks.delete(owner);if(visible.delete(owner)){emit('track',{owner,roll:null});emit('clear',owner);}}
-    for(const owner of active)if(!tracks.has(owner))tracks.set(owner,transport.watch('diceDemoV2:track',{key,viewer:owner},value=>updateTrack(owner,value,version),error=>{if(valid(version))fail(error);}));
-    void catchup().catch(fail);
+    for(const owner of active)if(!tracks.has(owner))tracks.set(owner,transport.watch(trackMethod,{key,viewer:owner},value=>updateTrack(owner,value,version),error=>{if(valid(version))fail(error);}));
+    if(value.cursor!==undefined&&value.cursor>cursor)void catchup().catch(fail);
   }
   async function recover(version:number){
     const currentKey=key;
     const view=await transport.call('diceDemoV2:view',{key:currentKey}) as RoomSnapshot;
     if(!valid(version))return;
-    const latest=await Promise.all(view.participants.map(async member=>({owner:member.id,track:await transport.call('diceDemoV2:track',{key:currentKey,viewer:member.id}) as Track|null})));
+    const latest=await Promise.all(view.participants.map(async member=>({owner:member.id,track:await transport.call(trackMethod,{key:currentKey,viewer:member.id}) as Track|null})));
     if(!valid(version))return;
     const currentOwners=new Set(latest.filter(record=>record.track?.roll).map(record=>record.owner));
     for(const owner of visible)if(!currentOwners.has(owner)){visible.delete(owner);emit('track',{owner,roll:null});emit('clear',owner);}
@@ -124,6 +165,7 @@ export function createController(options:{transport:Transport;key:string;identit
     refreshing=task;return task;
   }
   async function syncClock(version=epoch){
+    if(options.clockEstimate){const estimate=options.clockEstimate();offset=estimate.offset;uncertainty=estimate.uncertainty;return;}
     const samples:ClockSample[]=[];
     for(let i=0;i<3;i++){const start=local();const server=await transport.call('diceDemo:clock',{});if(!valid(version))return; samples.push({start,end:local(),server});}
     const estimate=estimateClock(samples);offset=estimate.offset;uncertainty=estimate.uncertainty;
@@ -141,13 +183,13 @@ export function createController(options:{transport:Transport;key:string;identit
       epoch++;const version=epoch;stop(changed);refreshing=undefined;refreshAgain=false;joined=false;
       if(changed){seen.clear();requests.clear();inFlight.clear();cursor=0;canonicalCode=null;key=nextKey;}
       emit('status','connecting');await syncClock(version);if(!valid(version))return;
-      await transport.call('diceDemoV2:join',{...session(),...profile,ready:true,uncertainty});if(!valid(version))return;
+      await transport.call('diceDemoV2:join',{...session(),...profile,ready:true,uncertainty:clockEstimate().uncertainty});if(!valid(version))return;
       joined=true;
       if(previous&&changed)void transport.call('diceDemoV2:leave',previous).catch(()=>{});
       const initial=await transport.call('diceDemoV2:view',{key}) as RoomSnapshot;
       if(!valid(version))return;updateRoom(initial,version);
       roomStop=transport.watch('diceDemoV2:view',{key},value=>updateRoom(value,version),error=>{if(valid(version))fail(error);});
-      heartbeat=setInterval(()=>{if(!valid(version))return;void transport.call('diceDemoV2:join',{...session(),...profile,ready:true,uncertainty}).then(()=>valid(version)?catchup():undefined).catch(error=>{if(valid(version))fail(error);});void syncClock(version).catch(error=>{if(valid(version))fail(error);});},10000);
+      heartbeat=setInterval(()=>{if(!valid(version))return;void transport.call('diceDemoV2:join',{...session(),...profile,ready:true,uncertainty:clockEstimate().uncertainty}).catch(error=>{if(valid(version))fail(error);});void syncClock(version).catch(error=>{if(valid(version))fail(error);});},10000);
       await catchup();if(valid(version))emit('status','connected');
     },
     async observe(){
@@ -183,15 +225,15 @@ export function createController(options:{transport:Transport;key:string;identit
         if(!valid(version))throw new Error('Room changed while preparing the roll.');
         const result=await transport.call('diceDemoV2:throwDice',{...args,id,dice,faces:retained.faces,edges,banes,...(retained.motion?{motion:retained.motion}:{})}) as ParticipantRoll;
         if(!valid(version))throw new Error('Room changed while accepting the roll.');
-        retained.accepted=result;receive(result);return result;
+        retained.accepted=result;delete retained.motion;receive(result);return result;
       })().finally(()=>{if(inFlight.get(id)===task)inFlight.delete(id);});
       inFlight.set(id,task);return task;
     },
     clock:now,
-    clockEstimate:()=>({offset,uncertainty}),
+    clockEstimate,
     catchup,
     get key(){return key;},get identity(){return {...options.identity};},
-    async dispose(){if(disposed)return;disposed=true;epoch++;joined=false;stop(true);listeners.clear();await transport.close?.();},
+    async dispose(){if(disposed)return;disposed=true;epoch++;joined=false;stop(true);requests.clear();inFlight.clear();motions.clear();trackVersions.clear();seen.clear();listeners.clear();await transport.close?.();},
   };
   return api;
 }

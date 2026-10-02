@@ -63,7 +63,7 @@ h2 em { font-style: normal; color: var(--pink); }
 .share-steps li::before { content: counter(share-step); position: absolute; left: 0; top: 2px; display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid #455b57; border-radius: 50%; color: var(--mint); font-size: 11px; }
 .share-steps strong, .share-steps span { display: block; }
 .share-steps span { color: var(--muted); }
-.sharing-demo { min-width: 0; margin: 0; }
+.sharing-demo { order: -1; min-width: 0; margin: 0; }
 .sharing-viewport { position: relative; aspect-ratio: 1; overflow: hidden; background: #111415; border: 1px solid var(--line); border-radius: 12px; touch-action: pan-y pinch-zoom; }
 .sharing-tray { position: absolute; inset: 0 auto auto 0; width: 720px; height: 720px; border: 0; transform-origin: top left; pointer-events: none; }
 .sharing-demo figcaption { margin-top: 16px; font-size: 14px; font-weight: 650; }
@@ -164,3 +164,6 @@ code { font-family: ui-monospace, monospace; }
 /* Reserve space while the customizer chunk loads near the viewport. */
 #customizer-root { min-height: 530px; }
 @media (max-width: 760px) { #customizer-root { min-height: 810px; } }
+
+/* Read the sharing instructions before the live illustration on small screens. */
+@media (max-width: 760px) { .together > .sharing-demo { order: 0; } }

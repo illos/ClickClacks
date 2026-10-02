@@ -65,7 +65,7 @@ function Demo() {
     async function roll(index: number) {
       if (stopped) return;
       const sides = ([6, 8, 10, 12, 20] as const)[random(5)]!;
-      const dice: DiceConfiguration = { kind: 'dice', sides, count: 1 + random(3) };
+      const dice: DiceConfiguration = { kind: 'dice', sides, count: 1 + random(2) };
       try {
         await controllers[index]!.roll({ dice }, async (faces, config) => {
           if (stopped || matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;

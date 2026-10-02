@@ -2,7 +2,7 @@
 
 The owner replaced the recording with a non-interactive instance of the real
 Click Clacks app. The square iframe runs at 720 × 720 and scales to its website
-column, to the left of the section copy (above it on narrow screens). It uses the existing component, renderer, roll lifecycle and dedicated
+column, to the left of the section copy (below it on narrow screens). It uses the existing component, renderer, roll lifecycle and dedicated
 Powerroller backend. Each page load has an isolated table and two fresh identities.
 
 The repeating sequence is Ariadne rolling 1d12, waiting a beat, opening Sharing
@@ -19,6 +19,7 @@ The script waits for the real `.join-log-entry[data-participant]` row for Cato,
 then holds it for 900ms before requesting his roll. Join notices use the same
 `historySince` boundary as rolls, so each repeat starts with an empty log.
 Both the interactive hero and the sharing illustration use Ariadne and Cato.
+Each scripted hero participant rolls one or two dice per throw.
 The result remains visible briefly. Cato leaves, the tray clears, and the
 visible log resets before the next cycle. One table is reused across cycles;
 the host's presentation boundary hides older accepted history without deleting

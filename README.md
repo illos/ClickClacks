@@ -3,6 +3,10 @@
 Click Clacks is the standalone dice roller published from `illos/powerroller`.
 The approved High Voltage branding changes the site name; package, API and browser-storage identifiers remain compatible.
 
+[The version-one readiness plan](docs/v1-readiness-plan.md) combines the codebase
+cleanup review, measured frontend/database optimizations, selected one-hour history
+policy and collision investigation. It describes proposed work, not changes already shipped.
+
 Use the appearance icon in the top menu to choose **System**, **Light**, or **Dark**.
 System is the default and follows device changes live; an explicit choice is saved
 in this browser. Appearance is also available in Customize dice and the floating

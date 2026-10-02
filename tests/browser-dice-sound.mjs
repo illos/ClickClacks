@@ -19,10 +19,9 @@ try {
   });
   await page.goto('http://127.0.0.1:9594/powerroller/');
   const toggle=page.getByRole('button',{name:'Dice sounds',exact:true});
-  await expect(toggle).toHaveAttribute('aria-pressed','false');
+  await expect(toggle).toHaveAttribute('aria-pressed','true');
   await expect(page.getByRole('button',{name:'Roll',exact:true})).toBeEnabled({timeout:30000});
   expect(await page.evaluate(()=>window.audioContexts.length)).toBe(0);
-  await toggle.click(); await expect(toggle).toHaveAttribute('aria-pressed','true');
   await page.getByRole('button',{name:'Roll',exact:true}).click();
   await expect.poll(()=>page.evaluate(()=>window.audioStarts.length),{timeout:20000}).toBeGreaterThan(0);
   expect(await page.evaluate(()=>window.audioStarts.every(s=>s.when>=s.current))).toBe(true);
@@ -35,6 +34,8 @@ try {
   const starts=await page.evaluate(()=>window.audioStarts.length);
   await page.getByRole('button',{name:'Roll',exact:true}).click();
   await page.waitForTimeout(4500);expect(await page.evaluate(()=>window.audioStarts.length)).toBe(starts);
+  await page.reload();await expect(toggle).toHaveAttribute('aria-pressed','false');
+  expect(await page.evaluate(()=>window.audioContexts.length)).toBe(0);
   await toggle.click();await page.reload();await expect(toggle).toHaveAttribute('aria-pressed','true');
   await expect(page.getByRole('button',{name:'Roll',exact:true})).toBeEnabled({timeout:30000});
   expect(await page.evaluate(()=>window.audioStarts.length)).toBe(0); // No historical playback.

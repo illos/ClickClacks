@@ -80,7 +80,8 @@ rendering provides main-thread/frame-gap evidence, not a physical phone FPS clai
 The settled/all-owner collision fix and adaptive hull sizes are preserved. Independent
 moving paths remain the existing behavior. Reciprocal moving collisions need the scene
 revision/cutover design in `tray-collisions.md` and a result/printed-label decision;
-this larger behavior change is awaiting the owner's answer separately from optimization.
+the owner confirmed on 2026-10-02 that this larger behavior change is deferred.
+Keep the settled-dice fix for version one.
 
 No GitHub repository rename, Convex project rename, main merge/push or shared live
 promotion has been performed by this implementation thread. Those publication steps

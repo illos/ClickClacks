@@ -619,3 +619,9 @@ mandatory package publication, new dice/rules modes or broad dependency upgrades
 Keep the current accepted feature set while making its ownership and costs clear.
 The owner-requested D100 addition is accepted in-progress work to preserve, rather
 than an unrequested new mode introduced by this cleanup.
+
+## Confirmed collision scope
+
+On 2026-10-02 the owner chose to keep the settled/all-owner collision fix and
+defer reciprocal collisions between moving rolls. The C1–C4 design remains
+future work, outside this version-one implementation acceptance.

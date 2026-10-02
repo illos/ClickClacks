@@ -174,6 +174,12 @@ try {
     }
     }
     if(!timingOnly) {
+    if(continuationOnly) {
+      await page.getByRole('button',{name:'Select dice',exact:true}).click();
+      await page.getByRole('menuitemradio',{name:'d20',exact:true}).click();
+      await page.getByRole('button',{name:'Color theme: System',exact:true}).click();
+      await page.getByRole('menuitemradio',{name:'Light',exact:true}).click();
+    }
     const popout=page.getByRole('button',{name:'Pop out dice tray',exact:true});
     if(await popout.count()) {
       await popout.click();

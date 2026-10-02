@@ -117,16 +117,27 @@ Evidence is outside Git in `test-artifacts/v1-readiness-a43eaa6/`,
 The frontend captures span the documented commits; the final budget adjustment
 changes backend cleanup limits only. Existing acceptance is reused for publication.
 
-A real one-hour soak started at 02:22:06 UTC on frozen `847dbbf`. Its dedicated
-thread owns the private stack and will check original-deadline expiry in the UI,
-IndexedDB and backend, together with resource retention and errors. The owner
-explicitly authorized publishing before this check finishes and requested follow-up
-fixes for any issues it finds. The soak has not yet passed.
+A real one-hour soak ran from 02:22:06 to 03:22:13 UTC on frozen `847dbbf`.
+The assigned test thread reported exit 0 and no page errors across 20 rolls,
+nine preview cycles, three PiP cycles, four visibility transitions and six sound
+cycles. After the initial roll's original deadline, its UI row and IndexedDB
+entry were absent and the public backend read returned `CURSOR_EXPIRED`.
+This proves logical expiry, rather than physical database row deletion.
+
+Native WebGL contexts stayed at one and textures at 26 across all five retention
+samples. Heap grew from 7.28 to 10.04 MB and DOM nodes from 493 to 1092 as the
+session accumulated retained log rows; this does not establish constant memory
+use or rule out every leak. Worker/socket construction counts were one each,
+and all six constructed audio contexts were closed. Listener counts, physical
+GPU allocations and phone FPS were not measured. The result covers `847dbbf`,
+before the subsequent roll-latency and Reload changes. Full evidence and limits
+are in `test-artifacts/v1-readiness-847dbbf/soak-summary.json`.
 
 Publication order is pushed main, dedicated Convex dev backend, then an explicit
 Pages workflow dispatch. The release commit uses `[skip ci]` to prevent the main
 push from automatically publishing the new frontend before its backend exists.
-The frozen soak worktree remains in place until the test thread releases it.
+The test thread released the clean frozen worktree and stopped its private
+9610/9612/9613 stack after the soak.
 
 ### Publication result
 
@@ -138,6 +149,5 @@ The ambient Salient deploy key was explicitly unset.
 
 [Pages run 36956072861](https://github.com/illos/powerroller/actions/runs/36956072861)
 built and deployed successfully at 02:32:37 UTC. No additional suite or browser
-runs were added for publication. The one-hour soak remains pending and its frozen
-worktree is retained until the soak thread releases it. Any detected issue will
-be addressed in a follow-up change, as authorized by the owner.
+runs were added for publication. The owner authorized publication while the soak
+was still running; its later passing result is recorded above.

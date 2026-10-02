@@ -578,7 +578,8 @@ Publication reuses accepted results instead of rerunning suites on promotion.
 | Consumers/builds | Public pure/client/Three isolation, mountable React, Node CLI, installed component/codegen and both HTML routes retain their supported behavior |
 | Collision scope | Settled/all-owner scale parity remains proven; if reciprocal moving collisions are selected, C1–C4 prove label/result consistency, atomic scenes, synchronized cutovers and bounded payloads |
 
-The hour soak is meaningful after lifecycle/cache changes; it has not been run yet.
+The hour soak passed on implemented candidate `847dbbf`; its measured results and
+limits are recorded in [v1-implementation.md](v1-implementation.md#release-acceptance--2026-10-02).
 Pin profile/appearance, number of players, roll cadence, viewport, cache state and
 GPU/backend conditions for comparisons. Do not compare random default styles as
 if identical. Use physical mobile/Safari observations for device FPS and interruption

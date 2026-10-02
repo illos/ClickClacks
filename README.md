@@ -16,7 +16,7 @@ fonts, patterns, roll state and table history stay independent of the app theme.
 A free realtime dice roller for Draw Steel, with a reusable TypeScript library,
 optional React/Three presentation and an isolated Convex backend.
 
-[Live site](https://illos.github.io/powerroller/) · [Source](https://github.com/illos/powerroller)
+[Live roller](https://app.clickclacks.app) · [Source](https://github.com/illos/powerroller)
 
 The default interface, materials, recorded physics, customization preview, social
 menus and compact log come from Salient commit
@@ -78,8 +78,8 @@ emits the old tray document under `dist/pip/` as a compatibility alias.
 Deploy the whole `dist/` directory. Set `CLICKCLACKS_BASE` (with a trailing slash)
 when building for a hosting path other than `/powerroller/`.
 
-For a dedicated Cloudflare hostname, `pnpm build:cloudflare` builds the same app
-at `/`. The prepared static-assets configuration and backend/team cutover steps
+The live Cloudflare roller uses `pnpm build:cloudflare` to build the same app
+at `/`. The static-assets configuration, publication record and backend/team steps
 are documented in [docs/cloudflare-hosting.md](docs/cloudflare-hosting.md).
 
 ## Embed without adopting the site

@@ -3,7 +3,7 @@
 Prepared from standalone main `6c15c17` on 2026-10-02. The owner confirmed the
 app hostname and active domain in Blackgate Studio. Frontend publication now
 uses the current dedicated backend; Convex team transfer and production backend
-selection follow separately. Publication results are recorded below once known.
+selection follow separately. Publication results are recorded below.
 
 ## Target architecture
 
@@ -144,3 +144,29 @@ automatically identify rooms in the new deployment.
 Rollback keeps the accepted Pages build and old backend available until the
 new target is accepted. Restore the previous frontend/hostname routing if
 needed; do not delete the old backend or reset user data as a rollback step.
+
+## App publication result — 2026-10-02
+
+Source `3e15819` was fast-forwarded into standalone main and pushed to GitHub.
+Its root-path build completed successfully with explicit public backend URL
+`https://nautical-partridge-636.convex.cloud`. Pinned Wrangler `4.134.0`
+published the 39-file static build successfully and reported the attached
+`app.clickclacks.app` custom domain.
+
+- Canonical roller: <https://app.clickclacks.app>
+- Worker: `clickclacks-app`, Blackgate Studio account
+- Version: `69552e9a-d72f-4a8f-b9b5-78b3869646eb`
+- Compatible backend: existing dedicated dev `nautical-partridge-636`
+- Original Pages workflow also passed, run `36965713007`; the old site remains
+  available during transition.
+
+Accepted local Test/review results were reused; no suite or live browser checks
+were repeated solely for publication. No Convex team, backend code or deployment
+was changed. The Actions secret remains unconfigured because the available
+GitHub credential cannot manage repository secrets. Main-ref and required-setting
+guards are present in the manual publication workflow. The merged hosting
+worktree and branch were removed without forcing.
+
+The separately accepted landing `a79ee92` was then merged and pushed into main
+for its owning thread to publish the apex Worker. Its publication is independent
+of this app Worker and does not change the roller's asset graph.

@@ -1,15 +1,8 @@
 /* SPDX-License-Identifier: MIT */
 /* Theme changes only the app surfaces; dice designs and the existing dark palette stay intact. */
-html[data-theme='light'] {
-  color-scheme: light;
-  background: #f4f1eb;
-  color: #202a2c;
-}
-html[data-theme='dark'] { color-scheme: dark; }
-html[data-theme='light'] .powerroller,
-.powerroller:has(.lab.v2[data-theme='light']) { background: #f4f1eb; color: #202a2c; color-scheme: light; }
+:is(.clickclacks, .powerroller):has(.lab.v2[data-theme='light']) { background: #f4f1eb; color: #202a2c; color-scheme: light; }
 
-@scope (.powerroller) {
+@scope (:is(.clickclacks, .powerroller)) {
   .theme-control { position: relative; flex: 0 0 auto; }
   .v2 .lab-header .theme-control .customize-trigger { margin: 0; }
   .theme-menu {

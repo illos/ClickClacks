@@ -1,3 +1,4 @@
+import { defaultNames } from '../shared/classical-names';
 // SPDX-License-Identifier: MIT
 /** Independent participant tracks, accessed through a public room capability. No campaign writes. */
 import { ConvexError, v } from "convex/values";
@@ -66,30 +67,6 @@ async function allocateCode(ctx: MutationCtx) {
   throw new ConvexError("Could not allocate a room code. Try again.");
 }
 /** Standalone cosmetic names; no game catalog or campaign records are required. */
-const defaultNames = [
-  "Plato",
-  "Sappho",
-  "Hypatia",
-  "Cicero",
-  "Cato",
-  "Marcus Aurelius",
-  "Aurelia",
-  "Livia",
-  "Ovid",
-  "Seneca",
-  "Ariadne",
-  "Daphne",
-  "Lucius",
-  "Octavia",
-  "Vergil",
-  "Claudia",
-  "Dion",
-  "Theon",
-  "Julia",
-  "Titus",
-  "Aelia",
-  "Cornelia",
-];
 export const randomName = mutation({
   args: {},
   returns: v.string(),

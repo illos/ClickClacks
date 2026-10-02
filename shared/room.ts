@@ -44,3 +44,5 @@ export function parseRoomKey(input: string): string | null {
     ? value
     : null;
 }
+
+export type CachedRoll = Omit<ParticipantRoll, 'motion'>;

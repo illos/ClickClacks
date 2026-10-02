@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { SitePreferences } from '../site/storage';
+import type { RollerPreferences } from '../../shared/preferences';
 import type { Style } from '../dice-demo/model';
 import type { ParticipantRoll } from './model';
 import type { createDicePreview } from './preview';
@@ -95,7 +95,7 @@ export function RollEntry({ roll, viewer, avatarStyle }: { roll: LogRoll; viewer
   );
 }
 
-export function TrayHistory({ rolls, viewer, motion }: { rolls: LogRoll[]; viewer: string; motion: SitePreferences['motion'] }) {
+export function TrayHistory({ rolls, viewer, motion }: { rolls: LogRoll[]; viewer: string; motion: RollerPreferences['motion'] }) {
   const host = useRef<HTMLDivElement>(null);
   const positions = useRef(new Map<string, number>());
   const reduced = motion === 'reduce' || (motion === 'device' && matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -127,7 +127,7 @@ export function TrayHistory({ rolls, viewer, motion }: { rolls: LogRoll[]; viewe
   </div>;
 }
 
-export function DicePreview({ style, preferences }: { style: Style; preferences?: SitePreferences }) {
+export function DicePreview({ style, preferences }: { style: Style; preferences?: RollerPreferences }) {
   const host = useRef<HTMLDivElement>(null);
   const preview = useRef<ReturnType<typeof createDicePreview> | null>(null);
   const latest = useRef({ style, preferences });

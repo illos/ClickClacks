@@ -2,17 +2,17 @@
 import type { Identity } from './session';
 import type { SitePreferences } from './storage';
 import { applyDocumentTheme, type ColorTheme } from '../dice-demo-v2/theme';
-import type { RollControls } from 'powerroller/react';
+import type { RollControls } from 'clickclacks/react';
 
 export type TraySession = { identity: Identity; roomKey: string; preferences: SitePreferences; controls?: RollControls; onControls?: (controls:RollControls)=>void; onJoin?: (key:string)=>void; roomLink?: (code:string)=>string };
-type MiniWindow = Window & { powerrollerTraySession?: TraySession };
+type MiniWindow = Window & { clickclacksTraySession?: TraySession; powerrollerTraySession?: TraySession };
 type PictureInPicture = { window: Window | null; requestWindow(options: {width:number;height:number}): Promise<Window> };
 const pip = (window as Window & { documentPictureInPicture?: PictureInPicture }).documentPictureInPicture;
 
 /** A PiP iframe shares the opener's participant, without claiming a second tab identity. */
 export function traySession(): TraySession | undefined {
   if (document.getElementById('root')?.dataset.popout !== 'true' || parent === window) return;
-  try { return (parent as MiniWindow).powerrollerTraySession; } catch { return; }
+  try { return (parent as MiniWindow).clickclacksTraySession ?? (parent as MiniWindow).powerrollerTraySession; } catch { return; }
 }
 
 export function createTrayPopout() {
@@ -30,7 +30,7 @@ export function createTrayPopout() {
     if (!mini?.powerrollerTraySession || !frame?.contentWindow) return;
     if (JSON.stringify(mini.powerrollerTraySession.controls) === JSON.stringify(controls)) return;
     mini.powerrollerTraySession.controls = controls;
-    frame.contentWindow.dispatchEvent(new CustomEvent('powerroller-controls', {detail:controls}));
+    frame.contentWindow.dispatchEvent(new CustomEvent('clickclacks-controls', {detail:controls}));
   }
   function setTheme(theme: ColorTheme) { if (mini) applyDocumentTheme(theme, mini.document); }
   async function open(session: TraySession) {
@@ -45,7 +45,8 @@ export function createTrayPopout() {
       const target = await pip.requestWindow({width:480, height:420}) as MiniWindow;
       if (version !== generation) { target.close(); return; }
       mini = target;
-      target.powerrollerTraySession = session;
+      target.clickclacksTraySession = session;
+      target.powerrollerTraySession = session; // Legacy embedded clients share the same object.
       target.document.title = 'Click Clacks tray';
       const style = target.document.createElement('style');
       style.textContent = 'html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--page-bg,#111415);color:var(--page-ink,#e8e5df);font:14px system-ui,sans-serif}html[data-theme=light]{--page-bg:#f4f1eb;--page-ink:#202a2c}iframe{display:block;width:100%;height:100%;border:0}.pip-loading{position:absolute;inset:0;margin:0;padding:24px;background:var(--page-bg,#111415)}.pip-loading[hidden]{display:none}';
@@ -63,8 +64,8 @@ export function createTrayPopout() {
       child.src = address.href;
       target.addEventListener('message', event => {
         if (event.origin !== location.origin || event.source !== child.contentWindow) return;
-        if (event.data?.type === 'powerroller-tray-ready') loading.hidden = true;
-        if (event.data?.type === 'powerroller-tray-error') {
+        if (['clickclacks-tray-ready','powerroller-tray-ready'].includes(event.data?.type)) loading.hidden = true;
+        if (['clickclacks-tray-error','powerroller-tray-error'].includes(event.data?.type)) {
           loading.hidden = true;
           update(false, 'The floating tray could not load. Close its window and try again.');
         }

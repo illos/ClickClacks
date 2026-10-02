@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 import { createRoot } from 'react-dom/client';
 import { ConvexReactClient } from 'convex/react';
-import { PowerRoller } from 'powerroller/react';
-import 'powerroller/styles.css';
+import { PowerRoller } from 'clickclacks/react';
+import 'clickclacks/styles.css';
 const client = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL);
 const root = createRoot(document.getElementById('mount')!);
 const roomKey = crypto.randomUUID(),

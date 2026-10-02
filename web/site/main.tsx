@@ -3,13 +3,13 @@ import { StrictMode, useEffect, useLayoutEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { makeFunctionReference } from 'convex/server';
 import { ConvexReactClient } from 'convex/react';
-import { PowerRoller, type RollControls } from 'powerroller/react';
-import { parseRoomKey } from 'powerroller/client';
+import { ClickClacks, type RollControls } from 'clickclacks/react';
+import { parseRoomKey } from 'clickclacks/client';
 import { claimIdentity, readIdentity, type Identity } from './session';
 import { randomClassicalName } from './classical-names';
 import { createTrayPopout, traySession } from './popout';
 import { loadPreferences, savePreferences, saveProfile, rememberRoom, cacheRoll, loadHistory } from './storage';
-import 'powerroller/styles.css';
+import 'clickclacks/styles.css';
 import './style.css';
 import { applyDocumentTheme, useColorTheme } from '../dice-demo-v2/theme';
 
@@ -61,8 +61,9 @@ function Site() {
   useEffect(() => {
     if (!miniSession) return;
     const update = (event: Event) => updateControls((event as CustomEvent<RollControls>).detail);
+    addEventListener('clickclacks-controls', update);
     addEventListener('powerroller-controls', update);
-    return () => removeEventListener('powerroller-controls', update);
+    return () => { removeEventListener('clickclacks-controls', update); removeEventListener('powerroller-controls', update); };
   }, []);
   useEffect(() => {
     const refresh = (event: StorageEvent) => {
@@ -80,7 +81,7 @@ function Site() {
     return () => { active = false; };
   }, []);
   if (!identity) return null;
-  return <PowerRoller client={client} roomKey={room} identity={identity} profile={preferences.profile} preferences={preferences} nameProvider={randomClassicalName}
+  return <ClickClacks client={client} roomKey={room} identity={identity} profile={preferences.profile} preferences={preferences} nameProvider={randomClassicalName}
     trayHistory={document.getElementById('root')?.dataset.trayHistory === 'true'}
     onPopout={!miniSession && popout.supported ? () => void popout.open({identity, roomKey:room, preferences:loadPreferences(), controls, onControls:updateControls, onJoin:joinTable, roomLink}) : undefined}
     popoutActive={popoutActive} popoutError={popoutError}

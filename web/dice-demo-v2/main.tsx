@@ -35,7 +35,8 @@ import type { createThrowPlanner } from '../dice-demo/prepare-throw';
 import type { restingScene } from './resting-scene';
 import { trayDieScale } from './dice-size';
 import { type Style, type Motion, type DiceConfig } from '../dice-demo/model';
-import type { SitePreferences, CachedRoll } from '../site/storage';
+import type { RollerPreferences } from '../../shared/preferences';
+import type { CachedRoll } from '../../shared/room';
 import { dieFontFamilies, dieFontWeights } from '../dice-demo/font-style';
 import { demoV2 } from './api';
 import {
@@ -58,14 +59,14 @@ import { isBackdropPointer, useMenuScrollLock } from './dialog-lifecycle';
 import { historyDeadline, useDeadlineClock } from './history-lifecycle';
 import { createPlaybackReports } from './playback-reports';
 export type RollControls = { diceCount: number; bonusD4: boolean; edges: number; banes: number; readyAt?: number };
-export type PowerRollerOptions = {
+export type ClickClacksOptions = {
   client: ConvexReactClient;
   roomKey: string;
   identity?: Identity;
   profile?: Profile;
   nameProvider?: () => string | Promise<string>;
-  preferences?: SitePreferences;
-  onPreferences?: (preferences: SitePreferences) => void;
+  preferences?: RollerPreferences;
+  onPreferences?: (preferences: RollerPreferences) => void;
   onProfile?: (profile: Profile) => void;
   onRoom?: (code: string) => void;
   onJoin?: (key: string) => void;
@@ -82,9 +83,9 @@ export type PowerRollerOptions = {
   controls?: RollControls;
   onControls?: (controls: RollControls) => void;
 };
-const RollerContext = createContext<PowerRollerOptions | null>(null);
+const RollerContext = createContext<ClickClacksOptions | null>(null);
 function useRoller() { const value = useContext(RollerContext); if (!value) throw new Error('Mount inside PowerRoller.'); return value; }
-export function PowerRoller(options: PowerRollerOptions) {
+export function ClickClacks(options: ClickClacksOptions) {
   const [activeRoom, setActiveRoom] = useState(options.roomKey);
   useEffect(() => setActiveRoom(options.roomKey), [options.roomKey]);
   const [activeProfile, setActiveProfile] = useState(options.profile);
@@ -93,15 +94,15 @@ export function PowerRoller(options: PowerRollerOptions) {
   useEffect(() => setActivePreferences(options.preferences), [options.preferences]);
   const value = { ...options, roomKey: activeRoom, profile: activeProfile, preferences: activePreferences,
     onProfile: (profile: Profile) => { setActiveProfile(profile); options.onProfile?.(profile); },
-    onPreferences: (preferences: SitePreferences) => { setActivePreferences(preferences); options.onPreferences?.(preferences); },
+    onPreferences: (preferences: RollerPreferences) => { setActivePreferences(preferences); options.onPreferences?.(preferences); },
     onJoin: (key: string) => { setActiveRoom(key); options.onJoin?.(key); } };
-  return <div className="powerroller"><ConvexProvider client={options.client}><RollerContext.Provider value={value}><DiceRoom key={activeRoom} /></RollerContext.Provider></ConvexProvider></div>;
+  return <div className="clickclacks powerroller"><ConvexProvider client={options.client}><RollerContext.Provider value={value}><DiceRoom key={activeRoom} /></RollerContext.Provider></ConvexProvider></div>;
 }
 type Clock = { offset: number; uncertainty: number };
 type Tray = ReturnType<typeof createRoomTray>;
 
 
-type SelectedDice = NonNullable<SitePreferences['selectedDice']>;
+type SelectedDice = NonNullable<RollerPreferences['selectedDice']>;
 const diceChoices: ReadonlyArray<{ value: SelectedDice; label: string }> = [
   { value: 'power', label: 'Power roll (2d10)' },
   { value: 'percentile', label: 'd100 (percentile)' },
@@ -167,7 +168,7 @@ function DiceRoom() {
   const instanceId = useId();
   const options = useRoller();
   const { roomKey, client } = options;
-  const [preferences, setSavedPreferences] = useState<SitePreferences>(() => options.preferences ?? { motion: 'device', hidden: false, highContrast: false, announcements: 'all' });
+  const [preferences, setSavedPreferences] = useState<RollerPreferences>(() => options.preferences ?? { motion: 'device', hidden: false, highContrast: false, announcements: 'all' });
   useEffect(() => { if (options.preferences) setSavedPreferences(options.preferences); }, [options.preferences]);
   const colorTheme = useColorTheme(preferences.theme);
   const preferencesRef = useRef(preferences);
@@ -192,7 +193,7 @@ function DiceRoom() {
   }
   const planner = useRef<ReturnType<typeof createThrowPlanner> | null>(null);
   const makeRestingScene = useRef<typeof restingScene | null>(null);
-  function changePreferences(next: SitePreferences) {
+  function changePreferences(next: RollerPreferences) {
     setSavedPreferences(next);
     options.onPreferences?.(next);
   }
@@ -706,12 +707,6 @@ function DiceRoom() {
   }, [diceCount, bonusD4, edges, banes, rollLockUntil, options.controls]);
   const submissions = useRef(0);
   const rollQueue = useRef<Promise<void>>(Promise.resolve());
-  useEffect(() => {
-    const delay = rollLockUntil - performance.now();
-    if (delay <= 0) return;
-    const timer = setTimeout(() => setNow(performance.now()), Math.ceil(delay));
-    return () => clearTimeout(timer);
-  }, [rollLockUntil]);
   const busy =
     changingTable || now < rollLockUntil;
   async function changeTable(next: string) {
@@ -1350,3 +1345,7 @@ function DiceRoom() {
     </main>
   );
 }
+
+/** Compatibility aliases for existing embedded consumers. */
+export const PowerRoller = ClickClacks;
+export type PowerRollerOptions = ClickClacksOptions;

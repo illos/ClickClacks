@@ -1,4 +1,4 @@
-@scope (.powerroller) {
+@scope (:is(.clickclacks, .powerroller)) {
 .v2 .stage {
   height: clamp(240px, 38vh, 440px);
   margin-top: 24px;

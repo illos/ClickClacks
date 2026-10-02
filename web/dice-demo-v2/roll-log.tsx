@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import type { SitePreferences } from '../site/storage';
+import type { RollerPreferences } from '../../shared/preferences';
 
 /** Keep all log rows; animate their displacement when a newly revealed roll arrives. */
-export function RollLog({ children, motion, revision }: { children: ReactNode; revision: string; motion: SitePreferences['motion'] }) {
+export function RollLog({ children, motion, revision }: { children: ReactNode; revision: string; motion: RollerPreferences['motion'] }) {
   const host = useRef<HTMLElement>(null);
   const positions = useRef(new Map<string, number>());
   const initialized = useRef(false);

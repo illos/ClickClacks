@@ -7,7 +7,7 @@ import { makeFunctionReference } from 'convex/server';
 import { defaultDice, validateDiceConfiguration, type DiceConfiguration } from '../shared/dice.ts';
 import { recordedRevealDelay } from '../shared/timing.ts';
 import { estimateClock, type ClockSample, type Motion, type Style } from '../shared/model.ts';
-import { packMotion, unpackRoll } from '../shared/motion-codec.ts';
+import { packMotion, unpackRoll, unpackMotion } from '../shared/motion-codec.ts';
 import type { ParticipantRoll, Room, Track } from '../shared/room.ts';
 
 export type { DiceConfiguration, Style, Motion, ParticipantRoll };
@@ -48,7 +48,8 @@ export function reactTransport(client:ConvexReactClient):Transport {
       : client.mutation(makeFunctionReference<'mutation'>(method),args),
     watch:(method,args,next,error)=>{
       const query=client.watchQuery(makeFunctionReference<'query'>(method),args);
-      return query.onUpdate(()=>{try{const value=query.localQueryResult();if(value!==undefined)next(value);}catch(value){error(value instanceof Error?value:new Error(String(value)));}});
+      const deliver=()=>{try{const value=query.localQueryResult();if(value!==undefined)next(value);}catch(value){error(value instanceof Error?value:new Error(String(value)));}};
+      let active=true;const stop=query.onUpdate(()=>{if(active)deliver();});deliver();return()=>{active=false;stop();};
     },
   };
 }
@@ -84,15 +85,23 @@ export function createController(options:{transport:Transport;key:string;identit
   const trackMethod=transport.compactTracks?'diceDemoV2:trackMetadata':'diceDemoV2:track';
   const motions=new Map<string,Promise<Motion|undefined>>();
   const motionBytes=new Map<string,number>();
+  const motionExpiry=new Map<string,number>();
+  let cacheTimer:ReturnType<typeof setTimeout>|undefined;
+  function scheduleCaches(){
+    if(cacheTimer)clearTimeout(cacheTimer);cacheTimer=undefined;
+    if(disposed)return;
+    const next=Math.min(...motionExpiry.values(),...[...requests.values()].flatMap(item=>item.accepted?[item.accepted.historyExpiresAt??item.accepted.startsAt+3600000]:[]));
+    if(Number.isFinite(next))cacheTimer=setTimeout(()=>{cacheTimer=undefined;trimMotions();trimRequests();scheduleCaches();},Math.max(1,Math.min(2147483647,next-now())));
+  }
   const byteSize=(motion:Motion|undefined)=>motion?(motion.packed?.byteLength??0)+8*(motion.samples.length+motion.offsets.length):0;
-  function trimMotions(){let size=[...motionBytes.values()].reduce((a,b)=>a+b,0);for(const id of motions.keys()){if(size<=8*1024*1024&&motions.size<=16)break;const bytes=motionBytes.get(id);if(bytes===undefined)continue;size-=bytes;motions.delete(id);motionBytes.delete(id);}}
+  function trimMotions(){for(const [id,expiresAt] of motionExpiry)if(expiresAt<=now()){motions.delete(id);motionBytes.delete(id);motionExpiry.delete(id);}let size=[...motionBytes.values()].reduce((a,b)=>a+b,0);for(const id of motions.keys()){if(size<=8*1024*1024&&motions.size<=16)break;const bytes=motionBytes.get(id);if(bytes===undefined)continue;size-=bytes;motions.delete(id);motionBytes.delete(id);motionExpiry.delete(id);}}
   const trackVersions=new Map<string,number>();
   async function hydrate(roll:ParticipantRoll):Promise<ParticipantRoll>{
     if(!transport.compactTracks||roll.motion)return unpackRoll(roll);
     if((roll.historyExpiresAt??roll.startsAt+3600000)<=now())return roll;
     const id=recordKey(roll);
     let pending=motions.get(id);
-    if(!pending){pending=transport.call('diceDemoV2:motion',{key,viewer:roll.roller,rollId:roll.id}).then(value=>{motionBytes.set(id,byteSize(value??undefined));trimMotions();return value??undefined;}).catch(error=>{motions.delete(id);motionBytes.delete(id);throw error;});motions.set(id,pending);}
+    if(!pending){pending=transport.call('diceDemoV2:motion',{key,viewer:roll.roller,rollId:roll.id}).then(value=>{const motion=value&&(value.version??1)===1?unpackMotion(value):undefined;if(!disposed&&motions.get(id)===pending){motionBytes.set(id,byteSize(motion));motionExpiry.set(id,roll.historyExpiresAt??roll.startsAt+3600000);trimMotions();scheduleCaches();}return motion;}).catch(error=>{if(motions.get(id)===pending){motions.delete(id);motionBytes.delete(id);}throw error;});motions.set(id,pending);}
     const motion=await pending;
     return unpackRoll(motion?{...roll,motion}:roll);
   }
@@ -100,7 +109,7 @@ export function createController(options:{transport:Transport;key:string;identit
     let bytes=[...requests.values()].reduce((sum,item)=>sum+byteSize(item.motion)+byteSize(item.accepted?.motion),0);
     for(const request of requests.values()){
       if(inFlight.has(request.id))continue;
-      const expired=(request.accepted?.historyExpiresAt??Infinity)<=now();
+      const expired=(request.accepted?(request.accepted.historyExpiresAt??request.accepted.startsAt+3600000):Infinity)<=now();
       if(!expired&&bytes<=8*1024*1024)continue;
       bytes-=byteSize(request.motion)+byteSize(request.accepted?.motion);
       // Keep semantic fingerprints/faces. The server remains authoritative for retry
@@ -131,19 +140,20 @@ export function createController(options:{transport:Transport;key:string;identit
     const revision=(trackVersions.get(owner)??0)+1;trackVersions.set(owner,revision);
     if(value?.roll){
       const rolls=value.activeRolls?.length?value.activeRolls:[value.roll];
-      void Promise.all(rolls.map(hydrate)).then(activeRolls=>{
+      for(const roll of rolls)receive(roll,true);
+      void Promise.all(rolls.map(roll=>hydrate(roll).catch(()=>({...roll,motion:undefined})))).then(activeRolls=>{
         if(!valid(version)||trackVersions.get(owner)!==revision)return;
         const roll=activeRolls.find(item=>item.id===value.roll.id)??unpackRoll(value.roll);
         visible.add(owner);emit('track',{owner,roll,activeRolls});
         for(const item of activeRolls)receive(item,true);
-      }).catch(fail);
+      }).catch(error=>{if(valid(version)&&trackVersions.get(owner)===revision)fail(error);});
     }else if(visible.delete(owner)){emit('track',{owner,roll:null});emit('clear',owner);}
   }
   function updateRoom(value:RoomSnapshot,version:number){
     if(!valid(version))return;
     canonicalCode=value.code;emit('room',value);
     const active=new Set(value.participants.map(member=>member.id));
-    for(const [owner,stop] of tracks)if(!active.has(owner)){stop();tracks.delete(owner);if(visible.delete(owner)){emit('track',{owner,roll:null});emit('clear',owner);}}
+    for(const [owner,stop] of tracks)if(!active.has(owner)){stop();tracks.delete(owner);trackVersions.set(owner,(trackVersions.get(owner)??0)+1);if(visible.delete(owner)){emit('track',{owner,roll:null});emit('clear',owner);}}
     for(const owner of active)if(!tracks.has(owner))tracks.set(owner,transport.watch(trackMethod,{key,viewer:owner},value=>updateTrack(owner,value,version),error=>{if(valid(version))fail(error);}));
     if(value.cursor!==undefined&&value.cursor>cursor)void catchup().catch(fail);
   }
@@ -196,7 +206,7 @@ export function createController(options:{transport:Transport;key:string;identit
       if(disposed)throw new Error('Controller disposed.');
       const previous=joined?session():undefined, changed=nextKey!==key&&nextKey.toUpperCase()!==canonicalCode;
       epoch++;const version=epoch;stop(changed);refreshing=undefined;refreshAgain=false;joined=false;
-      if(changed){seen.clear();requests.clear();inFlight.clear();motions.clear();motionBytes.clear();cursor=0;canonicalCode=null;key=nextKey;}
+      if(changed){seen.clear();requests.clear();inFlight.clear();motions.clear();motionBytes.clear();motionExpiry.clear();cursor=0;canonicalCode=null;key=nextKey;}
       emit('status','connecting');await syncClock(version);if(!valid(version))return;
       await transport.call('diceDemoV2:join',{...session(),...profile,ready:true,uncertainty:clockEstimate().uncertainty});if(!valid(version))return;
       joined=true;
@@ -217,7 +227,7 @@ export function createController(options:{transport:Transport;key:string;identit
       roomStop=transport.watch('diceDemoV2:view',{key},value=>updateRoom(value,version),error=>{if(valid(version))fail(error);});
       await catchup();if(valid(version))emit('status','connected');
     },
-    async leave(){const args=joined?session():undefined;epoch++;joined=false;stop(true);seen.clear();cursor=0;refreshing=undefined;requests.clear();inFlight.clear();if(args)await transport.call('diceDemoV2:leave',args);emit('status','left');},
+    async leave(){const args=joined?session():undefined;epoch++;joined=false;stop(true);seen.clear();cursor=0;refreshing=undefined;requests.clear();inFlight.clear();motions.clear();motionBytes.clear();motionExpiry.clear();trackVersions.clear();if(args)await transport.call('diceDemoV2:leave',args);emit('status','left');},
     async profile(next:Profile){assertJoined();const version=epoch;await transport.call('diceDemoV2:customize',{...session(),...next});if(valid(version))profile=next;},
     async clear(){assertJoined();await transport.call('diceDemoV2:clearTray',session());},
     async roll(input:RollInput={},prepare?:PresentationProvider):Promise<ParticipantRoll>{
@@ -241,14 +251,14 @@ export function createController(options:{transport:Transport;key:string;identit
         const result=await transport.call('diceDemoV2:throwDice',{...args,id,dice,faces:retained.faces,edges,banes,...(retained.motion?{motion:retained.motion}:{})}) as ParticipantRoll;
         if(!valid(version))throw new Error('Room changed while accepting the roll.');
         retained.accepted=result;delete retained.motion;receive(result);return result;
-      })().finally(()=>{if(inFlight.get(id)===task)inFlight.delete(id);trimRequests();});
+      })().finally(()=>{if(inFlight.get(id)===task)inFlight.delete(id);trimRequests();scheduleCaches();});
       inFlight.set(id,task);return task;
     },
     clock:now,
     clockEstimate,
     catchup,
     get key(){return key;},get identity(){return {...options.identity};},
-    async dispose(){if(disposed)return;disposed=true;epoch++;joined=false;stop(true);requests.clear();inFlight.clear();motions.clear();motionBytes.clear();trackVersions.clear();seen.clear();listeners.clear();await transport.close?.();},
+    async dispose(){if(disposed)return;disposed=true;if(cacheTimer)clearTimeout(cacheTimer);cacheTimer=undefined;epoch++;joined=false;stop(true);requests.clear();inFlight.clear();motions.clear();motionBytes.clear();motionExpiry.clear();trackVersions.clear();seen.clear();listeners.clear();await transport.close?.();},
   };
   return api;
 }

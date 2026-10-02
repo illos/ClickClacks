@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 import { historyDeadline } from '../dice-demo-v2/history-deadline';
-import type { ParticipantRoll, Style } from 'powerroller/client';
+import type { RollerPreferences } from '../../shared/preferences';
+import type { ParticipantRoll, Style } from 'clickclacks/client';
 export type Profile = { name: string; style: Style };
-export type SitePreferences = { theme?: 'system' | 'light' | 'dark'; profile?: Profile; room?: string; roomBackend?: string; sound?: boolean; selectedDice?: 'power' | 'percentile' | 4 | 6 | 8 | 10 | 12 | 20; motion: 'device' | 'reduce' | 'full'; hidden: boolean; highContrast: boolean; announcements: 'all' | 'mine' | 'off' };
+export type SitePreferences = RollerPreferences & {profile?: Profile; room?: string; roomBackend?: string};
 const key = 'powerroller.preferences.v2';
 const defaults: SitePreferences = { theme: 'system', sound: false, selectedDice: 'power', motion: 'device', hidden: false, highContrast: false, announcements: 'all' };
 let preferenceMemoryOnly = false;
@@ -26,7 +27,8 @@ export function savePreferences(preferences: SitePreferences) {
 export function loadProfile() { return loadPreferences().profile; }
 export function saveProfile(profile: Profile) { savePreferences({ ...loadPreferences(), profile }); }
 export function rememberRoom(room: string, backend?: string) { savePreferences({ ...loadPreferences(), room, roomBackend: backend }); }
-export type CachedRoll = Omit<ParticipantRoll, 'motion'>;
+export type { CachedRoll } from '../../shared/room';
+import type { CachedRoll } from '../../shared/room';
 const historyLimit = 1000;
 const globalHistoryLimit = 10000;
 const historyTtl = 3600000;

@@ -1,4 +1,4 @@
-@scope (.powerroller) {
+@scope (:is(.clickclacks, .powerroller)) {
 /* SPDX-License-Identifier: MIT */
 :scope {
   color-scheme: dark;

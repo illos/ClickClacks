@@ -69,7 +69,7 @@ pnpm build
 
 `dist/` is generated output and must not be committed. GitHub Pages publication
 uses the repository's Actions workflow and the repository variable
-`VITE_CONVEX_URL`. The default asset base is `/powerroller/`; configure Vite's base
+`VITE_CONVEX_URL`. The default asset base is `/powerroller/`; configure `CLICKCLACKS_BASE` (legacy `POWERROLLER_BASE` is also accepted)
 for another hosting path. Publish matching backend functions before a frontend
 that requires them.
 
@@ -83,7 +83,7 @@ npm publication is deferred. Install a **pinned Git revision or local source
 checkout** into a TypeScript application using a bundler such as Vite:
 
 ```sh
-pnpm add 'powerroller@git+https://github.com/illos/powerroller.git#COMMIT'
+pnpm add 'clickclacks@git+https://github.com/illos/powerroller.git#COMMIT'
 ```
 
 Replace `COMMIT` with the revision you reviewed. The package exports TypeScript
@@ -96,18 +96,18 @@ Generated Convex bindings are deliberately absent from Git. To distribute a loca
 backend component artifact, generate bindings during your Convex setup, then run
 `pnpm pack` and install the resulting `.tgz` into the consumer. The package includes
 the generated component bindings without committing them. A Git-only installation
-needs component codegen before using `powerroller/_generated/component.js`.
+needs component codegen before using `clickclacks/_generated/component.js`.
 
 | Import | Purpose |
 | --- | --- |
-| `powerroller/dice` | Bounded generation, mixed pools, supplied values, keep/drop and percentiles. |
-| `powerroller/draw-steel` | Cited Draw Steel resolution helpers and presets. |
-| `powerroller/format` | Plain semantic descriptions. |
-| `powerroller/client` | Instance-owned room controller and an explicit Convex transport. |
-| `powerroller/three` | Optional original tray, fonts, physics utilities and isolated planners. |
-| `powerroller/react` | The original interface as a mountable `PowerRoller` component. |
-| `powerroller/styles.css` | Explicit opt-in styles for that interface. |
-| `powerroller/convex.config.js` | Isolated backend component installation. |
+| `clickclacks/dice` | Bounded generation, mixed pools, supplied values, keep/drop and percentiles. |
+| `clickclacks/draw-steel` | Cited Draw Steel resolution helpers and presets. |
+| `clickclacks/format` | Plain semantic descriptions. |
+| `clickclacks/client` | Instance-owned room controller and an explicit Convex transport. |
+| `clickclacks/three` | Optional original tray, fonts, physics utilities and isolated planners. |
+| `clickclacks/react` | The original interface as a mountable `ClickClacks` component. |
+| `clickclacks/styles.css` | Explicit opt-in styles for that interface. |
+| `clickclacks/convex.config.js` | Isolated backend component installation. |
 
 Core arithmetic and controller imports do not load React, Three.js or application
 CSS. Importing a module does not mount a tray, join a room or change browser URLs.
@@ -116,7 +116,7 @@ Hosts own configuration, controls, identity, names, storage and logs.
 A renderer-free room controller:
 
 ```ts
-import { createController, convexTransport } from 'powerroller/client';
+import { createController, convexTransport } from 'clickclacks/client';
 
 const controller = createController({
   transport: convexTransport(myConvexUrl),
@@ -164,13 +164,13 @@ Use Convex **1.45.0** for this revision and mount the isolated component:
 ```ts
 // Your app's convex/convex.config.ts
 import { defineApp } from 'convex/server';
-import powerroller from 'powerroller/convex.config.js';
+import clickclacks from 'clickclacks/convex.config.js';
 const app = defineApp();
-app.use(powerroller);
+app.use(clickclacks);
 export default app;
 ```
 
-Run your app's Convex code generation. `components.powerroller` exposes the typed
+Run your app's Convex code generation. `components.clickclacks` exposes the typed
 component functions. Your app owns thin public wrappers and actual access policy;
 the repository's `convex/diceDemo.ts` and `convex/diceDemoV2.ts` show the complete
 community-site forwarding surface. Retain those function names for the standard
@@ -253,3 +253,19 @@ citations; the corpus itself is not required to build or run the project.
 initial publication. Later standalone capabilities are described by this README
 and the current code. Salient is an independent consumer; this project does not
 modify its deployment, characters or campaign rules.
+
+## Naming compatibility
+
+The source package and new component installations use `clickclacks`; the React
+entry exports `ClickClacks` and retains `PowerRoller`/`PowerRollerOptions` aliases.
+Existing consumers may install the source under an explicit dependency alias,
+for example `pnpm add 'powerroller@git+https://github.com/illos/powerroller.git#COMMIT'`.
+The community backend deliberately keeps its installed `powerroller` component
+namespace, and browser preferences, identities, channels and history keep their
+existing storage keys. Renaming does not create a new database or discard data.
+GitHub/Convex project metadata and the existing Pages path are unchanged until
+the hosting rename is coordinated. New builds accept `CLICKCLACKS_BASE`.
+
+The main page and PiP tray now share one production asset graph. The tray loads
+from `web/popout/tray.html`; the older `pip/web/popout/tray.html` URL is emitted
+as a compatible document using the same shared assets.

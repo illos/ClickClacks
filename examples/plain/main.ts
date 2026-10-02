@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-import { createController, convexTransport, type Identity, type Profile } from 'powerroller/client';
-import { createRoomTray, createThrowPlanner, loadDiceFonts } from 'powerroller/three';
-import { expandDice, resolvePool } from 'powerroller/dice';
+import { createController, convexTransport, type Identity, type Profile } from 'clickclacks/client';
+import { createRoomTray, createThrowPlanner, loadDiceFonts } from 'clickclacks/three';
+import { expandDice, resolvePool } from 'clickclacks/dice';
 
 /** Host supplies its endpoint, private identity, room, DOM and controls. No React or app stylesheet. */
 export async function mountPlainRoller(options:{backend:string;key:string;identity:Identity;profile:Profile;host:HTMLElement;log:HTMLElement;rollButton:HTMLButtonElement}){

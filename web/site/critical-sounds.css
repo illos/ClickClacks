@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: MIT */
 html, body { margin: 0; min-height: 100%; background: #111415; }
-@scope (.powerroller) {
+@scope (:is(.clickclacks, .powerroller)) {
   .critical-sound-demo { max-width: 760px; margin: 0 auto; padding: 24px 20px 40px; }
   .demo-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
   .demo-header a { font-size: 22px; }

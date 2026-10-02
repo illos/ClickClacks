@@ -14,7 +14,7 @@ export const view = query({
     })),
     code: v.union(v.string(),v.null()), cursor: v.optional(v.number()),
   }),
-  handler: (ctx,args)=>ctx.runQuery(components.powerroller.diceDemoV2.view,args),
+  handler: (ctx,args)=>ctx.runQuery(components.clickclacks.diceDemoV2.view,args),
 });
 export const clock = action({args:{},returns:v.number(),handler:async()=>Date.now()});
 // Expose only the operations your app needs. Derive authenticated identity and

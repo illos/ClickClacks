@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { defineApp } from 'convex/server';
-import powerroller from 'powerroller/convex.config.js';
+import clickclacks from 'clickclacks/convex.config.js';
 const app = defineApp();
-app.use(powerroller);
+app.use(clickclacks);
 export default app;

@@ -37,8 +37,8 @@ try {
     await expect(die).not.toHaveAttribute('aria-label', beforeInk);
     await page.getByRole('button', { name: 'Rose quartz', exact: true }).click();
     await expect(die).toHaveAttribute('aria-label', /#eaa0b3 body, #492233 numbers, marble finish/);
-    await expect(page.getByLabel('Finish', { exact: true })).toHaveValue('marble');
-    await page.getByLabel('Finish', { exact: true }).selectOption('speckle');
+    await expect(page.getByRole('combobox', { name: 'Finish', exact: true })).toHaveValue('marble');
+    await page.getByRole('combobox', { name: 'Finish', exact: true }).selectOption('speckle');
     await expect(die).toHaveAttribute('aria-label', /speckle finish/);
     await page.getByRole('combobox', { name: 'Numbers', exact: true }).selectOption('rune');
     await page.locator('.customizer').screenshot({ path: `${artifacts}/customizer-${viewport.width}.png` });

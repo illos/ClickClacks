@@ -184,4 +184,3 @@ export function DicePreview({ style, preferences }: { style: Style; preferences?
     </div>
   );
 }
-

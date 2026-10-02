@@ -23,4 +23,3 @@ export function trayOpacity(
 ) {
   return Math.max(0, Math.min(1, 1 - (serverNow - roll.startsAt - roll.duration - 5000) / 600));
 }
-

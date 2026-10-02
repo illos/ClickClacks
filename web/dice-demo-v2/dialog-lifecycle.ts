@@ -55,4 +55,3 @@ export function useMenuScrollLock(open: boolean) {
     return releaseMenuScroll;
   }, [open]);
 }
-

@@ -10,19 +10,23 @@ This implements the authorized cleanup, frontend performance and backend cost pl
   Current tracks store semantic data once. Legacy combined endpoints remain adapters.
 - Playback telemetry is independently indexed by room/roller/roll/viewer. A fallback
   receipt cannot overwrite an actual rendered receipt. No motion rewrite on receipt.
-- Canonical UUID subscriptions avoid room heartbeat dependencies. Room view still
+- Compact subscriptions use the canonical UUID even when a player joined using a
+  share code, avoiding room heartbeat dependencies. Room view still
   includes presence and sequence; cursor changes trigger catch-up, heartbeats do not.
 - Clock forwarding returns server time directly. Site controller consumes the existing
   browser clock estimate instead of making three additional serial clock requests.
 - Current results, recordings, receipts and browser history expire at the original
   one-hour request deadline. Minimal retry tombstones remain until room expiry.
-  Cleanup remains bounded/indexed; legacy V1 expiry is covered. Leave-by-code resolves
+  Cleanup remains bounded/indexed; legacy V1 expiry is covered, and pre-upgrade
+  full tracks are normalized in bounded batches so old 24-hour/absent deadlines
+  do not leave recordings indefinitely. Leave-by-code resolves
   the canonical key before deleting its persisted track.
 - Pure contracts/codecs/preferences and cosmetic names live in `shared`. UI authority,
   acceptance and retry use the same controller as the SDK. Presentation/dialog/history/
   telemetry lifecycles are isolated modules. Idle React ticks use nearest deadlines.
 - IndexedDB v2 upgrades in place, indexes room/time/expiry, serializes atomic pruning
-  across tabs, caps histories and closes connections on errors/version changes.
+  across tabs, caps histories and closes connections on errors/version changes. An open log
+  sweeps persistent expired rows at its nearest original result deadline.
 - Pinned Three 0.186.1 patch owns/disposes lighting lookup per renderer. Active trays
   retain their own lookup. Immutable geometry/texture caches are instance-owned and
   bounded; lane materials retain independent opacity. Per-frame support calculations
@@ -32,7 +36,9 @@ This implements the authorized cleanup, frontend performance and backend cost pl
   remain independent; shared controls retain epoch-based ready deadlines.
 - Primary source/package name is `clickclacks`, with `ClickClacks` React exports and
   legacy aliases. Browser storage keys and the installed community component namespace
-  remain compatible. Remote project metadata and Pages hosting paths are unchanged.
+  remain compatible. Remote project metadata and Pages hosting paths are unchanged. Source-package
+  graphics consumers register the included pinned Three patch in their own host;
+  package-manager patch configuration does not propagate transitively.
 
 ## Coordinator acceptance request
 

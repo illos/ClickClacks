@@ -73,7 +73,8 @@ uses the repository's Actions workflow and the repository variable
 for another hosting path. Publish matching backend functions before a frontend
 that requires them.
 
-The build publishes the main site and a separate PiP entry under `dist/pip/`.
+The build shares one asset graph between the main site and PiP tray. It also
+emits the old tray document under `dist/pip/` as a compatibility alias.
 Deploy the whole `dist/` directory. Set `CLICKCLACKS_BASE` (with a trailing slash)
 when building for a hosting path other than `/powerroller/`.
 

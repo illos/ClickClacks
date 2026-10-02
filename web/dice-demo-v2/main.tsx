@@ -871,6 +871,12 @@ function DiceRoom() {
     <ThemeOptions value={preferences.theme} onChange={theme => changePreferences({...preferences, theme})} />
     <AccessibilityControls preferences={preferences} onChange={changePreferences} />
     {options.onReportBug && <button type="button" className="leave-table" onClick={reportBug}>Report a bug</button>}
+    <nav className="settings-links" aria-label="Click Clacks links">
+      <a href="https://clickclacks.app/" target="_blank" rel="noopener noreferrer"
+        aria-label="Website (opens in a new tab)">Website <span aria-hidden="true">↗</span></a>
+      <a href="https://github.com/illos/powerroller" target="_blank" rel="noopener noreferrer"
+        aria-label="GitHub (opens in a new tab)">GitHub <span aria-hidden="true">↗</span></a>
+    </nav>
     {configuring && error && <ErrorAlert message={error} />}
   </>;
   return (

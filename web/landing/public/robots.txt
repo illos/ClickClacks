@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /web/landing/mini.html
+Sitemap: https://clickclacks.app/sitemap.xml

@@ -1,0 +1,13 @@
+{
+  "name": "clickclacks-landing",
+  "account_id": "462b5ee1e395c11b8523d6c38de0577a",
+  "compatibility_date": "2026-09-24",
+  "workers_dev": true,
+  "preview_urls": false,
+  "routes": [{ "pattern": "clickclacks.app", "custom_domain": true }],
+  "assets": {
+    "directory": "./dist/landing-demo",
+    "html_handling": "none",
+    "not_found_handling": "404-page"
+  }
+}

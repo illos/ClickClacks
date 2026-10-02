@@ -75,3 +75,12 @@ it('closes an acquired history connection if its read transaction throws', async
  expect(await loadHistory(crypto.randomUUID(),'room')).toEqual([]);
  expect(close).toHaveBeenCalledTimes(1);
 });
+it('honors an earlier server expiry and rejects a deadline that extends the original hour', async () => {
+ const backend=crypto.randomUUID();
+ await cacheRoll(backend,'room',{...roll('earlier',100000),historyExpiresAt:100010});
+ await cacheRoll(backend,'room',{...roll('extended',100000),historyExpiresAt:100000+7200000});
+ vi.setSystemTime(100010);
+ expect((await loadHistory(backend,'room')).map(value=>value.id)).toEqual(['extended']);
+ vi.setSystemTime(100000+3600000);
+ expect(await loadHistory(backend,'room')).toEqual([]);
+});

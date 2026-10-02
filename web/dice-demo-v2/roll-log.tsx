@@ -3,10 +3,12 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 're
 import type { SitePreferences } from '../site/storage';
 
 /** Keep all log rows; animate their displacement when a newly revealed roll arrives. */
-export function RollLog({ children, motion }: { children: ReactNode; motion: SitePreferences['motion'] }) {
+export function RollLog({ children, motion, revision }: { children: ReactNode; revision: string; motion: SitePreferences['motion'] }) {
   const host = useRef<HTMLElement>(null);
   const positions = useRef(new Map<string, number>());
   const initialized = useRef(false);
+  const resize = useRef<ResizeObserver | null>(null);
+  const observed = useRef(new Set<Element>());
   const [deviceReduced, setDeviceReduced] = useState(() => matchMedia('(prefers-reduced-motion: reduce)').matches);
   const reduced = motion === 'reduce' || (motion === 'device' && deviceReduced);
 
@@ -38,7 +40,7 @@ export function RollLog({ children, motion }: { children: ReactNode; motion: Sit
     }
     positions.current = next;
     initialized.current = true;
-  }, [children, reduced]);
+  }, [revision, reduced]);
 
   useLayoutEffect(() => {
     const element = host.current!;
@@ -47,14 +49,25 @@ export function RollLog({ children, motion }: { children: ReactNode; motion: Sit
     };
     const observer = new ResizeObserver(updateFade);
     observer.observe(element);
-    for (const row of element.children) observer.observe(row);
+    resize.current = observer;
     element.addEventListener('scroll', updateFade, { passive: true });
     updateFade();
     return () => {
       observer.disconnect();
+      resize.current = null;
+      observed.current.clear();
       element.removeEventListener('scroll', updateFade);
     };
-  }, [children]);
+  }, []);
+
+  useLayoutEffect(() => {
+    const observer = resize.current;
+    if (!observer || !host.current) return;
+    const next = new Set<Element>(host.current.children);
+    for (const row of observed.current) if (!next.has(row)) observer.unobserve(row);
+    for (const row of next) if (!observed.current.has(row)) observer.observe(row);
+    observed.current = next;
+  }, [revision]);
 
   return <section ref={host} className="track-results" aria-label="Roll log" tabIndex={0}>
     {children}

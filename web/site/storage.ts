@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+import { historyDeadline } from '../dice-demo-v2/history-deadline';
 import type { ParticipantRoll, Style } from 'powerroller/client';
 export type Profile = { name: string; style: Style };
 export type SitePreferences = { theme?: 'system' | 'light' | 'dark'; profile?: Profile; room?: string; roomBackend?: string; sound?: boolean; selectedDice?: 'power' | 'percentile' | 4 | 6 | 8 | 10 | 12 | 20; motion: 'device' | 'reduce' | 'full'; hidden: boolean; highContrast: boolean; announcements: 'all' | 'mine' | 'off' };
@@ -26,16 +27,50 @@ export function loadProfile() { return loadPreferences().profile; }
 export function saveProfile(profile: Profile) { savePreferences({ ...loadPreferences(), profile }); }
 export function rememberRoom(room: string, backend?: string) { savePreferences({ ...loadPreferences(), room, roomBackend: backend }); }
 export type CachedRoll = Omit<ParticipantRoll, 'motion'>;
-const historyLimit = 1000, historyTtl = 30 * 86400000;
-type Entry = { key: string; backend: string; room: string; savedAt: number; roll: CachedRoll };
+const historyLimit = 1000;
+const globalHistoryLimit = 10000;
+const historyTtl = 3600000;
+type Entry = {
+  key: string; backend: string; room: string; savedAt: number;
+  startsAt: number; expiresAt: number; roll: CachedRoll;
+};
 let memory: Entry[] = [];
-function compact(roll: ParticipantRoll): CachedRoll { const { motion: _motion, ...value } = roll; return value; }
+let writes: Promise<void> = Promise.resolve();
+function compact(roll: ParticipantRoll): CachedRoll {
+  const { motion: _motion, ...value } = roll;
+  return value;
+}
 async function database(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('powerroller.history.v2', 1);
-    request.onupgradeneeded = () => request.result.createObjectStore('rolls', { keyPath: 'key' });
-    request.onsuccess = () => resolve(request.result);
+    const request = indexedDB.open('powerroller.history.v2', 2);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      const store = db.objectStoreNames.contains('rolls')
+        ? request.transaction!.objectStore('rolls')
+        : db.createObjectStore('rolls', { keyPath: 'key' });
+      store.createIndex('roomStartsAt', ['backend', 'room', 'startsAt']);
+      store.createIndex('expiresAt', 'expiresAt');
+      store.createIndex('savedAt', 'savedAt');
+      // Migrate in place, retaining original result timestamps and storage keys.
+      const cursor = store.openCursor();
+      cursor.onsuccess = () => {
+        const row = cursor.result;
+        if (!row) return;
+        const entry = row.value as Entry;
+        if (!validEntry(entry) || historyDeadline(entry.roll) <= Date.now()) row.delete();
+        else row.update({ ...entry, startsAt: entry.roll.startsAt, expiresAt: historyDeadline(entry.roll) });
+        row.continue();
+      };
+    };
+    let blocked = false;
+    request.onsuccess = () => {
+      const db = request.result;
+      if (blocked) { db.close(); return; }
+      db.onversionchange = () => db.close();
+      resolve(db);
+    };
     request.onerror = () => reject(request.error);
+    request.onblocked = () => { blocked = true; reject(new Error('History storage upgrade is blocked.')); };
   });
 }
 function validEntry(entry: Entry): boolean {
@@ -43,27 +78,88 @@ function validEntry(entry: Entry): boolean {
   return typeof entry?.key === 'string' && typeof entry.backend === 'string' && typeof entry.room === 'string' && Number.isFinite(entry.savedAt) && !!roll && typeof roll.id === 'string' && typeof roll.roller === 'string' && typeof roll.name === 'string' && Number.isFinite(roll.startsAt) && roll.startsAt >= 0 && roll.startsAt <= 8.64e15 && Array.isArray(roll.faces) && roll.faces.length > 0 && roll.faces.length <= 100 && roll.faces.every(face => Number.isInteger(face) && face > 0 && face <= 1000) && Array.isArray(roll.styles) && roll.styles.length > 0 && roll.styles.every(style => /^#[a-f\d]{6}$/i.test(style?.color ?? '') && /^#[a-f\d]{6}$/i.test(style?.ink ?? '') && ['solid','speckle','marble','frosted'].includes(style?.pattern) && [undefined,'serif','modern','rune','gothic'].includes(style?.font)) && (roll.total === undefined || Number.isFinite(roll.total)) && (roll.modifier === undefined || Number.isFinite(roll.modifier)) && (!roll.power || Number.isFinite(roll.power.total) && [1,2,3].includes(roll.power.tier) && [0,1,2].includes(roll.power.edges) && [0,1,2].includes(roll.power.banes));
 }
 function selected(entries: Entry[], backend: string, room: string) {
-  return entries.filter(entry => validEntry(entry) && entry.backend === backend && entry.room === room && entry.savedAt > Date.now() - historyTtl)
-    .sort((a,b) => b.roll.startsAt - a.roll.startsAt).slice(0,historyLimit);
+  const now = Date.now();
+  return entries.filter(entry => validEntry(entry) && entry.backend === backend && entry.room === room && historyDeadline(entry.roll) > now)
+    .sort((a, b) => b.roll.startsAt - a.roll.startsAt).slice(0, historyLimit);
+}
+function roomRange(backend: string, room: string) {
+  return IDBKeyRange.bound([backend, room, 0], [backend, room, 8.64e15]);
 }
 export async function loadHistory(backend: string, room: string): Promise<CachedRoll[]> {
+  let db: IDBDatabase | undefined;
   try {
-    const db = await database();
-    const entries = await new Promise<Entry[]>((resolve,reject) => { const request = db.transaction('rolls').objectStore('rolls').getAll(); request.onsuccess=()=>resolve(request.result); request.onerror=()=>reject(request.error); });
-    db.close();
-    return selected(entries,backend,room).map(entry=>entry.roll);
-  } catch { return selected(memory,backend,room).map(entry=>entry.roll); }
+    await writes;
+    db = await database();
+    return await new Promise<CachedRoll[]>((resolve, reject) => {
+      const tx = db!.transaction('rolls');
+      const request = tx.objectStore('rolls').index('roomStartsAt').openCursor(roomRange(backend, room), 'prev');
+      const results: CachedRoll[] = [];
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (!cursor || results.length >= historyLimit) return;
+        const entry = cursor.value as Entry;
+        if (validEntry(entry) && historyDeadline(entry.roll) > Date.now()) results.push(entry.roll);
+        cursor.continue();
+      };
+      tx.oncomplete = () => resolve(results);
+      tx.onerror = tx.onabort = () => reject(tx.error ?? new Error('History read failed.'));
+    });
+  } catch { return selected(memory, backend, room).map(entry => entry.roll); }
+  finally { db?.close(); }
 }
-export async function cacheRoll(backend: string, room: string, roll: ParticipantRoll) {
-  const entry: Entry = { key: JSON.stringify([backend,room,roll.roller,roll.id]), backend, room, savedAt:Date.now(), roll:compact(roll) };
-  memory = selected([...memory.filter(value=>value.key!==entry.key),entry],backend,room).concat(memory.filter(value=>value.backend!==backend||value.room!==room)).filter(value=>value.savedAt>Date.now()-historyTtl).sort((a,b)=>b.savedAt-a.savedAt).slice(0,10000);
+async function writeRoll(backend: string, room: string, roll: ParticipantRoll) {
+  const entry: Entry = {
+    key: JSON.stringify([backend, room, roll.roller, roll.id]), backend, room,
+    savedAt: Date.now(), startsAt: roll.startsAt, expiresAt: historyDeadline(roll), roll: compact(roll),
+  };
+  if (!validEntry(entry) || entry.expiresAt <= Date.now()) return;
+  const others = memory.filter(value => value.key !== entry.key && validEntry(value) && historyDeadline(value.roll) > Date.now());
+  memory = selected([...others, entry], backend, room)
+    .concat(others.filter(value => value.backend !== backend || value.room !== room))
+    .sort((a, b) => b.savedAt - a.savedAt).slice(0, globalHistoryLimit);
+  let db: IDBDatabase | undefined;
   try {
-    const db=await database();
-    const entries=await new Promise<Entry[]>((resolve,reject)=>{const request=db.transaction('rolls').objectStore('rolls').getAll();request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});
-    const fresh = entries.filter(value=>validEntry(value)&&value.key!==entry.key&&value.savedAt>Date.now()-historyTtl);
-    const bounded = selected([...fresh,entry],backend,room).concat(fresh.filter(value=>value.backend!==backend||value.room!==room)).sort((a,b)=>b.savedAt-a.savedAt).slice(0,10000);
-    const keep=new Set(bounded.map(value=>value.key));
-    await new Promise<void>((resolve,reject)=>{const tx=db.transaction('rolls','readwrite'),store=tx.objectStore('rolls');store.put(entry);for(const old of entries)if(typeof old.key==='string'&&!keep.has(old.key))store.delete(old.key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);});
-    db.close();
-  } catch {}
+    db = await database();
+    await new Promise<void>((resolve, reject) => {
+      // One read/write transaction serializes with other tabs: pruning never writes
+      // a stale getAll snapshot over a roll concurrently saved in another window.
+      const tx = db!.transaction('rolls', 'readwrite');
+      const store = tx.objectStore('rolls');
+      store.put(entry);
+      let pendingPrunes = 2;
+      const globalPrune = () => {
+        if (--pendingPrunes) return;
+        // Count after expiry and room pruning, avoiding unnecessary deletion.
+        const total = store.count();
+        total.onsuccess = () => {
+          let excess = total.result - globalHistoryLimit;
+          if (excess <= 0) return;
+          const oldest = store.index('savedAt').openCursor();
+          oldest.onsuccess = () => {
+            const cursor = oldest.result;
+            if (cursor && excess-- > 0) { cursor.delete(); cursor.continue(); }
+          };
+        };
+      };
+      const expired = store.index('expiresAt').openCursor(IDBKeyRange.upperBound(Date.now()));
+      expired.onsuccess = () => {
+        const cursor = expired.result;
+        if (cursor) { cursor.delete(); cursor.continue(); } else globalPrune();
+      };
+      let count = 0;
+      const roomRows = store.index('roomStartsAt').openCursor(roomRange(backend, room), 'prev');
+      roomRows.onsuccess = () => {
+        const cursor = roomRows.result;
+        if (cursor) { if (++count > historyLimit) cursor.delete(); cursor.continue(); } else globalPrune();
+      };
+      tx.oncomplete = () => resolve();
+      tx.onerror = tx.onabort = () => reject(tx.error ?? new Error('History write failed.'));
+    });
+  } catch { /* Storage is optional; the compact memory history remains usable. */ }
+  finally { db?.close(); }
+}
+export function cacheRoll(backend: string, room: string, roll: ParticipantRoll): Promise<void> {
+  const write = writes.then(() => writeRoll(backend, room, roll));
+  writes = write.catch(() => {});
+  return write;
 }

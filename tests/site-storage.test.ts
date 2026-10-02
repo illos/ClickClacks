@@ -5,7 +5,7 @@ import type { ParticipantRoll } from '../web/dice-demo-v2/model';
 function storage(){const values=new Map<string,string>();return{getItem:(key:string)=>values.get(key)??null,setItem:(key:string,value:string)=>values.set(key,value),removeItem:(key:string)=>values.delete(key),clear:()=>values.clear()};}
 const profile={name:'River',style:{color:'#70dac3',ink:'#fff4e5',pattern:'solid' as const,font:'serif' as const}};
 const roll=(id:string,startsAt:number):ParticipantRoll=>({id,name:'River',roller:'viewer',styles:[profile.style,profile.style],faces:[7,8],startsAt,duration:1000,total:15,source:'generated',motion:{seed:1,stepMs:16,samples:[1,2,3],offsets:[]}});
-beforeEach(()=>{vi.stubGlobal('localStorage',storage());vi.stubGlobal('sessionStorage',storage());vi.stubGlobal('indexedDB',undefined);});
+beforeEach(()=>{vi.useFakeTimers();vi.setSystemTime(100000);vi.stubGlobal('localStorage',storage());vi.stubGlobal('sessionStorage',storage());vi.stubGlobal('indexedDB',undefined);});
 afterEach(()=>{vi.useRealTimers();vi.unstubAllGlobals();});
 describe('site-owned persistence and private identity',()=>{
  it('defaults old and invalid appearance settings to System and preserves profile while saving theme',()=>{
@@ -34,8 +34,8 @@ describe('site-owned persistence and private identity',()=>{
  it('deduplicates compact history and partitions it by backend and room in blocked IndexedDB',async()=>{
   const suffix=crypto.randomUUID(),backendA=`a-${suffix}`,backendB=`b-${suffix}`;await cacheRoll(backendA,'same',roll('same-id',1));await cacheRoll(backendB,'same',roll('same-id',2));await cacheRoll(backendA,'other',roll('same-id',3));await cacheRoll(backendA,'same',roll('same-id',1));expect((await loadHistory(backendA,'same')).map(value=>value.startsAt)).toEqual([1]);expect((await loadHistory(backendB,'same')).map(value=>value.startsAt)).toEqual([2]);expect((await loadHistory(backendA,'other')).map(value=>value.startsAt)).toEqual([3]);expect((await loadHistory(backendA,'same'))[0]).not.toHaveProperty('motion');
  });
- it('sorts newest-first and applies the 30-day history retention in memory fallback',async()=>{
-  vi.useFakeTimers();vi.setSystemTime(100000);const backend=crypto.randomUUID();await cacheRoll(backend,'room',roll('old',1));await cacheRoll(backend,'room',roll('new',2));expect((await loadHistory(backend,'room')).map(value=>value.id)).toEqual(['new','old']);await vi.advanceTimersByTimeAsync(31*86400000);expect(await loadHistory(backend,'room')).toEqual([]);
+ it('sorts newest-first and applies the one-hour original-result retention in memory fallback',async()=>{
+  vi.useFakeTimers();vi.setSystemTime(100000);const backend=crypto.randomUUID();await cacheRoll(backend,'room',roll('old',1));await cacheRoll(backend,'room',roll('new',2));expect((await loadHistory(backend,'room')).map(value=>value.id)).toEqual(['new','old']);await vi.advanceTimersByTimeAsync(3600000);expect(await loadHistory(backend,'room')).toEqual([]);
  });
  it('ignores malformed IndexedDB rows rather than returning unsafe cached log values',async()=>{
   const backend=crypto.randomUUID();const values=[{backend,room:'room',savedAt:Date.now(),roll:{id:'bad',startsAt:'yesterday'}}];
@@ -55,4 +55,23 @@ describe('site-owned persistence and private identity',()=>{
 it('retains new preferences in memory when writes hit quota but reads still work',()=>{
  vi.stubGlobal('localStorage',{getItem:()=>null,setItem:()=>{throw Error('quota');}});
  const latest={...profile,name:'Hypatia'};saveProfile(latest);expect(loadProfile()).toEqual(latest);
+});
+
+it('never renews an old result when it is saved or observed again', async () => {
+ const backend=crypto.randomUUID();
+ const original=roll('retention',100000);
+ await cacheRoll(backend,'room',original);
+ vi.setSystemTime(100000+3599999);
+ await cacheRoll(backend,'room',original);
+ expect(await loadHistory(backend,'room')).toHaveLength(1);
+ vi.setSystemTime(100000+3600000);
+ expect(await loadHistory(backend,'room')).toEqual([]);
+ await cacheRoll(backend,'room',original);
+ expect(await loadHistory(backend,'room')).toEqual([]);
+});
+it('closes an acquired history connection if its read transaction throws', async () => {
+ const close=vi.fn();
+ vi.stubGlobal('indexedDB',{open:()=>{const request:any={result:{transaction:()=>{throw Error('blocked');},close}};queueMicrotask(()=>request.onsuccess?.());return request;}});
+ expect(await loadHistory(crypto.randomUUID(),'room')).toEqual([]);
+ expect(close).toHaveBeenCalledTimes(1);
 });

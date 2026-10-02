@@ -55,6 +55,10 @@ import { AccessibilityControls } from './accessibility-controls';
 import { DiceDesignControls } from './dice-design-controls';
 import { startClockSync } from './clock-sync';
 import { RollLog } from './roll-log';
+import { DiceAvatar, DicePreview, RollEntry, TrayHistory, type LogRoll } from './roll-presentation';
+import { isBackdropPointer, useMenuScrollLock } from './dialog-lifecycle';
+import { historyDeadline, useDeadlineClock } from './history-lifecycle';
+import { createPlaybackReports } from './playback-reports';
 export type RollControls = { diceCount: number; bonusD4: boolean; edges: number; banes: number; readyAt?: number };
 export type PowerRollerOptions = {
   client: ConvexReactClient;
@@ -142,240 +146,6 @@ function TrackCard({
     if (clock && graphics && tray.current) tray.current.play(roll, clock);
   }, [roll, clock, graphics, tray, member.id]);
   return null;
-}
-
-type LogRoll = Pick<
-  ParticipantRoll,
-  'id' | 'roller' | 'name' | 'faces' | 'power' | 'styles' | 'startsAt' | 'dice' | 'modifier' | 'total' | 'edges' | 'banes' | 'source'
->;
-function DiceAvatar({ style, className = '' }: { style?: Style; className?: string }) {
-  return (
-    <svg className={`dice-avatar ${className}`} viewBox="0 0 32 36" aria-hidden="true">
-      <path d="M16 1 30 9 30 27 16 35 2 27 2 9Z" fill={style?.color ?? '#70dac3'} />
-      <path d="M16 1 8 12 24 12Z" fill="#fff" opacity=".25" />
-      <path d="M2 9 8 12 2 27Z M24 12 30 27 16 35Z" fill="#000" opacity=".2" />
-      <path
-        d="M16 1 8 12 2 9M16 1 24 12 30 9M8 12H24L16 27ZM2 27 16 27 30 27M8 12 2 27M24 12 30 27M16 27V35"
-        fill="none"
-        stroke={style?.ink ?? '#fff4e5'}
-        strokeOpacity=".35"
-        strokeWidth=".7"
-      />
-      <text
-        x="16"
-        y="22"
-        textAnchor="middle"
-        fill={style?.ink ?? '#fff4e5'}
-        style={
-          style?.font
-            ? {
-                fontFamily: `"${dieFontFamilies[style.font]}"`,
-                fontWeight: dieFontWeights[style.font],
-              }
-            : undefined
-        }
-      >
-        0
-      </text>
-    </svg>
-  );
-}
-
-function RollEntry({ roll, viewer, avatarStyle }: { roll: LogRoll; viewer: string; avatarStyle?: Style }) {
-  const critical = criticalResult(roll);
-  const showEquation = roll.faces.length > 1 || !!roll.modifier;
-  return (
-    <article className={`roll-log-entry${critical ? ` critical-${critical}` : ''}`}>
-      <header>
-        <strong className="roll-author">
-          <DiceAvatar style={avatarStyle ?? roll.styles[0]} className="roll-avatar" />
-          <span className="roll-author-name">
-            {roll.name}
-            {roll.roller === viewer ? ' · you' : ''}
-          </span>
-        </strong>
-        <time dateTime={new Date(roll.startsAt).toISOString()}>
-          {new Date(roll.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </time>
-      </header>
-      <div className="roll-result-line">
-        <span className="roll-dice-notation">{rollDiceNotation(roll)}</span>
-        <span aria-hidden="true">|</span>
-        {showEquation && <span className="roll-equation">
-          {rollFacesText(roll)}
-          {roll.power && roll.power.edges - roll.power.banes === 1 && ' + 2'}
-          {roll.power && roll.power.edges - roll.power.banes === -1 && ' − 2'}
-          {!roll.power &&
-            !!roll.modifier &&
-            `${roll.modifier > 0 ? ' + ' : ' − '}${Math.abs(roll.modifier)}`}
-        </span>}
-        <span className="roll-outcome">
-          {showEquation && <span>=</span>}
-          <strong className="roll-total">
-            {roll.total ?? roll.power?.total ??
-              rollNaturalTotal(roll) + (roll.modifier ?? 0)}
-          </strong>
-          {roll.power && (
-            <strong className={`tier tier-${roll.power.tier}`}>Tier {roll.power.tier}</strong>
-          )}
-          {critical && <strong className={`critical-badge critical-${critical}`}>{criticalLabel(critical)}</strong>}
-        </span>
-        {roll.power && roll.power.edges > 0 && (
-          <span className="edge">↑ {roll.power.edges === 2 ? 'Double edge' : 'Edge'}</span>
-        )}
-        {roll.power && roll.power.banes > 0 && (
-          <span className="bane">↓ {roll.power.banes === 2 ? 'Double bane' : 'Bane'}</span>
-        )}
-      </div>
-      <span className="visually-hidden">{describeRoll(roll as ParticipantRoll).detailed}</span>
-    </article>
-  );
-}
-
-function TrayHistory({ rolls, viewer, motion }: { rolls: LogRoll[]; viewer: string; motion: SitePreferences['motion'] }) {
-  const host = useRef<HTMLDivElement>(null);
-  const positions = useRef(new Map<string, number>());
-  const reduced = motion === 'reduce' || (motion === 'device' && matchMedia('(prefers-reduced-motion: reduce)').matches);
-  useLayoutEffect(() => {
-    const next = new Map<string, number>();
-    for (const row of host.current!.querySelectorAll<HTMLElement>('[data-history-key]')) {
-      const key = row.dataset.historyKey!;
-      const top = row.offsetTop;
-      next.set(key, top);
-      if (reduced) row.getAnimations().forEach(animation => animation.cancel());
-      else {
-        const previous = positions.current.get(key);
-        if (previous !== top) {
-          row.getAnimations().forEach(animation => animation.cancel());
-          row.animate([
-            { transform: `translateY(${previous === undefined ? -24 : previous - top}px)` },
-            { transform: 'translateY(0)' },
-          ], { duration: 360, easing: 'cubic-bezier(.2,.7,.2,1)' });
-        }
-      }
-    }
-    positions.current = next;
-  }, [rolls, reduced]);
-  return <div className="tray-history" ref={host} role="region" aria-label="Recent tray rolls" data-motion={reduced ? 'reduce' : 'full'}>
-    {rolls.slice(0, 6).map(roll => <div className="tray-history-row"
-      key={`${roll.roller}:${roll.id}`} data-history-key={`${roll.roller}:${roll.id}`}>
-      <RollEntry roll={roll} viewer={viewer} />
-    </div>)}
-  </div>;
-}
-
-function DicePreview({ style, preferences }: { style: Style; preferences?: SitePreferences }) {
-  const host = useRef<HTMLDivElement>(null);
-  const preview = useRef<ReturnType<typeof createDicePreview> | null>(null);
-  const latest = useRef({ style, preferences });
-  latest.current = { style, preferences };
-  const [failed, setFailed] = useState(false);
-  useEffect(() => {
-    if (!host.current || preferences?.hidden) return;
-    let active = true;
-    void Promise.all([import('./preview'), import('../dice-demo/fonts')])
-      .then(async ([graphics, fonts]) => {
-        const failedFonts = await fonts.loadDiceFonts();
-        if (!active) return;
-        if (failedFonts.length) {
-          setFailed(true);
-          return;
-        }
-        try {
-          preview.current = graphics.createDicePreview(
-            host.current!,
-            () => {
-              if (active) setFailed(true);
-            },
-            latest.current.preferences,
-          );
-          preview.current.style(latest.current.style);
-        } catch {
-          if (active) setFailed(true);
-        }
-      })
-      .catch(() => {
-        if (active) setFailed(true);
-      });
-    return () => {
-      active = false;
-      preview.current?.dispose();
-      preview.current = null;
-    };
-  }, [preferences?.hidden]);
-  useEffect(() => {
-    preview.current?.setPreferences(preferences ?? {});
-    preview.current?.style(style);
-  }, [style, preferences]);
-  if (preferences?.hidden) return null;
-  return (
-    <div
-      className="dice-preview"
-      role="img"
-      aria-label={`${style.font ?? 'original'} ${style.pattern} die with ${style.color} body and ${style.ink} numbers`}
-    >
-      <div className="preview-canvas" ref={host} />
-      {failed && (
-        <p className="preview-fallback">3D preview unavailable. Your dice settings still work.</p>
-      )}
-    </div>
-  );
-}
-
-function isBackdropPointer(event: PointerEvent<HTMLDialogElement>) {
-  const rect = event.currentTarget.getBoundingClientRect();
-  return (
-    event.target === event.currentTarget &&
-    (event.clientX < rect.left ||
-      event.clientX > rect.right ||
-      event.clientY < rect.top ||
-      event.clientY > rect.bottom)
-  );
-}
-
-let menuLockCount = 0;
-let restoreMenuScroll: (() => void) | undefined;
-function releaseMenuScroll() { if (--menuLockCount === 0) { restoreMenuScroll?.(); restoreMenuScroll = undefined; } }
-
-/** Fixed-body lock also prevents Safari rubber-banding behind native dialogs. */
-function useMenuScrollLock(open: boolean) {
-  useEffect(() => {
-    if (!open) return;
-    if (++menuLockCount > 1) return releaseMenuScroll;
-    const x = window.scrollX,
-      y = window.scrollY;
-    const body = document.body.style,
-      root = document.documentElement.style;
-    const patches: [CSSStyleDeclaration, string, string][] = [
-      [body, 'position', 'fixed'],
-      [body, 'top', `${-y}px`],
-      [body, 'left', `${-x}px`],
-      [body, 'width', '100%'],
-      [body, 'overflow', 'hidden'],
-      [root, 'overflow', 'hidden'],
-      [root, 'overscroll-behavior', 'none'],
-    ];
-    const saved = patches.map(([style, property]) => ({
-      style,
-      property,
-      value: style.getPropertyValue(property),
-      priority: style.getPropertyPriority(property),
-    }));
-    for (const [style, property, value] of patches) style.setProperty(property, value);
-    restoreMenuScroll = () => {
-      for (const { style, property, value, priority } of saved) {
-        if (value) style.setProperty(property, value, priority);
-        else style.removeProperty(property);
-      }
-      const behavior = root.getPropertyValue('scroll-behavior'),
-        priority = root.getPropertyPriority('scroll-behavior');
-      root.setProperty('scroll-behavior', 'auto', 'important');
-      window.scrollTo(x, y);
-      if (behavior) root.setProperty('scroll-behavior', behavior, priority);
-      else root.removeProperty('scroll-behavior');
-    };
-    return releaseMenuScroll;
-  }, [open]);
 }
 
 type SelectedDice = NonNullable<SitePreferences['selectedDice']>;
@@ -618,7 +388,7 @@ function DiceRoom() {
     void options.loadHistory(room.code).then(history => {
       if (!active) return;
       for (const roll of history) delivered.current.add(`${roll.roller}:${roll.id}`);
-      setRollLog(current => [...current, ...history.filter(roll => !current.some(value => value.id === roll.id && value.roller === roll.roller))].sort((a,b) => b.startsAt-a.startsAt).slice(0,100));
+      setRollLog(current => [...current, ...history.filter(roll => historyDeadline(roll) > Date.now() && !current.some(value => value.id === roll.id && value.roller === roll.roller))].sort((a,b) => b.startsAt-a.startsAt).slice(0,100));
     }).catch(() => {}).finally(() => { if (active) setHistoryReady(true); });
     return () => { active = false; };
   }, [room?.code]);
@@ -722,10 +492,8 @@ function DiceRoom() {
       setNow(performance.now());
     };
     document.addEventListener('visibilitychange', change);
-    const timer = setInterval(() => setNow(performance.now()), 250);
     return () => {
       document.removeEventListener('visibilitychange', change);
-      clearInterval(timer);
     };
   }, []);
   useEffect(() => {
@@ -766,12 +534,20 @@ function DiceRoom() {
       clearInterval(timer);
     };
   }, [join, viewer, credential, identityReady, ready, nameReady, connection.isWebSocketConnected, options.popoutActive]);
+  const receiptReports = useMemo(() => createPlaybackReports((rollKey, timing, uncertainty) => {
+    const split = rollKey.indexOf(':');
+    void record({ key: roomKey, credential, roller: rollKey.slice(0, split), sample: {
+      viewer, roll: rollKey.slice(split + 1), uncertainty, ...timing,
+    } }).catch(error => setError(displayError(error, credential)));
+  }), [record, roomKey, credential, viewer]);
+  useEffect(() => () => receiptReports.dispose(), [receiptReports]);
   const report = useCallback(
     (
       roll: ParticipantRoll,
       uncertainty: number,
       timing?: { firstFrame: number; revealFrame: number; frames: number; maxFrameGap: number },
     ) => {
+      if (historyDeadline(roll) <= Date.now()) return;
       const rollKey = `${roll.roller}:${roll.id}`;
       if (!delivered.current.has(rollKey)) {
         delivered.current.add(rollKey);
@@ -783,25 +559,15 @@ function DiceRoom() {
       setRollLog(old => {
         if (old.some(entry => entry.id === roll.id && entry.roller === roll.roller)) return old;
         const { id, roller, name, faces, power, styles, startsAt, dice, modifier, total, edges, banes, source } = roll;
-        return [{ id, roller, name, faces, power, styles, startsAt, dice, modifier, total, edges, banes, source }, ...old]
+        return [{ id, roller, name, faces, power, styles, startsAt, dice, modifier, total, edges, banes, source, historyExpiresAt: historyDeadline(roll) }, ...old]
           .sort((a, b) => b.startsAt - a.startsAt)
           .slice(0, 100);
       });
       if ((roll as DeliveredRoll).historical && !timing) return;
       const time = performance.now() + (clockRef.current?.offset ?? 0);
-      void record({
-        key: roomKey,
-        credential,
-        roller: roll.roller,
-        sample: {
-          viewer,
-          roll: roll.id,
-          uncertainty,
-          ...(timing ?? { firstFrame: time, revealFrame: time, frames: 0, maxFrameGap: 0 }),
-        },
-      }).catch(e => setError(displayError(e, credential)));
+      receiptReports.report(rollKey, timing ?? { firstFrame: time, revealFrame: time, frames: 0, maxFrameGap: 0 }, uncertainty);
     },
-    [record, viewer, credential],
+    [receiptReports, viewer],
   );
   const joinedForDelivery = room?.participants.some(member => member.id === viewer);
   useEffect(() => {
@@ -951,6 +717,19 @@ function DiceRoom() {
   }, [profile, initial, joined, viewer, credential, customize, options.popoutActive]);
   const [rollLockUntil, setRollLockUntil] = useState(0);
   const rollLock = useRef(0);
+  const serverOffset = clock?.offset ?? Date.now() - performance.now();
+  useDeadlineClock([
+    rollLockUntil,
+    ...(room?.participants ?? []).map(member => member.seenAt + 30000 - serverOffset),
+    ...Object.values(trayRolls).flatMap(roll => [roll.startsAt, roll.startsAt + roll.duration, roll.startsAt + roll.duration + 5600].map(time => time - serverOffset)),
+    ...rollLog.map(roll => historyDeadline(roll) - serverOffset),
+  ], now, setNow);
+  useEffect(() => {
+    setRollLog(current => {
+      const retained = current.filter(roll => historyDeadline(roll) > now + serverOffset);
+      return retained.length === current.length ? current : retained;
+    });
+  }, [now, serverOffset]);
   useEffect(() => {
     const deadline = (options.controls?.readyAt ?? 0) - performance.timeOrigin;
     if (deadline > rollLock.current) { rollLock.current = deadline; setRollLockUntil(deadline); setNow(performance.now()); }
@@ -1428,7 +1207,7 @@ function DiceRoom() {
           hasTrack={hasTrack}
         />
       ))}
-      <RollLog motion={preferences.motion}>
+      <RollLog motion={preferences.motion} revision={rollLog.map(roll => `${roll.roller}:${roll.id}`).join("|")}>
         {rollLog.length ? (
           rollLog.map(roll => (
             <div

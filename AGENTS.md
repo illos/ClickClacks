@@ -1,7 +1,10 @@
 # Click Clacks
 
-This is a direct extraction of Salient Power Roller at23cf9035b6e55d3e2e3a8198cba8c2320e7d205b.
-Preserve the original implementation. Do not replace existing behavior, UI, physics, error handling,
-or interaction code with approximations. Only change standalone dependencies and configuration unless
-the owner explicitly requests a behavior change. See README.md and docs/extraction.md for provenance.
-Use the dedicated Powerroller Convex deployment; never the ambient Salient deployment key.
+Click Clacks includes a web app, TypeScript library and reusable Convex component.
+Preserve existing behavior, UI, physics, error handling and interactions unless
+the task explicitly calls for a change. Keep dice results independent of graphics
+and enforce shared-roll authority on the server.
+
+Use the project's dedicated Convex deployment. Clear any unrelated ambient
+`CONVEX_DEPLOY_KEY` before running the Convex CLI. See README.md for setup and
+docs/README.md for integration guides and development records.

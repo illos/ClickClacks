@@ -56,14 +56,14 @@ pnpm dlx wrangler@4.134.0 deploy --dry-run --config wrangler.jsonc
 ```
 
 The deployment URL above is a placeholder. The currently published frontend
-uses dedicated **dev** deployment `nautical-partridge-636`, not Salient's
-deployment. A production deployment should be selected and published separately
+uses dedicated **dev** deployment `nautical-partridge-636`.
+A production deployment should be selected and published separately
 before the public V1 frontend switches to it.
 
 ## Separate Convex allowance
 
 Convex's [resource limits are per team unless specified otherwise](https://docs.convex.dev/production/state/limits).
-A second project in Salient's team would still share that allowance. A separate
+A second project in the same team would still share that allowance. A separate
 Click Clacks team under the existing login is the documented organizational
 mechanism; a second login is unnecessary. Confirm the destination team's Free
 plan and usage in the dashboard before relying on its allowance.
@@ -141,9 +141,9 @@ complete, avoiding a failing deploy job on ordinary pushes.
    only the standalone project. Verify its existing deployment addresses and
    permissions in the dashboard.
 6. Select a dedicated production deployment for real users. Publish the accepted
-   backend there, with the ambient Salient `CONVEX_DEPLOY_KEY` unset, then update
-   the frontend's public backend variable and publish. Do not reset or redeploy
-   the Salient app as part of this work.
+   backend there, with any unrelated ambient `CONVEX_DEPLOY_KEY` unset, then
+   update the frontend's public backend variable and publish. Keep unrelated
+   applications and their deployments out of the cutover.
 
 Browser storage is scoped to an origin, and session identity is additionally
 keyed by backend URL. Moving from `illos.github.io` to a new app domain gives

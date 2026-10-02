@@ -46,18 +46,18 @@ results and wrote the recommendations. Dependencies matched Node 24.18.0, pnpm
 11.5.3 and Playwright 1.63.0. Install/build and completed browser probes exited zero.
 
 - Full/retention and cold/warm startup: `33c82b8`, raw JSON/logs under
-  `/srv/presidium/home/projects/powerroller/test-artifacts/frontend-performance-33c82b8/`.
+  `test-artifacts/frontend-performance-33c82b8/`.
 - Focused active-frame, uninstrumented preview and actual IndexedDB module probes:
   `65ddbfb`, raw JSON/logs under
-  `/srv/presidium/home/projects/powerroller/test-artifacts/frontend-performance-65ddbfb/`.
+  `test-artifacts/frontend-performance-65ddbfb/`.
 - Preview native retention: `62a1c58`, artifacts under
-  `/srv/presidium/home/projects/powerroller/test-artifacts/frontend-performance-62a1c58/`.
+  `test-artifacts/frontend-performance-62a1c58/`.
 - Strong-retainer path probe: `f5a06be`, artifacts under
-  `/srv/presidium/home/projects/powerroller/test-artifacts/frontend-performance-f5a06be/`.
+  `test-artifacts/frontend-performance-f5a06be/`.
 - Lookup ownership diagnostic: `8f9bcb0`, artifacts under
-  `/srv/presidium/home/projects/powerroller/test-artifacts/frontend-performance-8f9bcb0/`.
-- Module-size analysis: build with `write:false`, artifact
-  `/srv/presidium/projects/salient/design-artifacts/clickclacks-frontend-20261002/bundle-modules.json`.
+  `test-artifacts/frontend-performance-8f9bcb0/`.
+- Module-size analysis: build with `write:false`, artifact `bundle-modules.json`
+  retained outside Git with the maintainer's investigation evidence.
   It writes no application build files. Module rendered lengths are pre-minification
   attribution, not measured transferred-byte percentages.
 
@@ -250,7 +250,7 @@ browser** reduced native contexts from **7 to 1**, texture objects from **40 to 
 and DOM nodes to **431**. Both before/after heaps came from the same browser; the
 probe exited zero with no page errors. This confirms the retained ownership path.
 Raw/sanitized diagnostic evidence:
-`/srv/presidium/home/projects/powerroller/test-artifacts/frontend-performance-8f9bcb0/lookup-diagnostic.json`.
+`test-artifacts/frontend-performance-8f9bcb0/lookup-diagnostic.json`.
 
 Recommended correction: clean up the renderer-owned lookup allocation/registration,
 or give each renderer an explicitly disposed lookup texture with identical data.

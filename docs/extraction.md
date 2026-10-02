@@ -3,7 +3,7 @@
 This records the clean baseline release `f8587f7`. Later owner-authorized
 extensions and their verification are recorded in [the standalone audit](standalone-audit.md).
 
-Source: Salient `23cf9035b6e55d3e2e3a8198cba8c2320e7d205b` (approved V272).
+Original source revision: `23cf9035b6e55d3e2e3a8198cba8c2320e7d205b`.
 The owner discarded the first extraction and its attempted parity rewrite. All of
 that application code was removed before copying the original project files.
 
@@ -23,14 +23,14 @@ that application code was removed before copying the original project files.
 ## Standalone adaptations
 
 - Minimal package, TypeScript/Vite configuration, root HTML entry and GitHub Pages workflow.
-- Header's Salient home link points to this repository; expired-room link uses the
+- The home link points to this repository; the expired-room link uses the
   standalone base URL. HTML title drops En Garde branding.
 - Original backend schema is mounted independently. Catalog-backed cosmetic names
   are replaced with a small standalone name pool behind the same API; its unused
   catalog cache table is omitted.
-- Shared arithmetic/generator functions are copied out of their larger Salient
+- Shared arithmetic/generator functions are copied out of their larger source
   modules; campaign state, campaign commands and unrelated game engine imports are omitted.
-- Original tests use an isolated Convex fixture instead of Salient's campaign fixture.
+- Original tests use an isolated Convex fixture instead of a campaign fixture.
 - SPDX headers reflect the owner's existing MIT authorization. Font notices are unchanged.
 
 No changes to the original renderer, solver, worker, animation paths, preview,
@@ -46,7 +46,7 @@ Production build passed, including the original physics worker and all four font
 `nautical-partridge-636`. Convex codegen, TypeScript and schema validation passed;
 the discarded component was unmounted.
 
-[GitHub Pages run36816604230](https://github.com/illos/powerroller/actions/runs/36816604230)
+[GitHub Pages run36816604230](https://github.com/illos/ClickClacks/actions/runs/36816604230)
 succeeded. Live URL: https://illos.github.io/powerroller/.
 
 A focused live standalone-wiring check loaded the page, joined a fresh room and

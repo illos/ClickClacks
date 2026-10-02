@@ -38,8 +38,8 @@ global exact submission quota. No geographic permission prompt is used.
 
 ## Reading and triage from Presidium
 
-Salient project threads already inherit a Cloudflare credential through the
-host secrets broker. For the production support origin only, the CLI derives
+The maintainer's environment supplies a Cloudflare credential through a
+secrets broker. For the production support origin only, the CLI derives
 a distinct read-only support token from that credential. It never sends the
 Cloudflare credential to the support API. Explicit `BUG_REPORT_READ_TOKEN` takes
 precedence and is required for other origins. Run from this checkout (or use
@@ -139,14 +139,14 @@ reads were refused. The game backend was blocked throughout browser checks.
 `b25f1f0` corrects only command/help wording to `pnpm run bugs`; the coordinator
 and QC reused the accepted evidence. Final QC PASS closed the retry and command
 findings. Evidence is outside Git at
-`/srv/presidium/home/projects/powerroller/test-artifacts/bug-reports-fbd3982/RESULT.md`.
+`test-artifacts/bug-reports-fbd3982/RESULT.md`.
 Phone popup screenshots were visually inspected. All test-owned services and
 checkouts were removed. Local authoring typecheck and Worker dry-run also passed.
 
 The release credential-routing delta `99f1713` received source QC PASS and
 Test coordinator PASS: three focused CLI authentication tests and typecheck,
 both exit 0. The prior runtime and browser evidence was reused. Logs are at
-`/srv/presidium/home/projects/powerroller/test-artifacts/bug-auth-99f1713-{focused,typecheck}.log`.
+`test-artifacts/bug-auth-99f1713-{focused,typecheck}.log`.
 
 ## Publication result — 2026-10-02
 
@@ -199,7 +199,7 @@ placement, theme/accessibility persistence after reload, tab keyboard wrap,
 report handoff/focus and 16px fields. The reporting script repeated lost-save
 response → 429 → identical retry/download and read back four distinct saved
 reports from isolated local D1. Backend HTTP and WebSockets were blocked.
-Evidence: `/srv/presidium/home/projects/powerroller/test-artifacts/settings-037a5ee/RESULT.md`.
+Evidence: `test-artifacts/settings-037a5ee/RESULT.md`.
 Prior 172-test runtime and CLI authorization results were reused; temporary
 Test services/worktree were removed. Mobile Settings screenshot was inspected.
 

@@ -96,7 +96,7 @@ Only report IDs and support receipts identify browser submissions: the browser
 cannot supply assignment, trusted actor, issue URL or resolved status.
 
 GitHub remains an optional work tracker. The existing
-[illos/powerroller repository](https://github.com/illos/powerroller) is public and
+[illos/powerroller repository](https://github.com/illos/ClickClacks) is public and
 had Issues enabled when inspected on 2026-10-02. Its
 [create-issue API](https://docs.github.com/en/rest/issues/issues#create-an-issue)
 supports server-created issues using a GitHub App with repository Issues write
@@ -134,8 +134,8 @@ actual fix commit and evidence note. Committed-on-branch and released fixes
 remain distinguishable. Reading a report does not claim or resolve it.
 
 Link the inbox to this Presidium project's threads through explicit host-side
-configuration. The current T3 threads are registered to Salient while the app
-source lives in the standalone Click Clacks checkout; do not infer Chords
+configuration. Thread registration can differ from the app's source checkout;
+do not infer Chords
 membership from that directory or bypass project boundaries. A trusted host
 bridge can verify Chords identity and make authenticated triage calls, recording
 stable thread IDs. The browser never asserts a Chords sender or chooses a thread.

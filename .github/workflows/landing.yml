@@ -1,23 +1,5 @@
 name: Publish Click Clacks landing
 on:
-  push:
-    branches: [main]
-    paths:
-      - landing.html
-      - web/landing/**
-      - web/branding/**
-      - web/dice-demo/**
-      - web/dice-demo-v2/**
-      - web/popout-demo/tray.css
-      - lib/**
-      - shared/**
-      - vite.landing.config.ts
-      - wrangler.landing.jsonc
-      - scripts/build-landing.mjs
-      - scripts/lib/dice-font-build.ts
-      - package.json
-      - pnpm-lock.yaml
-      - .github/workflows/landing.yml
   workflow_dispatch:
 permissions:
   contents: read

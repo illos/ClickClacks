@@ -83,15 +83,30 @@ export function createController(options:{transport:Transport;key:string;identit
   const now=()=>local()+clockEstimate().offset;
   const trackMethod=transport.compactTracks?'diceDemoV2:trackMetadata':'diceDemoV2:track';
   const motions=new Map<string,Promise<Motion|undefined>>();
+  const motionBytes=new Map<string,number>();
+  const byteSize=(motion:Motion|undefined)=>motion?(motion.packed?.byteLength??0)+8*(motion.samples.length+motion.offsets.length):0;
+  function trimMotions(){let size=[...motionBytes.values()].reduce((a,b)=>a+b,0);for(const id of motions.keys()){if(size<=8*1024*1024&&motions.size<=16)break;const bytes=motionBytes.get(id);if(bytes===undefined)continue;size-=bytes;motions.delete(id);motionBytes.delete(id);}}
   const trackVersions=new Map<string,number>();
   async function hydrate(roll:ParticipantRoll):Promise<ParticipantRoll>{
     if(!transport.compactTracks||roll.motion)return unpackRoll(roll);
     if((roll.historyExpiresAt??roll.startsAt+3600000)<=now())return roll;
     const id=recordKey(roll);
     let pending=motions.get(id);
-    if(!pending){pending=transport.call('diceDemoV2:motion',{key,viewer:roll.roller,rollId:roll.id}).then(value=>value??undefined).catch(error=>{motions.delete(id);throw error;});motions.set(id,pending);if(motions.size>32)motions.delete(motions.keys().next().value!);}
+    if(!pending){pending=transport.call('diceDemoV2:motion',{key,viewer:roll.roller,rollId:roll.id}).then(value=>{motionBytes.set(id,byteSize(value??undefined));trimMotions();return value??undefined;}).catch(error=>{motions.delete(id);motionBytes.delete(id);throw error;});motions.set(id,pending);}
     const motion=await pending;
     return unpackRoll(motion?{...roll,motion}:roll);
+  }
+  function trimRequests(){
+    let bytes=[...requests.values()].reduce((sum,item)=>sum+byteSize(item.motion)+byteSize(item.accepted?.motion),0);
+    for(const request of requests.values()){
+      if(inFlight.has(request.id))continue;
+      const expired=(request.accepted?.historyExpiresAt??Infinity)<=now();
+      if(!expired&&bytes<=8*1024*1024)continue;
+      bytes-=byteSize(request.motion)+byteSize(request.accepted?.motion);
+      // Keep semantic fingerprints/faces. The server remains authoritative for retry
+      // acceptance and returns its original motion if a local cache was trimmed.
+      delete request.motion;delete request.accepted;
+    }
   }
   const session=()=>({key,viewer:options.identity.viewer,credential:options.identity.credential});
   const emit=<K extends keyof ClientEvents>(name:K,value:ClientEvents[K])=>listeners.get(name)?.forEach(listener=>listener(value));
@@ -181,7 +196,7 @@ export function createController(options:{transport:Transport;key:string;identit
       if(disposed)throw new Error('Controller disposed.');
       const previous=joined?session():undefined, changed=nextKey!==key&&nextKey.toUpperCase()!==canonicalCode;
       epoch++;const version=epoch;stop(changed);refreshing=undefined;refreshAgain=false;joined=false;
-      if(changed){seen.clear();requests.clear();inFlight.clear();cursor=0;canonicalCode=null;key=nextKey;}
+      if(changed){seen.clear();requests.clear();inFlight.clear();motions.clear();motionBytes.clear();cursor=0;canonicalCode=null;key=nextKey;}
       emit('status','connecting');await syncClock(version);if(!valid(version))return;
       await transport.call('diceDemoV2:join',{...session(),...profile,ready:true,uncertainty:clockEstimate().uncertainty});if(!valid(version))return;
       joined=true;
@@ -206,7 +221,7 @@ export function createController(options:{transport:Transport;key:string;identit
     async profile(next:Profile){assertJoined();const version=epoch;await transport.call('diceDemoV2:customize',{...session(),...next});if(valid(version))profile=next;},
     async clear(){assertJoined();await transport.call('diceDemoV2:clearTray',session());},
     async roll(input:RollInput={},prepare?:PresentationProvider):Promise<ParticipantRoll>{
-      assertJoined();
+      assertJoined();trimRequests();
       const dice={...validateDiceConfiguration(input.dice??defaultDice)},edges=input.edges??0,banes=input.banes??0;
       if(!Number.isInteger(edges)||!Number.isInteger(banes)||edges<0||edges>2||banes<0||banes>2)throw new Error('Modifier counts must be integers from 0 to 2.');
       const id=input.id??(options.requestId??(()=>crypto.randomUUID()))();
@@ -226,14 +241,14 @@ export function createController(options:{transport:Transport;key:string;identit
         const result=await transport.call('diceDemoV2:throwDice',{...args,id,dice,faces:retained.faces,edges,banes,...(retained.motion?{motion:retained.motion}:{})}) as ParticipantRoll;
         if(!valid(version))throw new Error('Room changed while accepting the roll.');
         retained.accepted=result;delete retained.motion;receive(result);return result;
-      })().finally(()=>{if(inFlight.get(id)===task)inFlight.delete(id);});
+      })().finally(()=>{if(inFlight.get(id)===task)inFlight.delete(id);trimRequests();});
       inFlight.set(id,task);return task;
     },
     clock:now,
     clockEstimate,
     catchup,
     get key(){return key;},get identity(){return {...options.identity};},
-    async dispose(){if(disposed)return;disposed=true;epoch++;joined=false;stop(true);requests.clear();inFlight.clear();motions.clear();trackVersions.clear();seen.clear();listeners.clear();await transport.close?.();},
+    async dispose(){if(disposed)return;disposed=true;epoch++;joined=false;stop(true);requests.clear();inFlight.clear();motions.clear();motionBytes.clear();trackVersions.clear();seen.clear();listeners.clear();await transport.close?.();},
   };
   return api;
 }

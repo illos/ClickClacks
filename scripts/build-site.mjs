@@ -1,6 +1,4 @@
 // SPDX-License-Identifier: MIT
 import { build } from 'vite';
-
-// Independent entry graphs keep the site's React startup out of auxiliary pages.
+// Both documents share one asset graph, including the lazy renderer and worker.
 await build({configFile:'vite.config.ts'});
-await build({configFile:'web/popout/vite.config.ts'});

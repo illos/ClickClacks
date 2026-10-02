@@ -546,9 +546,14 @@
   min-width: 0;
 }
 .roll-log-entry + .roll-log-entry,
-.roll-log-row + .roll-log-row .roll-log-entry {
+.roll-log-row + .roll-log-row :is(.roll-log-entry, .join-log-entry) {
   border-top: 1px solid #242b2d;
 }
+.join-log-entry { display: flex; align-items: center; gap: .65rem; padding: 10px 6px; min-width: 0; }
+.join-log-entry > svg { flex-shrink: 0; }
+.join-log-message { min-width: 0; overflow-wrap: anywhere; }
+.join-log-entry time { margin-left: auto; flex-shrink: 0; font-size: .8rem; opacity: .75; }
+.high-contrast .join-log-entry time { opacity: 1; }
 .roll-log-entry.critical-success {
   background: linear-gradient(90deg, #70dac322, #70dac309);
   box-shadow: inset 3px 0 #70dac3;

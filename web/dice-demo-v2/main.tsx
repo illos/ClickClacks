@@ -55,7 +55,8 @@ import { AccessibilityControls } from './accessibility-controls';
 import { DiceDesignControls } from './dice-design-controls';
 import { startClockSync } from './clock-sync';
 import { RollLog } from './roll-log';
-import { DiceAvatar, DicePreview, RollEntry, TrayHistory, type LogRoll } from './roll-presentation';
+import { DiceAvatar, DicePreview, TableEntry, TrayHistory, logEntryTime, logEntryKey, type TableLogEntry, type LogRoll } from './roll-presentation';
+import { createMembershipLog, type JoinLogEntry } from './membership-log';
 import { isBackdropPointer, useMenuScrollLock } from './dialog-lifecycle';
 import { historyDeadline, useDeadlineClock } from './history-lifecycle';
 import { createPlaybackReports } from './playback-reports';
@@ -345,7 +346,11 @@ function DiceRoom() {
     [error, setError] = useState(''),
     [copied, setCopied] = useState<'code' | 'link' | null>(null);
   const [rollLog, setRollLog] = useState<LogRoll[]>([]);
-  const displayedRollLog = options.historySince === undefined ? rollLog : rollLog.filter(roll => roll.startsAt >= options.historySince!);
+  const membershipLog = useRef(createMembershipLog());
+  const [joinEntries, setJoinEntries] = useState<JoinLogEntry[]>([]);
+  const logEntries: TableLogEntry[] = [...rollLog.map(roll => ({ kind: 'roll' as const, roll })), ...joinEntries]
+    .sort((a, b) => logEntryTime(b) - logEntryTime(a)).slice(0, 100);
+  const displayedLogEntries = options.historySince === undefined ? logEntries : logEntries.filter(entry => logEntryTime(entry) >= options.historySince!);
   const delivered = useRef(new Set<string>());
   const optionsRef = useRef(options); optionsRef.current = options;
   const codeRef = useRef<string | null>(null);
@@ -706,6 +711,13 @@ function DiceRoom() {
         .map(p => (p.id === viewer ? { ...p, ...profile } : p)),
     [room, profile, viewer, now, clock, presenceClock],
   );
+  useLayoutEffect(() => {
+    if (!room || !presenceReady || !connection.isWebSocketConnected) return;
+    // The layout observer can switch authority before this render commits.
+    if (automaticSession && automaticSession.getSnapshot().revision !== rollSession.revision) return;
+    const time = localRolls ? Date.now() : performance.now() + presenceClock!.estimate.offset;
+    setJoinEntries(membershipLog.current.observe(roomKey, rollSession.revision, members, time));
+  }, [room, roomKey, presenceReady, presenceClock, connection.isWebSocketConnected, automaticSession, rollSession.revision, localRolls, members]);
   useEffect(() => {
     tray.current?.participants(members);
   }, [members, graphics]);
@@ -1013,7 +1025,7 @@ function DiceRoom() {
         </header>
         <div className="dice-card">
           <section className="stage" aria-label="Shared 3D dice tray">
-            {options.trayHistory && <TrayHistory rolls={displayedRollLog} viewer={viewer} motion={preferences.motion} />}
+            {options.trayHistory && <TrayHistory entries={displayedLogEntries} viewer={viewer} motion={preferences.motion} />}
             <div className="canvas-host" ref={host} />
             <div className="stage-label">
               <span className="dot" />
@@ -1252,18 +1264,18 @@ function DiceRoom() {
           </section>
         </div>
       </div>
-      <RollLog motion={preferences.motion} revision={displayedRollLog.map(roll => `${roll.roller}:${roll.id}`).join("|")}>
-        {displayedRollLog.length ? (
-          displayedRollLog.map(roll => (
+      <RollLog motion={preferences.motion} revision={displayedLogEntries.map(logEntryKey).join("|")}>
+        {displayedLogEntries.length ? (
+          displayedLogEntries.map(entry => (
             <div
               className="roll-log-row"
-              data-log-key={`${roll.roller}:${roll.id}`}
-              key={`${roll.roller}:${roll.id}`}
+              data-log-key={logEntryKey(entry)}
+              key={logEntryKey(entry)}
             >
-              <RollEntry
-                roll={roll}
+              <TableEntry
+                entry={entry}
                 viewer={viewer}
-                avatarStyle={roll.roller === viewer ? profile.style : room?.participants.find(member => member.id === roll.roller)?.style}
+                avatarStyle={entry.kind === 'roll' ? entry.roll.roller === viewer ? profile.style : room?.participants.find(member => member.id === entry.roll.roller)?.style : undefined}
               />
             </div>
           ))

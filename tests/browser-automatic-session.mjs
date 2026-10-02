@@ -64,6 +64,8 @@ try {
   const peerUrl = new URL(fixture); peerUrl.searchParams.set('room', session.key);
   await peer.goto(peerUrl.href);
   await expect(main).toHaveAttribute('data-roll-mode', 'shared', { timeout: 5000 });
+  const incoming = await peer.evaluate(() => window.fixture.identity.viewer);
+  await expect(page.locator(`.join-log-entry[data-participant="${incoming}"]`)).toHaveCount(1);
   await expect(peer.locator('main')).toHaveAttribute('data-roll-mode', 'shared');
   await expect(roll).toBeEnabled({ timeout: 20000 });
   await expect(page.locator('.roll-log-entry')).toHaveCount(0); // Local history is discarded.
@@ -87,6 +89,7 @@ try {
   await expect(main).toHaveAttribute('data-roll-mode', 'shared');
   await page.evaluate(() => window.fixture.advanceSolo(1000));
   await expect(main).toHaveAttribute('data-roll-mode', 'local');
+  await expect(page.locator('.join-log-entry')).toHaveCount(0);
   await expect(page.locator('.roll-log-entry')).toHaveCount(0);
   await expect(roll).toBeEnabled();
   const afterSwitch = await page.evaluate(() => window.rpc.length);

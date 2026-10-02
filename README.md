@@ -239,7 +239,7 @@ and the session file. Use a separate file for another backend or participant.
 - Browser preferences and observed history are site-owned, bounded and
   origin-specific. Unavailable storage falls back to memory. The library does not
   secretly persist a host's session or rewrite its navigation.
-- App sounds are on by default; the Dice sounds setting and tray sound button save the same local preference, including an explicit mute. Embedded hosts can supply their own sound preference; the landing demo stays muted by default. Clacks follow recorded bounce timing; reduced/hidden motion uses a result-reveal clack. Recorded clips are from [Gliz Caldo's Dice Roll Sound Effects](https://www.youtube.com/watch?v=F4Kxnv3Hzmk), used with the creator's permission; [audio provenance](web/dice-demo-v2/audio/README.md).
+- App sounds are on by default; the existing sound button saves the local preference, including an explicit mute. Embedded hosts can supply their own sound preference; the landing demo stays muted by default. Clacks follow recorded bounce timing; reduced/hidden motion uses a result-reveal clack. Recorded clips are from [Gliz Caldo's Dice Roll Sound Effects](https://www.youtube.com/watch?v=F4Kxnv3Hzmk), used with the creator's permission; [audio provenance](web/dice-demo-v2/audio/README.md).
 - Local motion/text/contrast preferences affect presentation. Shared result
   availability stays aligned with the common reveal timestamp. Real-device
   timing and actual VoiceOver/NVDA checks remain separate manual evidence; this

@@ -8,17 +8,23 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Require Cloudflare deployment credential
+      - name: Require deployment settings
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
             echo "Set the repository Actions secret CLOUDFLARE_API_TOKEN before publishing."
             exit 1
           fi
+          if [ -z "$VITE_CONVEX_URL" ]; then
+            echo "Set repository variable VITE_CONVEX_URL to the intended Click Clacks backend."
+            exit 1
+          fi
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          VITE_CONVEX_URL: ${{ vars.VITE_CONVEX_URL }}
       - uses: pnpm/action-setup@v4
         with:
           version: 11.5.3

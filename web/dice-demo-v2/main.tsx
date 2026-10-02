@@ -434,7 +434,7 @@ function DiceRoom() {
       setCopied(kind);
       setTimeout(() => setCopied(null), 2000);
     } catch {
-      setShareError('Select and copy the code or link below.');
+      setShareError(kind === 'code' ? 'Select and copy the table code above.' : 'Could not copy the link. Try again or share the table code.');
     }
   }
   useEffect(() => {
@@ -1288,19 +1288,6 @@ function DiceRoom() {
               >
                 {copied === 'code' ? <Check aria-hidden /> : <Copy aria-hidden />}
               </button>
-            </div>
-          </div>
-          <div>
-            <label htmlFor={`${instanceId}-menu-table-link`}>Table link</label>
-            <div className="share-field">
-              <input
-                id={`${instanceId}-menu-table-link`}
-                readOnly
-                value={roomLink}
-                placeholder="Connecting…"
-                onFocus={event => event.currentTarget.select()}
-                onClick={event => event.currentTarget.select()}
-              />
               <button
                 type="button"
                 disabled={!room?.code}

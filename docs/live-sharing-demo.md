@@ -2,7 +2,7 @@
 
 The owner replaced the recording with a non-interactive instance of the real
 Click Clacks app. The square iframe runs at 720 × 720 and scales to its website
-column. It uses the existing component, renderer, roll lifecycle and dedicated
+column, to the left of the section copy (above it on narrow screens). It uses the existing component, renderer, roll lifecycle and dedicated
 Powerroller backend. Each page load has an isolated table and two fresh identities.
 
 The repeating sequence is Alex rolling 1d12, opening Sharing, copying the code,

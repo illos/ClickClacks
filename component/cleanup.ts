@@ -2,6 +2,7 @@
 import { mutation } from "./_generated/server";
 import { api } from "./_generated/api";
 import { v } from "convex/values";
+import { updateActivity } from "./lib/activity";
 export const expired = mutation({
   args: {},
   returns: v.number(),
@@ -60,6 +61,8 @@ export const expired = mutation({
             : 100);
       for (const doc of docs) {
         if (table === "diceDemoV2Rooms") {
+          const room = await ctx.db.get(doc._id as import("./_generated/dataModel").Id<"diceDemoV2Rooms">);
+          if (room) await updateActivity(ctx, room, [], now);
           const tracks = await ctx.db
             .query("diceDemoV2Tracks")
             .withIndex("by_room_viewer", (q) => q.eq("key", doc.key))

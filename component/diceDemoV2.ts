@@ -3,6 +3,7 @@ import { defaultNames } from '../shared/classical-names';
 /** Independent participant tracks, accessed through a public room capability. No campaign writes. */
 import { ConvexError, v } from "convex/values";
 import { authorityError } from "./lib/errors";
+import { updateActivity } from "./lib/activity";
 import {
   mutation,
   query,
@@ -236,10 +237,14 @@ export const join = mutation({
         seenAt: now,
       },
     ].sort((a, b) => a.slot - b.slot);
+    const activity = await updateActivity(ctx, found ?? {
+      key: args.key, expiresAt: now + selectedPolicy.ttlMs, participants: [], activity: undefined,
+    }, participants, now);
     if (found)
       await ctx.db.patch(found._id, {
         participants,
         code,
+        ...activity,
         sessionCount: (found.sessionCount ?? 0) + (session ? 0 : 1),
       });
     else
@@ -251,6 +256,7 @@ export const join = mutation({
         sequence: 0,
         sessionCount: 1,
         participants,
+        ...activity,
       });
     if (!session)
       await ctx.db.insert("diceDemoV2Sessions", {
@@ -718,7 +724,8 @@ export const leave = mutation({
     const ownTrack=await ctx.db.query("diceDemoV2Tracks").withIndex("by_room_viewer",q=>q.eq("key",found.key).eq("viewer",args.viewer)).unique();
     if(ownTrack) await ctx.db.delete(ownTrack._id);
     await ctx.db.delete(session._id);
-    await ctx.db.patch(found._id,{participants:found.participants.filter(p=>p.id!==args.viewer)});
+    const participants = found.participants.filter(p=>p.id!==args.viewer);
+    await ctx.db.patch(found._id,{participants, ...await updateActivity(ctx, found, participants, Date.now())});
     return null;
   },
 });

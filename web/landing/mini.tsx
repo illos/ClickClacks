@@ -6,13 +6,14 @@ import { ClickClacks } from '../../lib/react';
 import { createController, reactTransport, type Identity, type Profile } from '../../lib/client';
 import { createThrowPlanner } from '../dice-demo/prepare-throw';
 import type { DiceConfiguration } from '../../shared/dice';
+import {newDemoRoomKey} from '../../shared/stats';
 import '../../lib/styles.css';
 import '../popout-demo/tray.css';
 import './mini.css';
 
 const backend = import.meta.env.VITE_CONVEX_URL as string | undefined;
 const root = document.getElementById('root')!;
-const roomKey = crypto.randomUUID();
+const roomKey = newDemoRoomKey();
 function identity(): Identity {
   return { viewer: crypto.randomUUID(), credential: crypto.randomUUID() + crypto.randomUUID() };
 }

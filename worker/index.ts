@@ -5,13 +5,14 @@ import {
   reportStatuses,
 } from "../shared/bug-report";
 import { canonicalPage } from './canonical';
+import {metricsRequest, injectMetrics, expireVisitorMarkers, type MetricsEnv} from './metrics';
 interface Statement {
   bind(...values: unknown[]): Statement;
   first<T = Record<string, unknown>>(): Promise<T | null>;
   all<T = Record<string, unknown>>(): Promise<{ results: T[] }>;
   run(): Promise<{ meta: { changes: number } }>;
 }
-export interface SupportEnv {
+export interface SupportEnv extends MetricsEnv {
   BUG_REPORTS: { prepare(sql: string): Statement };
   ASSETS: { fetch(request: Request): Promise<Response> };
   BUG_REPORT_READ_TOKEN?: string;
@@ -279,7 +280,8 @@ async function handle(request: Request, env: SupportEnv): Promise<Response> {
 export default {
   async fetch(request: Request, env: SupportEnv) {
     try {
-      return await handle(request, env);
+      const metrics = await metricsRequest(request, env, 'app');
+      return metrics ?? await injectMetrics(request, await handle(request, env));
     } catch {
       return json(
         {
@@ -291,6 +293,7 @@ export default {
     }
   },
   async scheduled(_event: unknown, env: SupportEnv) {
+    if (env.METRICS) await expireVisitorMarkers(env.METRICS, Date.now());
     await env.BUG_REPORTS.prepare(
       "UPDATE bug_reports SET contact = '', diagnostics = NULL, country = NULL, region = NULL WHERE private_expires_at <= ? AND (diagnostics IS NOT NULL OR contact != '' OR country IS NOT NULL OR region IS NOT NULL)",
     )

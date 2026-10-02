@@ -29,11 +29,15 @@
     "test": "vitest run",
     "cli": "node scripts/cli.ts",
     "build:landing": "node scripts/build-landing.mjs",
+    "build:stats": "node scripts/build-stats.mjs",
     "bugs": "node scripts/bugs.ts"
   },
   "dependencies": {
+    "@auth/core": "0.41.3",
+    "@convex-dev/auth": "0.0.96",
     "cannon-es": "0.20.0",
     "convex": "1.45.0",
+    "jose": "6.2.12",
     "lucide-react": "1.45.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",

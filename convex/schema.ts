@@ -1,3 +1,4 @@
 // SPDX-License-Identifier: MIT
 import {defineSchema} from "convex/server";
-export default defineSchema({});
+import {authTables} from "@convex-dev/auth/server";
+export default defineSchema({...authTables});

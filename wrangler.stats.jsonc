@@ -1,0 +1,12 @@
+{
+  "name": "clickclacks-stats",
+  "main": "worker/stats.ts",
+  "account_id": "462b5ee1e395c11b8523d6c38de0577a",
+  "compatibility_date": "2026-09-24",
+  "workers_dev": true,
+  "preview_urls": false,
+  "routes": [{"pattern": "stats.clickclacks.app", "custom_domain": true}],
+  "vars": {"CONVEX_URL": "https://nautical-partridge-636.convex.cloud"},
+  "assets": {"directory": "./dist/stats", "binding": "ASSETS", "run_worker_first": ["/api/*"], "html_handling": "auto-trailing-slash", "not_found_handling": "404-page"},
+  "d1_databases": [{"binding": "METRICS", "database_name": "clickclacks-bug-reports", "database_id": "9eddbb4b-5dbd-4093-99c3-c533605fab18", "migrations_dir": "worker/migrations"}]
+}

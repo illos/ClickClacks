@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
+import { activityState } from "./activityTables";
 import {
   demoRoll,
   demoParticipantStyle as demoStyle,
@@ -105,6 +106,8 @@ export const diceDemoV2Tables = {
     .index("by_room_viewer_sequence", ["key", "viewer", "sequence"]),
   diceDemoV2Rooms: defineTable({
     key: v.string(),
+    activity: v.optional(activityState),
+    activityDueAt: v.optional(v.number()),
     sequence: v.optional(v.number()),
     requestCount: v.optional(v.number()),
     sessionCount: v.optional(v.number()),
@@ -115,6 +118,7 @@ export const diceDemoV2Tables = {
   })
     .index("by_key", ["key"])
     .index("by_code", ["code"])
+    .index("by_activity_due", ["activityDueAt"])
     .index("by_expiry", ["expiresAt"]),
   // One current throw per participant; independent subscriptions avoid resending everyone else's paths.
   diceDemoV2Tracks: defineTable({

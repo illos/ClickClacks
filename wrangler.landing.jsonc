@@ -6,10 +6,12 @@
   "workers_dev": true,
   "preview_urls": false,
   "routes": [{ "pattern": "clickclacks.app", "custom_domain": true }],
+  "d1_databases": [{"binding": "METRICS", "database_name": "clickclacks-bug-reports", "database_id": "9eddbb4b-5dbd-4093-99c3-c533605fab18", "migrations_dir": "worker/migrations"}],
+  "ratelimits": [{"name": "METRICS_LIMITER", "namespace_id": "1003", "simple": {"limit": 100, "period": 60}}],
   "assets": {
     "directory": "./dist/landing-demo",
     "binding": "ASSETS",
-    "run_worker_first": ["/", "/index.html", "/landing.html", "/web/landing/mini.html"],
+    "run_worker_first": ["/api/metrics/*", "/", "/index.html", "/landing.html", "/web/landing/mini.html"],
     "html_handling": "none",
     "not_found_handling": "404-page"
   }

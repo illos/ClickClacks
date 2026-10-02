@@ -5,13 +5,14 @@ import { ConvexReactClient } from 'convex/react';
 import { ClickClacks } from '../../lib/react';
 import { createController, reactTransport, type DeliveredRoll, type Identity, type Profile } from '../../lib/client';
 import { createThrowPlanner } from '../dice-demo/prepare-throw';
+import {newDemoRoomKey} from '../../shared/stats';
 import '../../lib/styles.css';
 import './sharing.css';
 
 const backend = import.meta.env.VITE_CONVEX_URL as string | undefined;
 const client = backend ? new ConvexReactClient(backend) : undefined;
 const root = document.getElementById('root')!;
-const roomKey = crypto.randomUUID();
+const roomKey = newDemoRoomKey();
 const identity = (): Identity => ({ viewer: crypto.randomUUID(), credential: crypto.randomUUID() + crypto.randomUUID() });
 const ariadne = { identity: identity(), profile: { name: 'Ariadne', style: { color: '#6edbc0', ink: '#142d26', pattern: 'frosted', font: 'modern' } } satisfies Profile };
 const cato = { identity: identity(), profile: { name: 'Cato', style: { color: '#eaa0b3', ink: '#492233', pattern: 'marble', font: 'serif' } } satisfies Profile };

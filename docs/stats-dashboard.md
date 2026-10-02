@@ -132,3 +132,12 @@ new-email and existing-email registration refusal, retained prior session,
 wrong-password refusal, original-password sign-in, reload and dashboard readback.
 No live verification or broad suite was run. Evidence is outside Git in
 `powerroller/test-artifacts/stats-signin-239d310/RESULT.md`.
+
+Registration closure published from pushed main `4ccbe4e`, runtime identical to
+accepted `239d310`. Dedicated dev backend deployment, stats build and stats Worker
+publication all completed with exit 0 (fail-fast release sequence); backend ready
+at 23:32:40 UTC and Vite build 95 ms. Stats Worker version
+`4942fc2f-aeec-459c-a3e6-f93dc6148d9d` serves `stats.clickclacks.app` with the
+sign-in-only form. Accepted coordinator/QC results were reused; no live checks or
+suite reruns. Publication logs are outside Git in
+`powerroller/test-artifacts/stats-signin-publication-4ccbe4e/`.

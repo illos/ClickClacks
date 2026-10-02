@@ -170,3 +170,18 @@ worktree and branch were removed without forcing.
 The separately accepted landing `a79ee92` was then merged and pushed into main
 for its owning thread to publish the apex Worker. Its publication is independent
 of this app Worker and does not change the roller's asset graph.
+
+## Landing publication result — 2026-10-02
+
+The owning landing thread merged and pushed final source `6ede6b0`, including
+the owner-requested hero and explanation of table codes and share links.
+It reported successful required build and Wrangler publication to
+<https://clickclacks.app>, Worker `clickclacks-landing`, version
+`257bf6b8-a35e-41c7-8eb4-b4dc3f47cfe3`.
+
+Focused visual checks at 1440, 430 and 320 pixels passed without page errors or
+overflow. Previously accepted gameplay and static-routing checks were reused;
+publication did not introduce repeated suites or live browser checks. The
+owning thread stopped its preview and retired its worktrees and branches.
+The app Worker and dedicated backend are unchanged. Both frontend domains are
+now published; Convex team separation and Actions secret setup remain pending.

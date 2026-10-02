@@ -89,3 +89,10 @@ Required landing build and Wrangler 4.134.0 deploy exited 0. Landing Worker:
 `a62c003b-dc2c-4106-a423-f553051561f7`. Logs are outside Git at
 `test-artifacts/hero-caption-publication-00f384a/`. The app Worker remains
 `66f954e1-d2bc-41ef-b286-98852ba68585`; demo browser checks stay held for owner review.
+
+Intro copy `1a44719` was merged, pushed and published on 2026-10-02:
+“Play live with synchronized rolls for up to eight people. Try the live demo or
+jump into the full app.” Source review accepted this one-line text revision;
+no tests ran. Required landing build and Wrangler 4.134.0 deploy exited 0.
+Landing Worker: `6218a32d-f0d1-4260-abd2-8f549b1dcfff`. Logs remain outside Git at
+`test-artifacts/hero-copy-publication-1a44719/`. The app Worker is unchanged.

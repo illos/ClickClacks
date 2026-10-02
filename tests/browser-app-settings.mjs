@@ -94,6 +94,7 @@ try {
     await expect(page.locator('.lab.v2')).toHaveAttribute('data-theme', 'light');
     await openSettings();
     await expect(settings.getByRole('radio', { name: 'Light', exact: true })).toBeChecked();
+    await settings.getByText('Accessibility', { exact: true }).click();
     await expect(settings.getByRole('combobox', { name: 'Motion', exact: true })).toHaveValue('device');
     await expect(settings.getByRole('checkbox', { name: 'High contrast', exact: true })).toBeChecked();
     expect(errors).toEqual([]);

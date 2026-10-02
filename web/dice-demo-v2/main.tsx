@@ -84,7 +84,7 @@ export type ClickClacksOptions = {
   onControls?: (controls: RollControls) => void;
 };
 const RollerContext = createContext<ClickClacksOptions | null>(null);
-function useRoller() { const value = useContext(RollerContext); if (!value) throw new Error('Mount inside PowerRoller.'); return value; }
+function useRoller() { const value = useContext(RollerContext); if (!value) throw new Error('Mount inside ClickClacks.'); return value; }
 export function ClickClacks(options: ClickClacksOptions) {
   const [activeRoom, setActiveRoom] = useState(options.roomKey);
   useEffect(() => setActiveRoom(options.roomKey), [options.roomKey]);

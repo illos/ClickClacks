@@ -74,7 +74,7 @@ for another hosting path. Publish matching backend functions before a frontend
 that requires them.
 
 The build publishes the main site and a separate PiP entry under `dist/pip/`.
-Deploy the whole `dist/` directory. Set `POWERROLLER_BASE` (with a trailing slash)
+Deploy the whole `dist/` directory. Set `CLICKCLACKS_BASE` (with a trailing slash)
 when building for a hosting path other than `/powerroller/`.
 
 ## Embed without adopting the site

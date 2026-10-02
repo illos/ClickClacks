@@ -19,11 +19,14 @@ The app's Vite configuration uses `scripts/lib/pwa-build.ts` to provide:
 - A 180 × 180 Apple touch icon and standalone launch metadata in the full app's
   document. The embedded tray keeps its existing document metadata.
 
-Every raster icon is rendered from `web/branding/click-clacks-mark.svg`, the
-existing favicon. The maskable icon has more background padding so adaptive
-home-screen crops keep the artwork. Raster files are generated build output;
-the SVG remains the single artwork source. Vite's development server serves the
-same generated assets. No new runtime dependency is required.
+Every raster icon is rendered from `web/branding/click-clacks-app-icon.svg`, a
+square version of the favicon artwork. The hexagon is centered at (82, 82) in
+its 164 × 164 viewBox; the lightning bolt and pink accents keep their positions
+relative to it. The maskable icon has more background padding so adaptive
+home-screen crops keep the artwork. Raster files are generated build output.
+Vite's development server serves the same generated assets. No new runtime
+dependency is required. The revised icon paths include `-v2` to avoid reusing
+cached images; existing installed icons may require removal and reinstallation.
 
 Installation metadata does not register a service worker or cache pages. Page
 loading and the existing local/shared roll modes keep their ordinary network

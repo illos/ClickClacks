@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 164 164" role="img" aria-labelledby="title desc">
+  <title id="title">Click Clacks app icon</title>
+  <desc id="desc">A centered mint hexagon with a lightning bolt and pink accents.</desc>
+  <g transform="translate(12 10)">
+    <path d="M70 8L124 40V104L70 136L16 104V40Z" fill="none" stroke="#6edbc0" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M81 24L43 78H66L57 121L100 63H76Z" fill="#e8e5df"/>
+    <path d="M11 16L0 0M130 118L141 134" stroke="#ff8f96" stroke-width="6" stroke-linecap="round"/>
+  </g>
+</svg>

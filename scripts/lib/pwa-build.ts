@@ -4,16 +4,16 @@ import { resolve } from 'node:path';
 import { Resvg } from '@resvg/resvg-js';
 import type { Plugin } from 'vite';
 
-/** Install metadata and raster icons derived from the existing favicon artwork. */
+/** Install metadata and raster icons using the centered app version of the mark. */
 export function appInstallation(): Plugin {
   let base = '/', root = process.cwd();
   let files: Map<string, { type: string; source: string | Uint8Array }>;
   function assets() {
     if (files) return files;
-    const mark = readFileSync(resolve(root, 'web/branding/click-clacks-mark.svg'), 'utf8');
+    const mark = readFileSync(resolve(root, 'web/branding/click-clacks-app-icon.svg'), 'utf8');
     const icon = (size: number, artworkWidth: number) => {
-      const height = artworkWidth * 152 / 164;
-      const artwork = mark.replace('<svg ', `<svg x="${(512 - artworkWidth) / 2}" y="${(512 - height) / 2}" width="${artworkWidth}" height="${height}" `);
+      const inset = (512 - artworkWidth) / 2;
+      const artwork = mark.replace('<svg ', `<svg x="${inset}" y="${inset}" width="${artworkWidth}" height="${artworkWidth}" `);
       return new Resvg(`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 512 512"><rect width="512" height="512" fill="#111415"/>${artwork}</svg>`, {
         font: { loadSystemFonts: false },
       }).render().asPng();
@@ -31,15 +31,15 @@ export function appInstallation(): Plugin {
         background_color: '#111415',
         theme_color: '#111415',
         icons: [
-          { src: 'icons/app-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-          { src: 'icons/app-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-          { src: 'icons/app-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: 'icons/app-192-v2.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'icons/app-512-v2.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: 'icons/app-maskable-512-v2.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       }, null, 2) }],
-      ['icons/app-192.png', { type: 'image/png', source: icon(192, 400) }],
-      ['icons/app-512.png', { type: 'image/png', source: icon(512, 400) }],
-      ['icons/app-maskable-512.png', { type: 'image/png', source: icon(512, 280) }],
-      ['icons/apple-touch-icon.png', { type: 'image/png', source: icon(180, 400) }],
+      ['icons/app-192-v2.png', { type: 'image/png', source: icon(192, 400) }],
+      ['icons/app-512-v2.png', { type: 'image/png', source: icon(512, 400) }],
+      ['icons/app-maskable-512-v2.png', { type: 'image/png', source: icon(512, 280) }],
+      ['icons/apple-touch-icon-v2.png', { type: 'image/png', source: icon(180, 400) }],
     ]);
     return files;
   }
@@ -50,7 +50,7 @@ export function appInstallation(): Plugin {
       if (context.filename !== resolve(root, 'index.html')) return;
       return [
         { tag: 'link', attrs: { rel: 'manifest', href: `${base}manifest.webmanifest` }, injectTo: 'head' },
-        { tag: 'link', attrs: { rel: 'apple-touch-icon', sizes: '180x180', href: `${base}icons/apple-touch-icon.png` }, injectTo: 'head' },
+        { tag: 'link', attrs: { rel: 'apple-touch-icon', sizes: '180x180', href: `${base}icons/apple-touch-icon-v2.png` }, injectTo: 'head' },
         { tag: 'meta', attrs: { name: 'mobile-web-app-capable', content: 'yes' }, injectTo: 'head' },
         { tag: 'meta', attrs: { name: 'apple-mobile-web-app-capable', content: 'yes' }, injectTo: 'head' },
         { tag: 'meta', attrs: { name: 'apple-mobile-web-app-title', content: 'Click Clacks' }, injectTo: 'head' },

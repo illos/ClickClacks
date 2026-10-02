@@ -57,7 +57,7 @@ redirect loop in the fixture; explicit localhost routing resolved that without
 changing production redirects. Root GET/HEAD, room queries, tray aliases and
 legacy API readback then passed.
 
-Evidence: `/srv/presidium/home/projects/powerroller/test-artifacts/site-audit-88f71a8/RESULT.md`.
+Evidence: `test-artifacts/site-audit-88f71a8/RESULT.md`.
 These results are reused for publication; no suite or browser test is repeated
 merely because the accepted code is merged or deployed.
 

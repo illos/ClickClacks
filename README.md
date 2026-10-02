@@ -153,10 +153,8 @@ behavior. Draw Steel helpers retain their source citations; rule changes need
 source-backed expectations. Keep generated bindings, `dist/`, credentials and
 local session files out of commits.
 
-See the [API coverage](docs/api-coverage.md),
-[version-one plan](docs/v1-readiness-plan.md) and
-[implementation record](docs/v1-implementation.md). These distinguish implemented
-capabilities from proposed work.
+See the [documentation index](docs/README.md) for API, backend integration and
+hosting guides.
 
 ## Host your own site
 
@@ -384,12 +382,13 @@ See [pnpm patch registration](https://pnpm.io/cli/patch) and
 Click Clacks code is released under the [MIT license](LICENSE).
 Dependencies keep their own licenses. Eczar, Sora, Caesar Dressing and New Rocker
 font subsets retain OFL notices in `web/dice-demo/fonts/`; builds ship
-`dice-font-licenses.txt`. Recorded audio comes from
+`dice-font-licenses.txt`. Dice clacks come from
 [Gliz Caldo's Dice Roll Sound Effects](https://www.youtube.com/watch?v=F4Kxnv3Hzmk),
-used with the creator's permission; see the [audio credits](web/dice-demo-v2/audio/README.md).
+and the sword-draw result cue comes from
+[CPhT Fluke's Sword Draw Sound Effect](https://www.youtube.com/watch?v=BQV5rbBMjCQ).
+Both are used with their creators' permission. See the
+[audio credits](web/dice-demo-v2/audio/README.md) for permission and asset details.
 
-The roller originated in Salient and became a standalone project.
-The [extraction record](docs/extraction.md) documents its source baseline and
-initial publication. Draw Steel helpers retain their rules citations; no game
-artwork, catalogs or reference corpus are distributed, and the corpus is not
-required to build or run the project.
+Draw Steel helpers retain their rules citations. No game artwork, catalogs or
+reference corpus are distributed, and the corpus is not required to build or
+run the project.

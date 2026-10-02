@@ -1,7 +1,7 @@
 # Standalone follow-up audit
 
 This follows the clean literal extraction recorded in `extraction.md`. The source
-implementation remains Salient V272, `23cf9035b6e55d3e2e3a8198cba8c2320e7d205b`.
+implementation uses source revision `23cf9035b6e55d3e2e3a8198cba8c2320e7d205b`.
 The owner's subsequent instructions authorize variable dice, classical names,
 removal of the Source link, and collapsed accessibility controls. Default Power
 Roll layout, models, material pipeline and recorded physics remain the baseline.
@@ -36,9 +36,9 @@ Pure APIs cover mixed dice, keep/drop and cited
 Draw Steel interpretations, and hosts can present already accepted results.
 This is not completion of every proposed P3 collaborative capability.
 
-Package publication to npm and future Salient dependency versus fork are
-undecided. Source consumption and the installable component are documented;
-no Salient integration is changed here. Normal-theme timestamp contrast debt
+Package publication to npm and future consumer integration are undecided.
+Source consumption and the installable component are documented.
+Normal-theme timestamp contrast debt
 remains; opt-in high contrast does not imply normal-theme conformance.
 
 Actual VoiceOver/NVDA delivery and physical-device animation/performance remain
@@ -78,7 +78,7 @@ included in artifacts, never committed. npm publication is not part of this rele
 
 ## Publication record
 
-`a1055f6` merged and pushed to `main`. [Pages run 36821094341](https://github.com/illos/powerroller/actions/runs/36821094341)
+`a1055f6` merged and pushed to `main`. [Pages run 36821094341](https://github.com/illos/ClickClacks/actions/runs/36821094341)
 completed successfully; the live HTML served its new built asset and Power Roller
 title. The deployment coordinator applied the exact main commit to dedicated dev
 `nautical-partridge-636`; Convex codegen, TypeScript and schema validation passed.

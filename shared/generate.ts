@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Standalone subset of Salient convex/lib/dice.ts: original validation and hash-stream generation.
+// Dice validation and deterministic hash-stream generation.
 import { ConvexError } from 'convex/values';
 import type { DieResult, DieSpec } from './contracts/history.ts';
 import { sha256 } from './sha256.ts';

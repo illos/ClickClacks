@@ -1,30 +1,33 @@
 # Install the collaborative backend
 
-Powerroller's backend is an isolated Convex component. Its tables, cleanup cron,
+The Click Clacks backend is an isolated Convex component. Its tables, cleanup cron,
 original demo functions and current participant tracks live in `component/`.
 The repository's `convex/` directory contains app-facing forwarders. It has no
 roller tables. This uses Convex 1.45.0; npm publication is deferred.
 
 Use a versioned repository checkout or package artifact in your application. The
-package entry `powerroller/convex.config.js` installs the component:
+package entry `clickclacks/convex.config.js` installs the component:
 
 ```ts
 // Your app's convex/convex.config.ts
 import { defineApp } from 'convex/server';
-import powerroller from 'powerroller/convex.config.js';
+import clickclacks from 'clickclacks/convex.config.js';
 const app = defineApp();
-app.use(powerroller);
+app.use(clickclacks);
 export default app;
 ```
 
 Run your app's normal Convex code generation against your own development
 project. The package does not select a deployment or contain a deploy key.
-`components.powerroller` then provides the typed component function references.
+`components.clickclacks` then provides the typed component function references.
 [Example installation](../examples/convex/convex.config.ts) and
 [example query wrapper](../examples/convex/rooms.ts) show the boundary.
 The repository's `convex/diceDemo.ts`, `diceDemoV2.ts` and `cleanup.ts` are the
 complete guest-site wrapper example; retain their function names if using the
-provided controller transport.
+provided controller transport. This repository installs the component under the
+legacy `powerroller` namespace to preserve existing data, so its wrappers use
+`components.powerroller`. New installations use `components.clickclacks` unless
+the host chooses a different installation name.
 
 A wrapper calls the component through `ctx.runQuery`, `ctx.runMutation` or
 `ctx.runAction`. Host applications choose which wrappers are public and enforce
@@ -74,20 +77,20 @@ tracks and compacts expired receipts, scheduling continuations when necessary.
 ## Existing results and custom interpretation
 
 For host-authorized persisted supplied faces, call
-`components.powerroller.diceDemoV2.acceptSupplied` from an internal wrapper or a
+`components.clickclacks.diceDemoV2.acceptSupplied` from an internal wrapper or a
 public wrapper that first enforces your actual authenticated permissions. Pass
 its required session fields and stable ID. It uses the same accepted record,
 shared timing, retry protection and built-in interpretation as the generated path.
 The community app's corresponding wrapper is internal.
 
 Custom interpretation does not require a backend or a source fork. Use
-`powerroller/dice` to resolve your already-authoritative values, or supply your
+`clickclacks/dice` to resolve your already-authoritative values, or supply your
 own interpretation. Your host owns that interpretation and log. Present the
 same values with the optional original imperative tray:
 
 ```ts
-import { expandDice, resolvePool } from 'powerroller/dice';
-import { describePool } from 'powerroller/format';
+import { expandDice, resolvePool } from 'clickclacks/dice';
+import { describePool } from 'clickclacks/format';
 const request = expandDice([{sides:6,count:4,id:'ability'}]);
 const result = resolvePool(request, [6,4,3,1], {
   keep:{mode:'highest',count:3}, modifier:2,

@@ -29,9 +29,11 @@ The original video and full uploaded screen recording are not distributed.
 `crit-sword-draw.wav` is **Sword Draw Sound Effect** by **CPhT Fluke**:
 https://www.youtube.com/watch?v=BQV5rbBMjCQ. The owner selected this exact clip
 and explicitly requested production use on 2026-10-01 after auditioning it.
-The creator's description identifies its use in the student game *Iron* but
-does not state a reuse license. The recording retains the creator's rights;
-it is not covered by the application's MIT license. It is converted to mono
+The creator says in the video's spoken introduction that the sound is free
+for anyone to use, as confirmed by the project maintainer on 2026-10-02. This
+spoken permission is the basis for including the clip. The recording retains
+the creator's rights and is not covered by the application's MIT license.
+It is converted to mono
 48 kHz / 16-bit PCM without changing timing or pitch (0.768 seconds).
 
 `crit-fail.wav` is the application's original synthesized dark impact and

@@ -51,7 +51,7 @@ support and completes a local roll without a browser or backend connection.
 
 The test coordinator accepted `f106934` on 2026-10-02, using a detached checkout
 and a private anonymous Convex backend. The evidence is outside Git at
-`/srv/presidium/home/projects/powerroller/test-artifacts/automatic-local-f106934/RESULT.md`.
+`test-artifacts/automatic-local-f106934/RESULT.md`.
 
 - Native Node public-client/local-roll regression: 1/1 passed; typecheck and site
   build exited 0. The unchanged earlier controller suite passed 41 files/197 tests
@@ -110,7 +110,7 @@ successfully, preserving the app's bug-reporting bindings.
 - Worker version: `47f8ca1d-7efe-41c8-8475-6cbc22753a66`.
 - Deployment also reported the legacy `app.clickclacks.app` binding.
 - Build/deployment logs:
-  `/srv/presidium/home/projects/powerroller/test-artifacts/automatic-publication-0c711b1/`.
+  `test-artifacts/automatic-publication-0c711b1/`.
 
 Publication reused the accepted tests above and changed only the frontend;
 the dedicated Convex deployment continues providing presence and shared play.

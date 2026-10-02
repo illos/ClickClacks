@@ -1,15 +1,15 @@
-# API coverage and remaining extraction work
+# API coverage
 
-The current stock-dice addition extends the copied V272 roller. It does not claim
-completion of every capability in the earlier expanded extraction plan.
+The library supports more dice operations than the shared backend. The table
+below identifies each public entry point and its supported capabilities.
 
 | Capability | Current public boundary |
 | --- | --- |
-| Pure values | `powerroller/dice`: identified mixed groups, bounded arbitrary side counts, supplied values, keep highest/lowest, discarded values, numeric modifiers, explicit percentile aggregation and secure generation |
-| Draw Steel interpretation | `powerroller/draw-steel`: original tiered power roll, opposed totals/comparison, project total/breakthrough, saving throw and combat-opening chooser |
-| Result text | `powerroller/format`: plain concise/detailed strings, including kept/discarded generic dice |
-| Optional graphics | `powerroller/three`: original imperative tray, instance throw planner, model/record types and motion codec |
-| Realtime lifecycle | `powerroller/client`: injected transport/identity/profile, stable IDs, accepted/available events, catch-up and explicit disposal |
+| Pure values | `clickclacks/dice`: identified mixed groups, bounded arbitrary side counts, supplied values, keep highest/lowest, discarded values, numeric modifiers, explicit percentile aggregation and secure generation |
+| Draw Steel interpretation | `clickclacks/draw-steel`: tiered power roll, opposed totals/comparison, project total/breakthrough, saving throw and combat-opening chooser |
+| Result text | `clickclacks/format`: concise/detailed strings, including kept/discarded generic dice |
+| Optional graphics | `clickclacks/three`: imperative tray, instance throw planner, model/record types and motion codec |
+| Realtime lifecycle | `clickclacks/client`: injected transport/identity/profile, stable IDs, accepted/available events, catch-up and explicit disposal |
 | Component backend | Isolated original tables/functions, generated face binding, retained receipts/tombstones, shared reveal timing, private guest sessions, original shared-clear behavior and bounded cleanup |
 | Site rolling | Original 2d10 power mode plus homogeneous d4/d6/d8/d10/d12/d20 pools, 1–20 base dice; fixed percentile pair (d100); optional +1d4 for d6–d20 and percentile |
 

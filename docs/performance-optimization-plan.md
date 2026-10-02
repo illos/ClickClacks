@@ -50,7 +50,7 @@ and 41 receipts reading 4.12 MB and writing 1.91 MB. The largest track read in t
 sample was about 712 KB. Expired-cursor and stale-presence errors in the sample are
 recovery-path observations, not proof of user-visible failures.
 
-Recorded dice traffic across Salient and the standalone app was approximately
+Earlier combined reference-app and standalone dice traffic was approximately
 45,273 calls, 485.33 MB I/O and 673 roll submissions. The earlier monthly estimates
 used heartbeat counts as a proxy for user hours. Initial joins, reconnections,
 invalid requests and automation make that proxy approximate. Use controlled
@@ -58,8 +58,8 @@ sessions to measure optimized costs; do not promise a new monthly price by apply
 a percentage to the earlier estimate. The 71.5% I/O share of tracks and receipts
 identifies where to work; it is not a claim that all those bytes can disappear.
 
-Aggregate billing/insight evidence remains outside Git at
-`/srv/presidium/projects/salient/design-artifacts/click-clacks-cost-20261001`.
+Aggregate billing/insight evidence remains outside Git in the maintainer's
+`click-clacks-cost-20261001` investigation bundle.
 Commit summaries and measurements, not raw traffic, credentials or generated bundles.
 
 ## Behavior to preserve

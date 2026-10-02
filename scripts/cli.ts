@@ -5,11 +5,27 @@ import { pathToFileURL } from 'node:url';
 import { ConvexHttpClient } from 'convex/browser';
 import { makeFunctionReference } from 'convex/server';
 import { createController, redactError, type Identity, type Profile, type Transport } from '../lib/client.ts';
-import type { DiceConfiguration } from '../shared/dice.ts';
+import { validateDiceConfiguration, type DiceConfiguration } from '../shared/dice.ts';
 
 type Saved={version:1;backend:string;key:string;identity:Identity;profile:Profile};
-const usage='powerroller create|join|roll|view|events|profile|clear|leave --backend URL --session FILE [--key CODE] [--name NAME] [--dice power|4|6|8|10|12|20] [--count N] [--bonus-d4 true|false] [--edges N] [--banes N] [--id ID]\nGeneric dice: --edges and --banes are stages 0|1|2 selecting 0|2|5; modifier = bonus minus penalty. Power rolls retain Draw Steel Edges/Banes.';
+const usage='powerroller create|join|roll|view|events|profile|clear|leave --backend URL --session FILE [--key CODE] [--name NAME] [--dice power|percentile|100|4|6|8|10|12|20] [--count N] [--bonus-d4 true|false] [--edges N] [--banes N] [--id ID]\nGeneric dice: --edges and --banes are stages 0|1|2 selecting 0|2|5; modifier = bonus minus penalty. Power rolls retain Draw Steel Edges/Banes.';
 function argumentsFor(argv:string[]){const[command,...tokens]=argv;const flags:Record<string,string>={};for(let i=0;i<tokens.length;i+=2){if(!tokens[i]?.startsWith('--')||tokens[i+1]===undefined)throw Error(usage);flags[tokens[i]!.slice(2)]=tokens[i+1]!;}return{command,flags};}
+/** Percentiles always use a tens/units pair; modifiers and bonus d4 remain available. */
+export function diceFromFlags(flags: Record<string, string>): DiceConfiguration {
+ const selected = flags.dice ?? 'power';
+ const fixed = selected === 'percentile' || selected === '100';
+ if (fixed && flags.count !== undefined && Number(flags.count) !== 2)
+  throw Error('Percentile rolls require exactly two base dice.');
+ const dice: DiceConfiguration = selected === 'power'
+  ? {kind:'power',sides:10,count:2}
+  : selected === 'percentile' || selected === '100'
+   ? {kind:'percentile',sides:10,count:2}
+   : {kind:'dice',sides:Number(selected) as DiceConfiguration['sides'],count:Number(flags.count ?? 1)};
+ if (flags['bonus-d4'] !== undefined && !['true','false'].includes(flags['bonus-d4']!))
+  throw Error('--bonus-d4 must be true or false.');
+ if (flags['bonus-d4'] === 'true') dice.bonusD4 = true;
+ return validateDiceConfiguration(dice);
+}
 function httpTransport(url:string):Transport{
  const client=new ConvexHttpClient(url);
  return{call:(method,args)=>['diceDemo:clock','diceDemo:sampleFaces'].includes(method)?client.action(makeFunctionReference<'action'>(method),args):['diceDemoV2:view','diceDemoV2:track','diceDemoV2:events'].includes(method)?client.query(makeFunctionReference<'query'>(method),args):client.mutation(makeFunctionReference<'mutation'>(method),args),watch:()=>()=>{}};
@@ -23,6 +39,7 @@ export async function runCli(argv:string[]){
  const{command,flags}=argumentsFor(argv);
  if(!command||command==='help'){console.log(usage);return;}
  if(!['create','join','roll','view','events','profile','clear','leave'].includes(command))throw Error(usage);
+ const rollDice=command==='roll'?diceFromFlags(flags):undefined;
  if(!flags.backend||!flags.session)throw Error('Supply an explicit --backend URL and --session FILE. '+usage);
  const path=resolve(flags.session),saved=await readSaved(path);
  if(saved&&saved.backend!==flags.backend)throw Error('This session file belongs to another backend. Use a separate session file.');
@@ -36,9 +53,7 @@ export async function runCli(argv:string[]){
   await controller.join();
   if(command==='create'||command==='join'){await save(path,state);console.log(JSON.stringify({key:state.key,room:await transport.call('diceDemoV2:view',{key:state.key})},null,2));}
   else if(command==='roll'){
-   const selected=flags.dice??'power';const dice:DiceConfiguration=selected==='power'?{kind:'power',sides:10,count:2}:{kind:'dice',sides:Number(selected) as DiceConfiguration['sides'],count:Number(flags.count??1)};
-   if(flags["bonus-d4"]!==undefined && !["true","false"].includes(flags["bonus-d4"]!)) throw Error("--bonus-d4 must be true or false.");
-   if(flags["bonus-d4"]==="true") dice.bonusD4=true;
+   const dice=rollDice!;
    const accepted=await controller.roll({id:flags.id,dice,edges:Number(flags.edges??0),banes:Number(flags.banes??0)});
    const track=await transport.call('diceDemoV2:track',{key:state.key,viewer:state.identity.viewer});console.log(JSON.stringify({accepted,persistedTrack:track},null,2));
   }else if(command==='view')console.log(JSON.stringify(await transport.call('diceDemoV2:view',{key:state.key}),null,2));

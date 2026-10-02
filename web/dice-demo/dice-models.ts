@@ -133,11 +133,14 @@ export function dieConfigForIndex(
   index: number,
 ): DiceConfig | undefined {
   if (!config || config.kind === 'power') return config;
+  if (config.kind === 'percentile' && index < 2)
+    return { kind: 'percentile', sides: 10, count: 2 };
   return { kind: 'dice', sides: dieSides(config, index) as DiceSides, count: 1 };
 }
 export function dieModel(config?: DiceConfig, index = 0): DieModel {
   config = dieConfigForIndex(config, index);
-  if (!config || config.kind === 'power') return { faces: powerFaces, vertices: powerVertices };
+  if (!config || config.kind === 'power' || config.kind === 'percentile')
+    return { faces: powerFaces, vertices: powerVertices };
   let model = genericModels.get(config.sides);
   if (model) return model;
   const sides = config.sides;
@@ -218,7 +221,7 @@ export function modelNumberingOrientation(
       (a, b) => b.normal.clone().applyQuaternion(body).y - a.normal.clone().applyQuaternion(body).y,
     )[0]!,
     original =
-      !config || config.kind === 'power'
+      !config || config.kind === 'power' || (config.kind === 'percentile' && index < 2)
         ? faceForResult(value, index)
         : model.faces.find(f => f.value === value)!;
   const from = faceFrame(original);
@@ -237,6 +240,7 @@ export function modelNumberingOrientation(
 }
 export function createDie(style: Style, config: DiceConfig | undefined, index = 0): THREE.Group {
   if (!config || config.kind === 'power') return createD10(style, index);
+  if (config.kind === 'percentile' && index < 2) return createD10(style, index, 'percentile');
   const model = dieModel(config, index),
     group = new THREE.Group();
   group.scale.setScalar(0.5);

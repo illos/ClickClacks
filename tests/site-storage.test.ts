@@ -21,6 +21,10 @@ describe('site-owned persistence and private identity',()=>{
   savePreferences({...loadPreferences(),sound:true});expect(loadPreferences().sound).toBe(true);
   localStorage.setItem('powerroller.preferences.v2',JSON.stringify({version:2,preferences:{sound:'true'}}));expect(loadPreferences().sound).toBe(false);
  });
+ it('remembers the percentile picker choice without saving transient bonus or count controls',()=>{
+  savePreferences({...loadPreferences(),selectedDice:'percentile'});expect(loadPreferences().selectedDice).toBe('percentile');
+  expect(loadPreferences()).not.toHaveProperty('diceCount');expect(loadPreferences()).not.toHaveProperty('bonusD4');
+ });
  it('validates malformed saved profiles before restoring them',()=>{
   localStorage.setItem('powerroller.preferences.v2',JSON.stringify({version:2,preferences:{profile:{...profile,style:{...profile.style,font:'invalid'}},motion:'invalid',room:2}}));expect(loadProfile()).toBeUndefined();expect(loadPreferences()).toMatchObject({motion:'device',room:undefined});saveProfile(profile);expect(loadProfile()).toEqual(profile);
  });

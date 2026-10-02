@@ -21,7 +21,7 @@ import { makeFunctionReference } from 'convex/server';
 import { createController, type Identity, type Profile, type DeliveredRoll } from '../../lib/client';
 import { displayError, redactError } from '../../lib/errors';
 import { dicePoolCount, genericModifierValue, rollCooldownMs } from '../../shared/dice';
-import { describeRoll, rollDiceNotation } from '../../lib/format';
+import { describeRoll, rollDiceNotation, rollNaturalTotal, rollFacesText } from '../../lib/format';
 import { criticalResult, criticalLabel } from '../../lib/critical';
 import {
   ConvexProvider,
@@ -202,7 +202,7 @@ function RollEntry({ roll, viewer, avatarStyle }: { roll: LogRoll; viewer: strin
         <span className="roll-dice-notation">{rollDiceNotation(roll)}</span>
         <span aria-hidden="true">|</span>
         {showEquation && <span className="roll-equation">
-          {roll.faces.join(' + ')}
+          {rollFacesText(roll)}
           {roll.power && roll.power.edges - roll.power.banes === 1 && ' + 2'}
           {roll.power && roll.power.edges - roll.power.banes === -1 && ' − 2'}
           {!roll.power &&
@@ -213,7 +213,7 @@ function RollEntry({ roll, viewer, avatarStyle }: { roll: LogRoll; viewer: strin
           {showEquation && <span>=</span>}
           <strong className="roll-total">
             {roll.total ?? roll.power?.total ??
-              roll.faces.reduce((total, face) => total + face, 0) + (roll.modifier ?? 0)}
+              rollNaturalTotal(roll) + (roll.modifier ?? 0)}
           </strong>
           {roll.power && (
             <strong className={`tier tier-${roll.power.tier}`}>Tier {roll.power.tier}</strong>
@@ -381,11 +381,12 @@ function useMenuScrollLock(open: boolean) {
 type SelectedDice = NonNullable<SitePreferences['selectedDice']>;
 const diceChoices: ReadonlyArray<{ value: SelectedDice; label: string }> = [
   { value: 'power', label: 'Power roll (2d10)' },
+  { value: 'percentile', label: 'd100 (percentile)' },
   ...([20, 12, 10, 8, 6, 4] as const).map(value => ({ value, label: `d${value}` })),
 ];
 function RollDieIcon({ dice }: { dice: SelectedDice }) {
   const overlapMask = useId();
-  if (dice === 'power') return (
+  if (dice === 'power' || dice === 'percentile') return (
     <svg aria-hidden="true" viewBox="0 0 34 30" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round">
       <defs>
         <mask id={overlapMask} maskUnits="userSpaceOnUse" x="0" y="0" width="34" height="30">
@@ -396,12 +397,12 @@ function RollDieIcon({ dice }: { dice: SelectedDice }) {
       <g mask={`url(#${overlapMask})`}>
         <g transform="rotate(16 23 11)">
           <path d="M23 2 31 6.5v9l-8 4.5-8-4.5v-9Z" />
-          <text x="25" y="12" textAnchor="middle" fill="currentColor" stroke="none" fontFamily="sans-serif" fontSize="8" fontWeight="700">10</text>
+          <text x="25" y="12" textAnchor="middle" fill="currentColor" stroke="none" fontFamily="sans-serif" fontSize="8" fontWeight="700">{dice === 'percentile' ? '0' : '10'}</text>
         </g>
       </g>
       <g transform="rotate(-12 12 17)">
         <path d="M12 7 21 12v10l-9 5-9-5V12Z" />
-        <text x="12" y="20.5" textAnchor="middle" fill="currentColor" stroke="none" fontFamily="sans-serif" fontSize="10" fontWeight="700">10</text>
+        <text x="12" y="20.5" textAnchor="middle" fill="currentColor" stroke="none" fontFamily="sans-serif" fontSize="10" fontWeight="700">{dice === 'percentile' ? '00' : '10'}</text>
       </g>
     </svg>
   );
@@ -538,6 +539,8 @@ function DiceRoom() {
     () =>
       selectedDice === 'power'
         ? { kind: 'power' as const, sides: 10 as const, count: 2 }
+        : selectedDice === 'percentile'
+          ? { kind: 'percentile' as const, sides: 10 as const, count: 2, ...(bonusD4 ? { bonusD4: true } : {}) }
         : { kind: 'dice' as const, sides: selectedDice, count: diceCount, ...(bonusD4 && selectedDice !== 4 ? { bonusD4: true } : {}) },
     [selectedDice, diceCount, bonusD4],
   );
@@ -1290,7 +1293,7 @@ function DiceRoom() {
                 </div>
               ))}
             </div>
-            {selectedDice !== 'power' && (
+            {selectedDice !== 'power' && selectedDice !== 'percentile' && (
               <div className="dice-quantity" role="group" aria-label="Dice count">
                 <button
                   type="button"

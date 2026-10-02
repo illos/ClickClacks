@@ -11,8 +11,8 @@ import {
 } from 'cannon-es';
 import * as THREE from 'three';
 import { faceForResult, faces, vertices } from './d10';
-import { dieModel, modelNumberingOrientation } from './dice-models';
-import type { Motion, ThrowScene } from './model';
+import { dieConfigForIndex, dieModel, modelNumberingOrientation } from './dice-models';
+import type { DiceConfig, Motion, ThrowScene } from './model';
 
 /** Seeded cosmetic parameters only. Results never come from the physics world. */
 function generator(seed: number) {
@@ -46,6 +46,18 @@ export function numberingOrientation(
   return faceFrame(target)
     .multiply(faceFrame(faceForResult(result, index)).invert())
     .normalize();
+}
+/** Original pair numbering remains unchanged; an optional percentile d4 reads its tip. */
+export function throwNumberingOrientation(
+  body: THREE.Quaternion,
+  result: number,
+  index: number,
+  config?: DiceConfig,
+) {
+  const own = dieConfigForIndex(config, index);
+  return !own || own.kind === 'power' || own.kind === 'percentile'
+    ? numberingOrientation(body, result, index)
+    : modelNumberingOrientation(body, result, index, config);
 }
 export function simulateThrow(seed: number, results: number[], scene: ThrowScene = {}): Motion {
   const random = generator(seed),
@@ -226,10 +238,8 @@ export function simulateThrow(seed: number, results: number[], scene: ThrowScene
     }
   }
   if (!settled) throw new Error('This throw did not settle. Try another throw.');
-  const orient =
-    !scene.dice || scene.dice.kind === 'power' ? numberingOrientation : modelNumberingOrientation;
   const offsets = bodies.flatMap((body, i) =>
-    orient(
+    throwNumberingOrientation(
       new THREE.Quaternion(
         body.quaternion.x,
         body.quaternion.y,

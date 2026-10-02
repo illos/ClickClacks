@@ -11,7 +11,7 @@ completion of every capability in the earlier expanded extraction plan.
 | Optional graphics | `powerroller/three`: original imperative tray, instance throw planner, model/record types and motion codec |
 | Realtime lifecycle | `powerroller/client`: injected transport/identity/profile, stable IDs, accepted/available events, catch-up and explicit disposal |
 | Component backend | Isolated original tables/functions, generated face binding, retained receipts/tombstones, shared reveal timing, private guest sessions, original shared-clear behavior and bounded cleanup |
-| Site rolling | Original 2d10 power mode plus homogeneous d4/d6/d8/d10/d12/d20 pools, 1–20 base dice; optional +1d4 for d6–d20 |
+| Site rolling | Original 2d10 power mode plus homogeneous d4/d6/d8/d10/d12/d20 pools, 1–20 base dice; fixed percentile pair (d100); optional +1d4 for d6–d20 and percentile |
 
 Rules references are the pinned Compendium paths cited in the preset source and
 tests. The project does not distribute that corpus. Presets interpret explicit
@@ -19,8 +19,9 @@ values; they do not execute abilities, end effects, award a turn or apply any
 other campaign mutation. Project extra-die values are supplied explicitly by the
 host, and breakthroughs inspect the original 2d10 faces.
 
-The current collaborative endpoint supports one optional bonus d4 after a d6–d20 base pool. It does not yet represent general mixed groups, per-die
-request IDs, keep/drop, d3/d100, characteristic/labelled bonus input, project/save/
+The current collaborative endpoint supports the fixed percentile d10 pair and one optional bonus d4 after
+a percentile or d6–d20 base pool. It does not yet represent general mixed groups, per-die
+request IDs, keep/drop, d3, characteristic/labelled bonus input, project/save/
 opposed rulesets, custom interpreted totals or bounded host context metadata.
 These pure API capabilities can be used in a host's own local or authoritative
 workflow; they are not secretly converted into a site power roll. The stock

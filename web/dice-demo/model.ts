@@ -14,7 +14,7 @@ export type Style = {
 };
 export type DiceSides = 4 | 6 | 8 | 10 | 12 | 20;
 export type DiceConfig = {
-  kind: 'power' | 'dice';
+  kind: 'power' | 'dice' | 'percentile';
   sides: DiceSides;
   count: number;
   bonusD4?: boolean;

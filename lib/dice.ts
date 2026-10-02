@@ -35,9 +35,4 @@ export function resolvePool(dice: readonly DieSpec[], values: readonly number[],
   const naturalTotal = resolved.reduce((sum,die)=>sum+(die.kept?die.value:0),0);
   return { dice:resolved,naturalTotal,modifier,total:naturalTotal+modifier };
 }
-/** Tens first, units second; a physical 10 denotes zero, and double zero denotes 100. */
-export function resolvePercentile(tens: number, units: number): number {
-  if (![tens,units].every(value=>Number.isInteger(value)&&value>=1&&value<=10)) throw new Error('Percentiles require two valid d10 faces.');
-  const value = (tens%10)*10+(units%10);
-  return value || 100;
-}
+export { resolvePercentile } from '../shared/dice';

@@ -8,7 +8,7 @@ import {
   demoMotion,
 } from "./diceDemoTables";
 export const diceConfiguration = v.object({
-  kind: v.union(v.literal("power"), v.literal("dice")),
+  kind: v.union(v.literal("power"), v.literal("dice"), v.literal("percentile")),
   sides: v.union(
     v.literal(4),
     v.literal(6),

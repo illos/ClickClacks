@@ -7,6 +7,7 @@ import type { Style } from '../dice-demo/model';
 import { progress } from '../dice-demo/model';
 import { revealDelay, trayOpacity, type Participant, type ParticipantRoll } from './model';
 import { criticalResult, criticalLabel } from '../../lib/critical';
+import { rollNaturalTotal } from '../../lib/format';
 import type { Timing } from '../dice-demo/renderer';
 import { trayDieScale } from './dice-size';
 type Lane = {
@@ -432,7 +433,7 @@ export function createRoomTray(
       style(lane, member);
       const total = document.createElement('strong');
       total.textContent = String(
-        roll.total ?? roll.power?.total ?? roll.faces.reduce((sum, face) => sum + face, 0),
+        roll.total ?? roll.power?.total ?? rollNaturalTotal(roll) + (roll.modifier ?? 0),
       );
       lane.result.replaceChildren(total);
       const critical = criticalResult(roll);

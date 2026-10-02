@@ -198,7 +198,10 @@ pnpm cli leave --backend https://YOUR.convex.cloud --session /tmp/my-roller.json
 The session file contains a private credential and is written with mode `0600`.
 Keep it outside a repository. Credentials are not printed. Roll output includes
 accepted data and persisted track readback; clear output also reads back state.
-Add `--bonus-d4 true` to include the extra d4 in generic d6–d20 CLI rolls.
+Add `--bonus-d4 true` to include the extra d4 in generic d6–d20 or percentile
+CLI rolls. Use `--dice 100` (or `--dice percentile`) for the fixed d10 pair;
+`--count`, if supplied, must be 2. The first raw face is tens, the second units.
+Raw 10 prints zero, and double zero resolves to 100 before adding d4/modifiers.
 
 Use the same explicit `--id` to retry an uncertain roll. Leave removes membership
 and the session file. Use a separate file for another backend or participant.
@@ -207,10 +210,12 @@ and the session file. Use a separate file for another backend or participant.
 
 - The collaborative backend supports the original power roll and homogeneous
   d4/d6/d8/d10/d12/d20 pools of **1–20** dice. Its d10 is the selected diamond model;
-  the power-roll model remains the accepted logical d10. Generic d6–d20 pools may
+  the power-roll model remains the accepted logical d10. A fixed percentile pair
+  uses that same original model, with 00–90 tens and 0–9 units (double zero = 100).
+  Generic d6–d20 and percentile pools may
   add one bonus d4 (up to 21 total dice). These all have recorded
   physics. This bound is not a performance guarantee on every device.
-- General mixed pools, keep/drop, percentiles and additional Draw Steel presets are pure
+- General mixed pools, keep/drop and additional Draw Steel presets are pure
   host-side capabilities. They are **not** automatic shared interpretations in
   the community backend. Custom persisted interpretation needs a trusted wrapper.
 - Default rooms last **24 hours**, with **8 active participants**, **2,000**

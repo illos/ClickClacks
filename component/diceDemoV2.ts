@@ -21,6 +21,7 @@ import {
   dicePoolSides,
   dicePoolCount,
   genericModifier,
+  naturalDiceTotal,
   validateDiceConfiguration,
   type DiceConfiguration,
 } from "../shared/dice";
@@ -540,7 +541,7 @@ async function acceptThrow(
         .map((p) => p.uncertainty * 2 + 50),
     ),
   );
-  const natural = args.faces.reduce((sum, n) => sum + n, 0),
+  const natural = naturalDiceTotal(args.faces, dice),
     adjustment = resolveEdgeBane(edges, banes),
     modifier =
       dice.kind === "power" ? adjustment.modifier : genericModifier(edges, banes),

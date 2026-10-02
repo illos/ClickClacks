@@ -42,7 +42,10 @@ source.dispose();
 export function faceForResult(value: number, index: number) {
   return faces[value - 1 + (index % 2) * 10]!;
 }
-export function faceGlyph(value: number, index = 0) {
+export type D10LabelMode = 'power' | 'percentile';
+export function faceGlyph(value: number, index = 0, mode: D10LabelMode = 'power') {
+  if (mode === 'percentile')
+    return index === 0 ? String((value % 10) * 10).padStart(2, '0') : String(value % 10);
   return String(value % 10).padStart(index === 1 ? 2 : 1, '0');
 }
 export function finalOrientation(value: number, index: number) {
@@ -53,14 +56,22 @@ export function finalOrientation(value: number, index: number) {
   return new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -yaw).multiply(q);
 }
 export type DieStyle = Style;
-function paintNumbers(ctx: CanvasRenderingContext2D, value: number, index: number, font?: DieFont) {
+function paintNumbers(
+  ctx: CanvasRenderingContext2D,
+  value: number,
+  index: number,
+  font?: DieFont,
+  mode: D10LabelMode = 'power',
+) {
+  const glyph = faceGlyph(value, index, mode);
+  const double = glyph.length === 2;
   const family = font ? `"${dieFontFamilies[font]}", Georgia, serif` : 'Georgia, serif';
-  ctx.font = `${font ? dieFontWeights[font] : 600} ${index === 1 ? 64 : 78}px ${family}`;
+  ctx.font = `${font ? dieFontWeights[font] : 600} ${double ? 64 : 78}px ${family}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(faceGlyph(value, index), 128, 132);
+  ctx.fillText(glyph, 128, 132);
   if (value === 6 || value === 9)
-    ctx.fillRect(index === 1 ? 96 : 108, 174, index === 1 ? 64 : 40, 3);
+    ctx.fillRect(double ? 96 : 108, 174, double ? 64 : 40, 3);
 }
 function texture(style: DieStyle, value: number, index: number, painter?: NumeralPainter) {
   const canvas = document.createElement('canvas');
@@ -125,7 +136,7 @@ export function createDieMaterial(
   }
   return material;
 }
-export function createD10(style: DieStyle, index = 0) {
+export function createD10(style: DieStyle, index = 0, mode: D10LabelMode = 'power') {
   const group = new THREE.Group();
   group.scale.setScalar(0.5);
   const materials = new Map<number, THREE.MeshStandardMaterial>();
@@ -149,7 +160,14 @@ export function createD10(style: DieStyle, index = 0) {
     geometry.computeVertexNormals();
     let material = materials.get(face.value);
     if (!material) {
-      material = createDieMaterial(style, face.value, index);
+      material = createDieMaterial(
+        style,
+        face.value,
+        index,
+        mode === 'percentile'
+          ? (ctx, style) => paintNumbers(ctx, face.value, index, style.font, mode)
+          : undefined,
+      );
       materials.set(face.value, material);
     }
     group.add(new THREE.Mesh(geometry, material));

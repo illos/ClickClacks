@@ -31,7 +31,8 @@ Float64 transfer buffer; this changes transport representation, not frame rate.
 See `api-coverage.md` for exact API coverage. The plan's broader collaborative
 mixed groups, alternate rulesets, context metadata and logical pools above 20
 are queued by the owner for a later release; the current community UI follows the owner's requested
-stock-die picker. Pure APIs cover mixed dice, keep/drop, percentiles and cited
+stock-die picker, including the fixed percentile d100 pair and optional bonus d4.
+Pure APIs cover mixed dice, keep/drop and cited
 Draw Steel interpretations, and hosts can present already accepted results.
 This is not completion of every proposed P3 collaborative capability.
 

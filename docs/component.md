@@ -110,11 +110,16 @@ The collaborative endpoint supports homogeneous stock d4/d6/d8/d10/d12/d20
 pools of 1–20 base dice and the original tiered 2d10 power roll. Generic edge/bane
 fields are stages 0–2 selecting values 0, 2 and 5. The modifier is the bonus
 value minus the penalty value; equal stages cancel and stages 2/1 yield +3.
-Generic d6–d20 configurations can set `bonusD4:true` to append one d4;
+Percentile rolls use `{kind:"percentile",sides:10,count:2}`: two raw d10 faces
+(1–10) ordered tens then units, with physical 10 denoting zero. Double zero
+resolves to 100. The base count is fixed at two. Generic staged modifiers apply
+after percentile resolution, and no power-roll tier or critical label is added.
+
+Generic d6–d20 and percentile configurations can set `bonusD4:true` to append one d4;
 `count` remains the base dice count, and faces/motion put the d4 last.
 The optional flag is forbidden for power rolls and base d4.
 Generic results do not produce a tier. It does not persist general mixed
-pools, keep/drop choices, percentile interpretations, custom totals or the other
+pools, keep/drop choices, custom totals or the other
 Draw Steel presets. Those are available as pure host-side operations where
 implemented; adding shared interpretation requires a trusted host integration.
 The original motion frames are retained, with packed Float64 data for large pools

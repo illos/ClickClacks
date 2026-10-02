@@ -90,6 +90,7 @@ describe('actual numbered polyhedral dice', () => {
     });
   it('new shapes retain every finish and font through the original material pipeline', () => {
     const ctx = {
+      save() {}, restore() {}, translate() {}, rotate() {},
       fillRect() {},
       fillText() {},
       beginPath() {},

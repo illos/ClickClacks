@@ -55,3 +55,14 @@ builds and Wrangler 4.134.0 deployments exited 0. App Worker:
 `892a92d4-14ed-47c8-bf6a-caff6189f654`. Publication logs remain outside Git at
 `test-artifacts/pwa-publication-486623f/`. Accepted verification was reused;
 no post-publication test or backend deployment ran.
+
+The centered icon revision `b5be6c3` was accepted by focused Test and final QC.
+Root and prefixed builds exited 0. All four PNG sizes matched their declarations;
+the mint hexagon's raster bounds were centered exactly on each pixel grid.
+The maskable artwork's maximum radius was 176.8 px, inside the 204.8 px safe
+radius. Manifest and Apple metadata referenced the emitted `-v2` assets, and
+tray metadata stayed unchanged. Evidence: `test-artifacts/pwa-centered-b5be6c3/`.
+The required app build and deployment exited 0 from pushed main `b5be6c3` on
+2026-10-02, publishing Worker `540a16bf-6b54-471f-822f-4f4a5af95ca7`.
+Publication logs: `test-artifacts/pwa-centered-publication-b5be6c3/`.
+Accepted evidence was reused; physical-phone installation remains unverified.

@@ -1,0 +1,6 @@
+/* SPDX-License-Identifier: MIT */
+:root { color-scheme: dark; background: #111415; color: #e8e5df; font-family: system-ui, sans-serif; }
+body { margin: 0; }
+.sharing-app .lab.v2 { padding: 20px 16px 24px; }
+.sharing-app :is(button, input, select, a) { pointer-events: none; }
+.sharing-status { position: absolute; inset: 45% 24px auto; text-align: center; color: #acb6b7; font-size: 14px; line-height: 1.7; }

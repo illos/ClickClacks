@@ -76,8 +76,12 @@ export type ClickClacksOptions = {
   onRoom?: (code: string) => void;
   onJoin?: (key: string) => void;
   roomLink?: (code: string) => string;
+  /** Optional host clipboard adapter, including non-interactive demonstrations. */
+  copyText?: (text: string) => Promise<void>;
   loadHistory?: (code: string) => Promise<CachedRoll[]>;
   onRoll?: (code: string, roll: ParticipantRoll) => void | Promise<void>;
+  /** Presentation-only log boundary; accepted backend history is unchanged. */
+  historySince?: number;
   /** Show the six latest revealed rolls beneath the dice inside the tray. */
   trayHistory?: boolean;
   /** Host-provided desktop Document PiP; omitted when unsupported. */
@@ -341,6 +345,7 @@ function DiceRoom() {
     [error, setError] = useState(''),
     [copied, setCopied] = useState<'code' | 'link' | null>(null);
   const [rollLog, setRollLog] = useState<LogRoll[]>([]);
+  const displayedRollLog = options.historySince === undefined ? rollLog : rollLog.filter(roll => roll.startsAt >= options.historySince!);
   const delivered = useRef(new Set<string>());
   const optionsRef = useRef(options); optionsRef.current = options;
   const codeRef = useRef<string | null>(null);
@@ -463,7 +468,9 @@ function DiceRoom() {
   async function copyRoom(kind: 'code' | 'link') {
     if (!room?.code) return;
     try {
-      await navigator.clipboard.writeText(kind === 'code' ? room.code : roomLink);
+      const text = kind === 'code' ? room.code : roomLink;
+      if (options.copyText) await options.copyText(text);
+      else await navigator.clipboard.writeText(text);
       setShareError('');
       setCopied(kind);
       setTimeout(() => setCopied(null), 2000);
@@ -1002,7 +1009,7 @@ function DiceRoom() {
         </header>
         <div className="dice-card">
           <section className="stage" aria-label="Shared 3D dice tray">
-            {options.trayHistory && <TrayHistory rolls={rollLog} viewer={viewer} motion={preferences.motion} />}
+            {options.trayHistory && <TrayHistory rolls={displayedRollLog} viewer={viewer} motion={preferences.motion} />}
             <div className="canvas-host" ref={host} />
             <div className="stage-label">
               <span className="dot" />
@@ -1241,9 +1248,9 @@ function DiceRoom() {
           </section>
         </div>
       </div>
-      <RollLog motion={preferences.motion} revision={rollLog.map(roll => `${roll.roller}:${roll.id}`).join("|")}>
-        {rollLog.length ? (
-          rollLog.map(roll => (
+      <RollLog motion={preferences.motion} revision={displayedRollLog.map(roll => `${roll.roller}:${roll.id}`).join("|")}>
+        {displayedRollLog.length ? (
+          displayedRollLog.map(roll => (
             <div
               className="roll-log-row"
               data-log-key={`${roll.roller}:${roll.id}`}

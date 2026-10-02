@@ -53,12 +53,11 @@
           </ol>
         </div>
         <figure class="sharing-demo">
-          <video autoplay loop muted playsinline preload="none" width="720" height="720" poster="/media/sharing-poster-5a29ba7f4faf.png" aria-labelledby="sharing-demo-caption" aria-describedby="sharing-demo-description">
-            <source data-src="/media/sharing-demo-672bb7789640.mp4" type="video/mp4" />
-            <p><a href="/media/sharing-demo-672bb7789640.mp4">Watch the sharing demo</a>.</p>
-          </video>
+          <div class="sharing-viewport" aria-hidden="true">
+            <iframe class="sharing-tray" data-src="/web/landing/sharing.html" title="Automatic Click Clacks sharing demonstration" width="720" height="720" tabindex="-1" inert loading="lazy"></iframe>
+          </div>
           <figcaption id="sharing-demo-caption">See how to share a table.</figcaption>
-          <p id="sharing-demo-description">Open the share menu, copy the table code, and return home. A friend joins and rolls a die; everyone sees the same result and history.</p>
+          <p id="sharing-demo-description">Alex rolls a d12, opens the share menu, and copies the table code. Sam joins and rolls two d4s. Everyone sees the same rolls and history.</p>
         </figure>
       </section>
       <section id="customize" class="customize-section" aria-labelledby="customize-title">
@@ -80,7 +79,7 @@
 // Generate a dice pool.
 const dice = generatePool([
   { sides: 20, count: 1 }
-]);</code></pre><a class="integration-docs" href="https://github.com/illos/ClickClacks#embed-without-adopting-the-site">Read the integration guide <span aria-hidden="true">↗</span></a></div><p class="integration-note">MIT licensed · TypeScript · React + Three.js · Optional Convex backend</p></div>
+]);</code></pre><a class="integration-docs" href="https://github.com/illos/ClickClacks#embedding">Read the integration guide <span aria-hidden="true">↗</span></a></div><p class="integration-note">MIT licensed · TypeScript · React + Three.js · Optional Convex backend</p></div>
       </section>
     </main>
     <footer class="site-footer wrap"><a class="brand" href="#" aria-label="Back to top"><img src="/web/branding/click-clacks.svg" alt="Click Clacks.app" width="640" height="280" /></a><div class="footer-links"><a href="https://github.com/illos/ClickClacks">GitHub <span aria-hidden="true">↗</span></a><a href="https://dice.clickclacks.app/">Open the app <span aria-hidden="true">↗</span></a></div></footer>

@@ -26,30 +26,35 @@ if (mini) {
   });
 }
 
-const sharingVideo = document.querySelector<HTMLVideoElement>('.sharing-demo video');
-if (sharingVideo) {
+const sharingFrame = document.querySelector<HTMLIFrameElement>('.sharing-tray');
+if (sharingFrame) {
   let onScreen = false;
-  const source = sharingVideo.querySelector<HTMLSourceElement>('source[data-src]');
-  const updatePlayback = () => {
-    if (!onScreen || document.hidden) {
-      sharingVideo.pause();
-      return;
+  let loaded = false;
+  const sendVisibility = () => {
+    if (onScreen && !document.hidden && !loaded && sharingFrame.dataset.src) {
+      loaded = true;
+      sharingFrame.src = sharingFrame.dataset.src;
     }
-    if (source?.dataset.src) {
-      source.src = source.dataset.src;
-      delete source.dataset.src;
-      sharingVideo.load();
-    }
-    void sharingVideo.play().then(() => {
-      if (!onScreen || document.hidden) sharingVideo.pause();
-    }).catch(() => { /* The poster remains visible if autoplay is unavailable. */ });
+    if (loaded) sharingFrame.contentWindow?.postMessage({
+      type: 'clickclacks-sharing-visibility', active: onScreen && !document.hidden,
+    }, location.origin);
   };
   const observer = new IntersectionObserver(entries => {
     onScreen = entries.some(entry => entry.isIntersecting);
-    updatePlayback();
+    sendVisibility();
   });
-  observer.observe(sharingVideo);
-  document.addEventListener('visibilitychange', updatePlayback);
+  observer.observe(sharingFrame);
+  const viewport = sharingFrame.parentElement!;
+  const resize = new ResizeObserver(() => {
+    sharingFrame.style.transform = `scale(${viewport.clientWidth / 720})`;
+  });
+  resize.observe(viewport);
+  sharingFrame.addEventListener('load', sendVisibility);
+  document.addEventListener('visibilitychange', sendVisibility);
+  addEventListener('message', event => {
+    if (event.origin === location.origin && event.source === sharingFrame.contentWindow &&
+        event.data?.type === 'clickclacks-sharing-ready') sendVisibility();
+  });
 }
 
 const customizer = document.getElementById('customizer-root');

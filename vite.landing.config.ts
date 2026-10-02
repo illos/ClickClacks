@@ -12,6 +12,6 @@ export default defineConfig({
   build: {
     outDir: 'dist/landing-demo',
     assetsInlineLimit: 0,
-    rollupOptions: { input: { landing: 'landing.html', mini: 'web/landing/mini.html' } },
+    rollupOptions: { input: { landing: 'landing.html', mini: 'web/landing/mini.html', sharing: 'web/landing/sharing.html' } },
   },
 });

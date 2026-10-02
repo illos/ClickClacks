@@ -211,6 +211,7 @@ function DiceRoom() {
   const heartbeatPending = useRef<Promise<unknown> | null>(null);
   const hasJoined = useRef(false);
   const customizePending = useRef<Promise<unknown> | null>(null);
+  const customizeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [shareError, setShareError] = useState('');
   const customization = useRef<HTMLDialogElement>(null);
   const backdropPointer = useRef<number | null>(null);
@@ -669,6 +670,7 @@ function DiceRoom() {
   useEffect(() => {
     if (options.popoutActive || !joined || profile === initial || !profile.name.trim()) return;
     const timer = setTimeout(() => {
+      if (customizeTimer.current === timer) customizeTimer.current = null;
       if (changingTableRef.current) return;
       const request = customize({
         key: roomKey,
@@ -681,7 +683,11 @@ function DiceRoom() {
       void request.catch(e => { if (!changingTableRef.current) setError(displayError(e, credential)); })
         .finally(() => { if (customizePending.current === request) customizePending.current = null; });
     }, 300);
-    return () => clearTimeout(timer);
+    customizeTimer.current = timer;
+    return () => {
+      clearTimeout(timer);
+      if (customizeTimer.current === timer) customizeTimer.current = null;
+    };
   }, [profile, initial, joined, viewer, credential, customize, options.popoutActive]);
   const [rollLockUntil, setRollLockUntil] = useState(0);
   const rollLock = useRef(0);
@@ -790,7 +796,15 @@ function DiceRoom() {
     try {
       const controller = delivery.current;
       if (!controller) throw new Error('The table is reconnecting. Try again shortly.');
-      await controller.profile({ name: profile.name, style: profile.style });
+      const matches = (known: Profile | undefined) => !!known &&
+        known.name === profile.name && known.style.color === profile.style.color &&
+        known.style.ink === profile.style.ink && known.style.pattern === profile.style.pattern &&
+        known.style.font === profile.style.font;
+      // A matching authoritative profile needs no save on an ordinary Roll tap.
+      // Pending edits or an older queued tap retain the explicit profile write.
+      if (customizeTimer.current || customizePending.current ||
+          !matches(ownParticipant) || !matches(profileRef.current))
+        await controller.profile({ name: profile.name, style: profile.style });
       await controller.roll(request, async (faces, dice) => {
         // Read current graphics after authority sampling; initial loading and a
         // missing cosmetic worker must never change the accepted logical result.

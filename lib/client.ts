@@ -174,6 +174,27 @@ export function createController(options: {
         motionExpiry.delete(id);
     } }
     const trackVersions = new Map<string, number>();
+    const trackSnapshots = new Map<string, Track | null>();
+    function retainAcceptedMotion(roll: ParticipantRoll, version: number) {
+        const expiresAt = roll.historyExpiresAt ?? roll.startsAt + 3600000;
+        if (!transport.compactTracks || !roll.motion || expiresAt <= now())
+            return;
+        const id = recordKey(roll);
+        // Reuse only the recording returned by authority, never a proposed throw.
+        // Replace a pending download so later metadata can hydrate immediately.
+        motions.delete(id);
+        motions.set(id, Promise.resolve(roll.motion));
+        motionBytes.set(id, byteSize(roll.motion));
+        motionExpiry.set(id, expiresAt);
+        trimMotions();
+        scheduleCaches();
+        const current = trackSnapshots.get(roll.roller);
+        if (current && (current.activeRolls?.length ? current.activeRolls : [current.roll])
+            .some(item => item.roller === roll.roller && item.id === roll.id))
+            // A subscription may arrive before the mutation response. Renew its
+            // revision to retire that hydration, while respecting a newer clear.
+            updateTrack(roll.roller, current, version);
+    }
     async function hydrate(roll: ParticipantRoll): Promise<ParticipantRoll> {
         if (!transport.compactTracks || roll.motion)
             return unpackRoll(roll);
@@ -244,6 +265,7 @@ export function createController(options: {
     function updateTrack(owner: string, value: Track | null, version: number) {
         if (!valid(version))
             return;
+        trackSnapshots.set(owner, value);
         const revision = (trackVersions.get(owner) ?? 0) + 1;
         trackVersions.set(owner, revision);
         if (value?.roll) {
@@ -275,6 +297,7 @@ export function createController(options: {
                 trackVersions.set(owner, (trackVersions.get(owner) ?? 0) + 1);
             }
             tracks.clear();
+            trackSnapshots.clear();
         }
     }
     function updateRoom(value: RoomSnapshot, version: number) {
@@ -288,6 +311,7 @@ export function createController(options: {
             if (!active.has(owner)) {
                 stop();
                 tracks.delete(owner);
+                trackSnapshots.delete(owner);
                 trackVersions.set(owner, (trackVersions.get(owner) ?? 0) + 1);
                 if (visible.delete(owner)) {
                     emit('track', { owner, roll: null });
@@ -312,6 +336,8 @@ export function createController(options: {
         if (!valid(version))
             return;
         const currentOwners = new Set(latest.filter(record => record.track?.roll).map(record => record.owner));
+        for (const owner of trackSnapshots.keys())
+            if (!currentOwners.has(owner)) trackSnapshots.delete(owner);
         for (const owner of visible)
             if (!currentOwners.has(owner)) {
                 visible.delete(owner);
@@ -390,6 +416,7 @@ export function createController(options: {
         for (const stop of tracks.values())
             stop();
         tracks.clear();
+        trackSnapshots.clear();
         if (heartbeat)
             clearInterval(heartbeat);
         heartbeat = undefined;
@@ -522,11 +549,13 @@ export function createController(options: {
                 }
                 if (!valid(version))
                     throw new Error('Room changed while preparing the roll.');
-                const result = await transport.call('diceDemoV2:throwDice', { ...args, id, dice, faces: retained.faces, edges, banes, ...(retained.motion ? { motion: retained.motion } : {}) }) as ParticipantRoll;
+                const raw = await transport.call('diceDemoV2:throwDice', { ...args, id, dice, faces: retained.faces, edges, banes, ...(retained.motion ? { motion: retained.motion } : {}) }) as ParticipantRoll;
                 if (!valid(version))
                     throw new Error('Room changed while accepting the roll.');
+                const result = unpackRoll(raw);
                 retained.accepted = result;
                 delete retained.motion;
+                retainAcceptedMotion(result, version);
                 receive(result);
                 return result;
             })().finally(() => { if (inFlight.get(id) === task)

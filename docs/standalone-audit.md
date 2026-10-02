@@ -604,3 +604,25 @@ two-way theme sync and compact settings; header/menu fit at 1280×900, 430×932,
 and 360×320 native PiP. Firefox/WebKit checks could not launch because host GUI/
 media libraries are absent; these attempts are not browser passes. Physical
 iOS/Safari and assistive-technology checks remain pending as previously approved.
+
+### High contrast preserves dice design (2026-10-02)
+
+Owner requested that high contrast leave dice colors alone because numeric roll
+results are available in the game log. Removed the white-body, black-ink and
+solid-pattern overrides from the shared tray renderer and customization preview.
+The full app and mini tray retain participant dice colors, ink, patterns and
+fonts when high contrast is enabled initially or toggled. Interface and log
+contrast rules remain in place.
+
+Source `dd9a94d` passed typecheck and focused Test/final QC. The real WebGL preview
+and tray retained a pink marble body, lime numerals and Gothic font through
+initial high contrast and dark on/off/on toggles; colored pixel counts matched.
+Light and dark log text retained its high contrast colors and opacity. No page
+errors or backend calls occurred. Evidence remains outside Git at
+`test-artifacts/contrast-dd9a94d/RESULT.md` with screenshots. Earlier probe failures
+were fixture/assertion issues; the accepted run exited 0 without source changes.
+
+Published from pushed main `dd9a94d` with required app build/deployment exit 0:
+Worker `ff400e11-835a-4ff7-98b2-e1d38e4439eb`. Logs are outside Git at
+`test-artifacts/contrast-publication-dd9a94d/`. Accepted evidence was reused;
+publication did not rerun tests or deploy the backend.

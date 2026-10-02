@@ -99,54 +99,9 @@ for (const button of document.querySelectorAll<HTMLButtonElement>('[data-example
     document.getElementById('framework-code')!.hidden = !framework;
     document.getElementById('code-label')!.textContent = framework
       ? 'A real export from the Click Clacks dice engine.'
-      : 'A little dice. Right in your app.';
+      : 'The mini roller. Right in your app.';
     for (const choice of document.querySelectorAll('[data-example]')) {
       choice.setAttribute('aria-pressed', String(choice === button));
     }
   });
-}
-
-// The recording is an external media artifact. Set its URL for a video-equipped
-// build; an ordinary demo build keeps the intro placeholder intact.
-const recordingUrl = import.meta.env.VITE_LANDING_VIDEO_URL as string | undefined;
-const videoHost = document.querySelector<HTMLElement>('.video-placeholder');
-if (recordingUrl && videoHost) {
-  const video = document.createElement('video');
-  const motion = matchMedia('(prefers-reduced-motion: reduce)');
-  video.src = recordingUrl;
-  video.poster = import.meta.env.VITE_LANDING_VIDEO_POSTER_URL ?? '';
-  video.muted = true;
-  video.loop = true;
-  video.playsInline = true;
-  video.autoplay = !motion.matches;
-  video.preload = 'metadata';
-  video.setAttribute('aria-label', 'Click Clacks demo: Alex rolls mint dice, Sam joins the table, then both players roll together.');
-  const actions = document.createElement('div');
-  actions.className = 'video-actions';
-  const pause = document.createElement('button');
-  pause.type = 'button';
-  pause.textContent = 'Play demo';
-  pause.addEventListener('click', () => {
-    if (video.paused) void video.play().catch(() => { pause.textContent = 'Play demo'; });
-    else video.pause();
-  });
-  video.addEventListener('play', () => { pause.textContent = 'Pause demo'; });
-  video.addEventListener('pause', () => { pause.textContent = 'Play demo'; });
-  const larger = document.createElement('a');
-  larger.href = recordingUrl;
-  larger.textContent = 'Watch larger ↗';
-  actions.append(pause, larger);
-  video.addEventListener('loadeddata', () => {
-    videoHost.classList.add('has-video');
-    videoHost.removeAttribute('role');
-    videoHost.removeAttribute('aria-label');
-  }, { once: true });
-  video.addEventListener('error', () => {
-    videoHost.classList.remove('has-video');
-    video.remove();
-    actions.remove();
-  }, { once: true });
-  motion.addEventListener('change', () => { if (motion.matches) video.pause(); });
-  videoHost.prepend(video);
-  videoHost.append(actions);
 }

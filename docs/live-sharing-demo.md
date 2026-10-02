@@ -104,3 +104,13 @@ Source review passed, and required landing build/deploy exited 0. Landing Worker
 `test-artifacts/uppercase-headings-publication-4c29eda/`. No browser fit checks
 ran under the owner's live-before-checks preference. The separate PWA candidate
 remains frozen for its focused app-installability checks.
+
+The owner reverted the all-caps experiment to sentence-case headings in
+`e304580`, restoring the prior mobile hero size. `011bdec` removes the automatic
+demo completion notice while keeping the expiration timer and manual roller.
+These source-reviewed changes were combined with the accepted PWA work and
+published from main `486623f` on 2026-10-02. Required landing build/deploy exited 0;
+landing Worker `892a92d4-14ed-47c8-bf6a-caff6189f654`. Logs are outside Git at
+`test-artifacts/pwa-publication-486623f/`. Homepage browser checks remain held
+for owner viewing. The app's separate installability evidence is recorded in
+[pwa-install.md](pwa-install.md), and its PWA revision is live.

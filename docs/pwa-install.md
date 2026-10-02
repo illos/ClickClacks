@@ -33,3 +33,22 @@ The implementation follows [Chrome's install criteria](https://web.dev/articles/
 and [WebKit's home-screen app guidance](https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/).
 Physical-phone installation remains a manual device check; browser manifest and
 built-asset verification can prove the supplied metadata and icon files.
+
+## Verification and publication
+
+Focused Test and final QC accepted `0c133e3`. Root and prefixed builds exited 0;
+built and development manifest/icon GET/HEAD requests returned 200 with the
+expected MIME types. Icons decoded at their declared sizes and the maskable
+artwork stayed inside the safe region. Chromium's manifest and installability
+APIs returned no errors for the app root and a room-query URL. Embedded tray
+metadata was unchanged. Backend HTTP and WebSocket requests were blocked during
+these checks. Evidence remains outside Git at `test-artifacts/pwa-0c133e3/`.
+Physical-phone installation was not exercised.
+
+Runtime-identical PWA code was combined with separately reviewed homepage changes
+and published from pushed main `486623f` on 2026-10-02. Required app and landing
+builds and Wrangler 4.134.0 deployments exited 0. App Worker:
+`83e96748-c9a2-43f8-8e6a-2e2db2af97bf`. Landing Worker:
+`892a92d4-14ed-47c8-bf6a-caff6189f654`. Publication logs remain outside Git at
+`test-artifacts/pwa-publication-486623f/`. Accepted verification was reused;
+no post-publication test or backend deployment ran.

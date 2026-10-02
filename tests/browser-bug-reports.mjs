@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { chromium, expect } from "@playwright/test";
-import { mkdir } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 const url = process.env.CLICKCLACKS_TEST_URL ?? "http://127.0.0.1:9695";
 if (!["127.0.0.1", "localhost"].includes(new URL(url).hostname))
   throw new Error("This check requires an isolated local Worker.");
@@ -12,10 +12,11 @@ const artifacts =
 await mkdir(artifacts, { recursive: true });
 const browser = await chromium.launch();
 try {
-  for (const [width, height] of [
-    [1440, 900],
-    [430, 932],
-    [320, 568],
+  for (const [width, height, path] of [
+    [1440, 900, "/"],
+    [430, 932, "/"],
+    [320, 568, "/"],
+    [480, 420, "/web/popout/tray.html"],
   ]) {
     const page = await browser.newPage({ viewport: { width, height } });
     // This is an intake/popup check, not a gameplay run against the shared backend.
@@ -30,11 +31,20 @@ try {
         }),
       ),
     );
-    await page.goto(url);
-    const trigger = page
-      .getByRole("button", { name: "Report a bug", exact: true })
-      .first();
-    await trigger.click();
+    await page.goto(new URL(path, url).href);
+    const tray = path !== "/";
+    const trigger = tray
+      ? page.getByRole("button", { name: "Open tray settings", exact: true })
+      : page.getByRole("button", { name: "Report a bug", exact: true }).first();
+    async function openReport() {
+      await trigger.click();
+      if (tray)
+        await page
+          .getByRole("dialog")
+          .getByRole("button", { name: "Report a bug", exact: true })
+          .click();
+    }
+    await openReport();
     const dialog = page.getByRole("dialog", { name: "Report a bug" });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByLabel("What went wrong?")).toBeFocused();
@@ -61,15 +71,19 @@ try {
     await page.screenshot({ path: `${artifacts}/popup-${width}.png` });
     let savedId;
     if (width === 1440) {
-      let first = true;
+      let attempt = 0;
       await page.route("**/api/bug-reports", async (route) => {
-        if (first) {
-          first = false;
+        if (++attempt === 1) {
           const response = await route.fetch();
           expect(response.status()).toBe(201);
           savedId = (await response.json()).id;
           await route.abort("failed");
-        } else await route.continue();
+        } else if (attempt === 2)
+          await route.fulfill({
+            status: 429,
+            json: { error: "Too many reports. Please try again in a minute." },
+          });
+        else await route.continue();
       });
       await dialog.getByRole("button", { name: "Send report" }).click();
       await expect(dialog.getByRole("alert")).toBeVisible();
@@ -77,9 +91,23 @@ try {
         description,
       );
       await expect(dialog.getByLabel("What went wrong?")).toBeDisabled();
+      await dialog.getByRole("button", { name: "Retry", exact: true }).click();
+      await expect(dialog.getByRole("alert")).toHaveText(
+        "Too many reports. Please try again in a minute.",
+      );
+      await expect(dialog.getByLabel("What went wrong?")).toBeDisabled();
+      await expect(dialog.getByLabel("Contact info")).toBeDisabled();
       const download = page.waitForEvent("download");
       await dialog.getByRole("button", { name: "Download report" }).click();
-      expect((await download).suggestedFilename()).toContain(savedId);
+      const file = await download;
+      expect(file.suggestedFilename()).toContain(savedId);
+      expect(
+        JSON.parse(await readFile(await file.path(), "utf8")),
+      ).toMatchObject({
+        id: savedId,
+        description,
+        contact: "reporter@example.invalid",
+      });
       await dialog.getByRole("button", { name: "Retry", exact: true }).click();
     } else await dialog.getByRole("button", { name: "Send report" }).click();
     await expect(
@@ -100,7 +128,9 @@ try {
       expect(row.country).toBeNull();
     } else {
       expect(row.diagnostics.viewport.width).toBe(width);
-      expect(row.diagnostics.context.surface).toBe("roller");
+      expect(row.diagnostics.context.surface).toBe(
+        tray ? "table-menu" : "roller",
+      );
       expect(JSON.stringify(row.diagnostics)).not.toMatch(
         /credential|roomKey|viewer/,
       );
@@ -108,7 +138,7 @@ try {
     await dialog.getByRole("button", { name: "Done" }).click();
     await expect(dialog).not.toBeVisible();
     await expect(trigger).toBeFocused();
-    await trigger.click();
+    await openReport();
     await dialog.getByLabel("What went wrong?").fill("Cancelled report");
     await page.keyboard.press("Escape");
     await expect(dialog).not.toBeVisible();
@@ -125,7 +155,7 @@ try {
     await page.close();
   }
   console.log(
-    "PASS: desktop/mobile popup, focus/escape, optional contact, opt-out, persisted readback, ambiguous-response retry and download",
+    "PASS: desktop/mobile/tray popup, focus/escape, optional contact, opt-out, persisted readback, ambiguous-response retry and download",
   );
 } finally {
   await browser.close();

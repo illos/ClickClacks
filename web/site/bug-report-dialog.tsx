@@ -26,6 +26,7 @@ export function BugReportDialog({
     [receipt, setReceipt] = useState("");
   // Retry the identical payload after an ambiguous response, so it cannot create another report.
   const attempted = useRef<BugSubmission | null>(null);
+  const uncertain = useRef(false);
   useMenuScrollLock(!!draft);
   useEffect(() => {
     if (!draft) return;
@@ -35,6 +36,7 @@ export function BugReportDialog({
     setError("");
     setReceipt("");
     attempted.current = null;
+    uncertain.current = false;
     ref.current?.showModal();
     ref.current?.querySelector<HTMLTextAreaElement>("textarea")?.focus();
     return () => ref.current?.close();
@@ -74,8 +76,9 @@ export function BugReportDialog({
       });
       const result = await response.json();
       if (!response.ok || result.saved !== true || result.id !== value.id) {
-        // These statuses prove rejection; the user can correct their payload.
-        if ([400, 403, 429].includes(response.status)) attempted.current = null;
+        // A rejection of this attempt cannot disprove an earlier ambiguous save.
+        if (!uncertain.current && [400, 403, 429].includes(response.status))
+          attempted.current = null;
         throw new Error(
           typeof result.error === "string"
             ? result.error
@@ -84,6 +87,7 @@ export function BugReportDialog({
       }
       setReceipt(result.id);
     } catch (reason) {
+      if (attempted.current) uncertain.current = true;
       setError(
         reason instanceof Error && reason.name !== "AbortError"
           ? reason.message

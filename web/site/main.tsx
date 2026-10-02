@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import { Component, type ReactNode, StrictMode, useEffect, useLayoutEffect, useState } from 'react';
+import { Component, type ReactNode, StrictMode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { makeFunctionReference } from 'convex/server';
 import { ConvexReactClient } from 'convex/react';
@@ -98,13 +98,16 @@ function Site({ onReportBug }: { onReportBug: (context: BugContext) => void }) {
 class ReportBoundary extends Component<{ children: ReactNode; onReport: () => void }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
-  render() { return this.state.failed ? <div className="bug-report-fallback"><p>The app ran into a problem.</p><button type="button" onClick={this.props.onReport}>Report a bug</button><button type="button" onClick={() => location.reload()}>Reload</button></div> : this.props.children; }
+  render() { return this.state.failed ? <div className="bug-report-fallback"><p>The app ran into a problem.</p><button type="button" aria-label="Report a bug" onClick={this.props.onReport}>Report a bug</button><button type="button" onClick={() => location.reload()}>Reload</button></div> : this.props.children; }
 }
 function ReportHost() {
+  const returnFocus = useRef<HTMLElement | null>(null);
   const [draft, setDraft] = useState<BugDraft | null>(null);
   useEffect(() => installBugDiagnostics(), []);
-  function open(context: BugContext) { setDraft({ id: crypto.randomUUID(), diagnostics: captureBugDiagnostics(context) }); }
+  function open(context: BugContext) { returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; setDraft({ id: crypto.randomUUID(), diagnostics: captureBugDiagnostics(context) }); }
   return <><ReportBoundary onReport={() => open({ surface: 'startup' })}><Site onReportBug={open} /></ReportBoundary>
-    <BugReportDialog draft={draft} onClose={() => { setDraft(null); document.querySelector<HTMLButtonElement>('[aria-label="Report a bug"]')?.focus(); }} /></>;
+    <BugReportDialog draft={draft} onClose={() => { setDraft(null); const visible = (element: HTMLElement | null) => !!element?.isConnected && !!element.getClientRects().length && !element.closest('dialog:not([open])');
+      const target = visible(returnFocus.current) ? returnFocus.current : [...document.querySelectorAll<HTMLButtonElement>('[aria-label="Open tray settings"], [aria-label="Report a bug"]')].find(visible);
+      target?.focus(); }} /></>;
 }
 createRoot(document.getElementById('root')!).render(<StrictMode><ReportHost /></StrictMode>);

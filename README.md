@@ -269,3 +269,32 @@ the hosting rename is coordinated. New builds accept `CLICKCLACKS_BASE`.
 The main page and PiP tray now share one production asset graph. The tray loads
 from `web/popout/tray.html`; the older `pip/web/popout/tray.html` URL is emitted
 as a compatible document using the same shared assets.
+
+### Graphics embedding and the pinned Three patch
+
+The standalone app applies the renderer-ownership fix through its root pnpm patch
+configuration. That configuration is not transitive dependency metadata. Hosts
+using the optional `clickclacks/three` or React 3D tray must register the same
+Three 0.186.1 patch in their own repository to receive the lifecycle fix. Pure
+semantic SDK and backend consumers do not create WebGL renderers.
+
+After installing the source package, copy its included patch into your host project:
+
+```sh
+mkdir -p patches
+cp node_modules/clickclacks/patches/three@0.186.1.patch patches/three@0.186.1.patch
+```
+
+Register it in the host's root `pnpm-workspace.yaml` (merge with existing entries):
+
+```yaml
+patchedDependencies:
+  'three@0.186.1': 'patches/three@0.186.1.patch'
+```
+
+Run `pnpm install` and commit the copied patch, configuration and updated lockfile
+before using frozen installs in CI. If you installed under a dependency alias,
+use that alias in the copy path. Keep the patch in your repository rather than
+referencing `node_modules`, which is absent at the start of a clean install.
+See [pnpm patch registration](https://pnpm.io/cli/patch) and
+[the patch's ownership notes](patches/README.md).

@@ -49,15 +49,32 @@ import and type-only validator dependency so native Node can load the public cli
 A child-process test imports the real public client with Node’s built-in TypeScript
 support and completes a local roll without a browser or backend connection.
 
-Coordinator acceptance requested: the complete focused controller/cooldown suite,
-site build, installed public API check if applicable, and the isolated-backend
-`tests/browser-automatic-session.mjs` journey. That journey traces outbound RPC
-names and reads server events back: local text/3D/clear must issue zero roll or
-clock/delivery RPCs and leave zero accepted records; a second browser must switch
-both to shared, produce matching persisted results, and return to local at the
-full ten-minute deadline. Its fixture advances the delay clock without changing
-server presence time. Actual Document PiP session sharing also needs coordinator
-browser coverage. Accepted results and any limitations will be recorded here.
+The test coordinator accepted `f106934` on 2026-10-02, using a detached checkout
+and a private anonymous Convex backend. The evidence is outside Git at
+`/srv/presidium/home/projects/powerroller/test-artifacts/automatic-local-f106934/RESULT.md`.
+
+- Native Node public-client/local-roll regression: 1/1 passed; typecheck and site
+  build exited 0. The unchanged earlier controller suite passed 41 files/197 tests
+  on `519dc59` and was reused after source review of the import-only repair.
+- The unmodified browser journey passed with zero clock skew and with client clocks
+  two minutes ahead and behind. Solo text/3D/clear produced zero roll/clock/delivery
+  RPCs and zero accepted backend records. Another participant switched both clients
+  to shared; the persisted shared result matched both logs. After departure, mode
+  remained shared at 599000ms and switched local at 600000ms; transition history
+  was discarded and solo rolls again produced zero roll RPCs.
+- Actual headful Chromium Document PiP passed rolls, shared clear, completed
+  name/color edits, close/reopen and one-participant checks. A hidden opener did
+  not reset the active tray's delay: peer departure returned local at 600000ms.
+  Closing PiP restored usable main controls. Local rolls left zero accepted backend
+  records and zero roll/delivery RPCs; PiP's first focus used one expected clock
+  calibration batch. No page errors were recorded.
+
+The first cold Vite preview attempt reloaded during lazy dependency optimization.
+The unchanged runner passed after the preview settled, as did both skew runs;
+a diagnostic fixed-delay variant was excluded from acceptance evidence. The fixture
+advances only the delay clock, keeping server presence time independent. The final
+integration rebase includes current Sharing styling and repository links without
+changing the accepted rolling implementation.
 
 Run coordinator commands from the committed worktree or its disposable test copy:
 
@@ -76,4 +93,5 @@ QC's initial R1–R3 findings are addressed in preparation: trusted presence tim
 separate from local playback, every local tap updates its current profile, and
 the transport binds modifiers across controllers. Retired submissions also have
 a generation-specific pending count, and an idle timer releases local motion and
-expired requests. Final independent acceptance remains pending.
+expired requests. Source review passed `f106934`; coordinator runtime evidence
+above proves those repairs, including the hidden-opener case.

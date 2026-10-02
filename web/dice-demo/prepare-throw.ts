@@ -41,7 +41,9 @@ export function createThrowPlanner(options: { workerFactory?: () => Worker } = {
       worker = options.workerFactory?.() ?? new Worker(new URL('./physics-worker.ts', import.meta.url), {
         type: 'module',
       });
+      const ownedWorker = worker;
       worker.onmessage = ({ data }: MessageEvent<Reply>) => {
+        if (worker !== ownedWorker) return;
         if (!active || active.id !== data.id) return;
         const completed = active;
         clearTimeout(completed.timer);
@@ -61,6 +63,7 @@ export function createThrowPlanner(options: { workerFactory?: () => Worker } = {
         dispatch();
       };
       worker.onerror = event => {
+        if (worker !== ownedWorker) return;
         rejectAll(new Error(event.message || 'Could not prepare the throw.'));
         worker?.terminate();
         worker = undefined;

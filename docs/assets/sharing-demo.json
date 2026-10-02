@@ -1,0 +1,19 @@
+{
+  "sourceCommit": "9bb9712",
+  "release": "sharing-demo-20261002",
+  "width": 720,
+  "height": 720,
+  "durationSeconds": 17.433,
+  "assets": [
+    {
+      "filename": "sharing-demo-d62eb5139d14.mp4",
+      "url": "https://github.com/illos/powerroller/releases/download/sharing-demo-20261002/sharing-demo-d62eb5139d14.mp4",
+      "sha256": "d62eb5139d1439890afaa99f6e485321e015ffdef16f04577709ad668af50787"
+    },
+    {
+      "filename": "sharing-poster-4245ca1965ad.png",
+      "url": "https://github.com/illos/powerroller/releases/download/sharing-demo-20261002/sharing-poster-4245ca1965ad.png",
+      "sha256": "4245ca1965ad08e12b40219aac3ab170b6a190caa49a51e760aa5255862f0c09"
+    }
+  ]
+}

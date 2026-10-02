@@ -2,8 +2,10 @@
 import { build } from 'vite';
 import { copyFile, readFile, writeFile } from 'node:fs/promises';
 import { Resvg } from '@resvg/resvg-js';
+import { prepareLandingPublic } from './lib/landing-media.mjs';
 if (!process.env.VITE_CONVEX_URL) throw new Error('Set the public VITE_CONVEX_URL for the landing mini demo.');
-await build({ configFile: 'vite.landing.config.ts' });
+const publicDir = await prepareLandingPublic();
+await build({ configFile: 'vite.landing.config.ts', publicDir });
 await copyFile('dist/landing-demo/landing.html', 'dist/landing-demo/index.html');
 
 // Raster social cards are build output; the SVG wordmark remains the only source.

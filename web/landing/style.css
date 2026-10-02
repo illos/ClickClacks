@@ -66,8 +66,6 @@ h2 em { font-style: normal; color: var(--pink); }
 .sharing-demo { order: -1; min-width: 0; margin: 0; }
 .sharing-viewport { position: relative; aspect-ratio: 1; overflow: hidden; background: #111415; border: 1px solid var(--line); border-radius: 12px; touch-action: pan-y pinch-zoom; }
 .sharing-tray { position: absolute; inset: 0 auto auto 0; width: 720px; height: 720px; border: 0; transform-origin: top left; pointer-events: none; }
-.sharing-demo figcaption { margin-top: 16px; font-size: 14px; font-weight: 650; }
-.sharing-demo > p { color: var(--muted); font-size: 12px; line-height: 1.8; margin: 8px 0 0; }
 .customize-section { padding: 88px 0 96px; background: #182021; border-block: 1px solid #2d393b; }
 .customize-heading { display: flex; gap: 40px; align-items: flex-end; justify-content: space-between; margin-bottom: 38px; }
 .customize-heading h2 { margin-bottom: 0; }

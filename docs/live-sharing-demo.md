@@ -27,7 +27,8 @@ backend records. Ordinary app consumers retain their existing full log.
 
 The iframe is inert, skipped by keyboard navigation, hidden from assistive
 technology, and ignores pointers. Trusted input is also blocked in its document.
-The website supplies a text description. A host clipboard adapter lets the real
+The section copy explains the sharing flow. The owner removed the separate
+caption and narrated paragraph beneath the illustration. A host clipboard adapter lets the real
 copy handler show confirmation without altering visitors' clipboards. The normal
 app keeps its browser clipboard implementation.
 

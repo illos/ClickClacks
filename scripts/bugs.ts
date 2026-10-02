@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { parseArgs } from "node:util";
 import { readFile } from "node:fs/promises";
+import { deriveSupportToken } from "./bug-report-auth.ts";
 import { reportStatuses } from "../shared/bug-report.ts";
 export async function runBugs(args = process.argv.slice(2), request = fetch) {
   const { values, positionals } = parseArgs({
@@ -37,7 +38,11 @@ export async function runBugs(args = process.argv.slice(2), request = fetch) {
   const writing = command === "submit" || command === "update";
   const token = writing
     ? process.env.BUG_REPORT_WRITE_TOKEN
-    : process.env.BUG_REPORT_READ_TOKEN;
+    : process.env.BUG_REPORT_READ_TOKEN ??
+      (base.origin === "https://app.clickclacks.app" &&
+      process.env.CLOUDFLARE_API_TOKEN
+        ? deriveSupportToken(process.env.CLOUDFLARE_API_TOKEN, "read")
+        : undefined);
   if (!token || token.length < 32)
     throw new Error(
       `Set ${writing ? "BUG_REPORT_WRITE_TOKEN" : "BUG_REPORT_READ_TOKEN"} through the host secret mechanism.`,

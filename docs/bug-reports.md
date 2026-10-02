@@ -38,8 +38,12 @@ global exact submission quota. No geographic permission prompt is used.
 
 ## Reading and triage from Presidium
 
-Obtain the support-reader token through the host secret mechanism. Run from this
-checkout (or use `pnpm --dir /path/to/checkout run bugs ...`):
+Salient project threads already inherit a Cloudflare credential through the
+host secrets broker. For the production support origin only, the CLI derives
+a distinct read-only support token from that credential. It never sends the
+Cloudflare credential to the support API. Explicit `BUG_REPORT_READ_TOKEN` takes
+precedence and is required for other origins. Run from this checkout (or use
+`pnpm --dir /path/to/checkout run bugs ...`):
 
 ```sh
 pnpm run bugs list --status new --json
@@ -76,10 +80,11 @@ independent node_modules in each worktree. Existing ignored Convex-generated
 types are needed for the project's full typecheck; this feature does not change
 or publish Convex code.
 
-`wrangler.bugs.jsonc` is the prepared app-with-intake config. It preserves the
-app hostname/assets and routes `/api/*` before SPA fallback. Its D1 ID is a
-local-only placeholder. Existing `wrangler.jsonc` remains the live static config
-until a reporting release is explicitly approved.
+`wrangler.bugs.jsonc` is the app-with-intake publication config. It preserves
+the app hostname/assets and routes `/api/*` before SPA fallback. The configured
+D1 database is `9eddbb4b-5dbd-4093-99c3-c533605fab18`. The publication workflow
+applies migrations and deploys this config. `wrangler.jsonc` is the historical
+static-only config; deploying it would disable reporting.
 
 Create an ignored `.dev.vars` with local fixture values for
 `BUG_REPORT_READ_TOKEN`, `BUG_REPORT_WRITE_TOKEN` and `BUG_REPORT_RATE_SALT`.
@@ -99,18 +104,29 @@ fixture tokens. Focused worker tests use real SQLite with the actual migration.
 
 ## Publication setup
 
-Publication needs an approved D1 database and server-only secret provisioning.
-Create `clickclacks-bug-reports` in the app's Cloudflare account, replace the
-placeholder ID, and apply its migration remotely. Set the two support tokens
-and rate salt as Worker secrets; provision the matching reader token to project
-threads through the host secret mechanism. A write token should be limited to
-staff doing triage. None of these values belongs in Git or generated assets.
+The owner approved publication on 2026-10-02. The database
+`clickclacks-bug-reports` is in app account
+`462b5ee1e395c11b8523d6c38de0577a`. Apply its migration remotely before deployment.
 
-After release approval, publish the complete app build with
-`wrangler.bugs.jsonc`, switch the app workflow to that config, and record its D1
-ID/Worker version. Reuse the accepted test results. Do not publish the config
-with its placeholder ID or without the rate limiter/salt: public intake fails
-closed when those bindings are absent. The landing Worker is unaffected.
+Worker read/write tokens and rate salt are HMAC-SHA256 derivatives of the
+canonical broker-provided Cloudflare API token, with distinct versioned
+`clickclacks-app:bug-reports:v1:ROLE` labels. The server receives only derived
+values. Provision all three through Worker secrets using
+`scripts/bug-report-auth.ts`; never print them, pass them as command arguments,
+or include them in Vite environment variables. Rotating the canonical
+Cloudflare credential requires reprovisioning the Worker derivatives. The
+canonical value remains in the host broker; no separate broker-admin grant is
+needed. Local fixture tokens are independent of production.
+
+The CLI automatically derives only the reader for the fixed production origin.
+Write commands continue to require an explicit `BUG_REPORT_WRITE_TOKEN` supplied
+through a trusted staff environment. A Cloudflare operator can derive that
+token with the helper for triage without putting its value in arguments/logs.
+
+Publish the complete app build with `wrangler.bugs.jsonc` from pushed main and
+record the Worker version. Reuse accepted tests; only CLI credential routing
+changed during provisioning and receives a focused check. The landing Worker
+is separate. Public intake fails closed without its rate limiter/salt.
 
 ## Accepted validation
 
@@ -127,5 +143,4 @@ findings. Evidence is outside Git at
 Phone popup screenshots were visually inspected. All test-owned services and
 checkouts were removed. Local authoring typecheck and Worker dry-run also passed.
 
-The implementation branch is retained for release approval. No cloud database,
-server secret, GitHub push or app publication has been performed by this task.
+Release results are recorded below after publication.

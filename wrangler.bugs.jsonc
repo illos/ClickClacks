@@ -17,8 +17,7 @@
     {
       "binding": "BUG_REPORTS",
       "database_name": "clickclacks-bug-reports",
-      // Local-only placeholder. Replace with the created D1 ID before publication.
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "9eddbb4b-5dbd-4093-99c3-c533605fab18",
       "migrations_dir": "worker/migrations",
     },
   ],

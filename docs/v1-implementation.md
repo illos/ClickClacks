@@ -90,10 +90,10 @@ revision/cutover design in `tray-collisions.md` and a result/printed-label decis
 the owner confirmed on 2026-10-02 that this larger behavior change is deferred.
 Keep the settled-dice fix for version one.
 
-No GitHub repository rename, Convex project rename, main merge/push or shared live
-promotion has been performed by this implementation thread. Those publication steps
-must use the assigned coordinator and the session's authorization. Preserve all other
-threads' branches, worktrees and running previews.
+No GitHub repository rename or Convex project rename is included. Publication was
+authorized by the owner on 2026-10-02; the release record below identifies the
+merged commit and targets. Preserve all other threads' branches, worktrees and
+running previews.
 
 ## Release acceptance — 2026-10-02
 
@@ -127,3 +127,17 @@ Publication order is pushed main, dedicated Convex dev backend, then an explicit
 Pages workflow dispatch. The release commit uses `[skip ci]` to prevent the main
 push from automatically publishing the new frontend before its backend exists.
 The frozen soak worktree remains in place until the test thread releases it.
+
+### Publication result
+
+`7b9f177` (runtime candidate `847dbbf` plus this release acceptance record) was
+fast-forwarded into standalone `main` and pushed to `illos/powerroller`.
+The dedicated dev backend `nautical-partridge-636` reported functions ready at
+02:31:50 UTC; codegen, schema validation and TypeScript checks succeeded.
+The ambient Salient deploy key was explicitly unset.
+
+[Pages run 36956072861](https://github.com/illos/powerroller/actions/runs/36956072861)
+built and deployed successfully at 02:32:37 UTC. No additional suite or browser
+runs were added for publication. The one-hour soak remains pending and its frozen
+worktree is retained until the soak thread releases it. Any detected issue will
+be addressed in a follow-up change, as authorized by the owner.

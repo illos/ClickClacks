@@ -57,13 +57,11 @@ test("history expiry starts at sampling, prunes current paths and leaves a non-r
     await t.mutation(api.cleanup.expired, {});
     const retained = await t.run(async ctx => ({
       tracks: await ctx.db.query("diceDemoV2Tracks").withIndex("by_room_viewer", q => q.eq("key", key)).take(2),
-      metadata: await ctx.db.query("diceDemoV2TrackMetadata").withIndex("by_room_viewer", q => q.eq("key", key)).take(2),
       presentations: await ctx.db.query("diceDemoV2Presentations").withIndex("by_room_viewer", q => q.eq("key", key)).take(2),
       request: await ctx.db.query("diceDemoV2Requests").withIndex("by_request", q => q.eq("key", key).eq("viewer", viewer).eq("id", roll.id)).unique(),
       room: await ctx.db.query("diceDemoV2Rooms").withIndex("by_key", q => q.eq("key", key)).unique(),
     }));
     expect(retained.tracks).toEqual([]);
-    expect(retained.metadata).toEqual([]);
     expect(retained.presentations).toEqual([]);
     expect(retained.request?.faces).toEqual([]);
     expect(retained.request?.roll).toBeUndefined();
@@ -73,14 +71,13 @@ test("history expiry starts at sampling, prunes current paths and leaves a non-r
   } finally { clock.mockRestore(); }
 });
 
-for (const form of ["uuid", "code", "normalized"] as const) test(`leave via ${form} removes canonical persisted track and metadata`, async () => {
+for (const form of ["uuid", "code", "normalized"] as const) test(`leave via ${form} removes the canonical persisted track`, async () => {
   const t = componentBackend();
   await t.mutation(api.diceDemoV2.join, join);
   await t.mutation(api.diceDemoV2.acceptSupplied, roll);
   const code = (await t.query(api.diceDemoV2.view, { key })).code!;
   await t.mutation(api.diceDemoV2.leave, { ...session, key: form === "uuid" ? key : form === "code" ? code : ` ${code.toLowerCase()} ` });
   expect(await t.run(ctx => ctx.db.query("diceDemoV2Tracks").withIndex("by_room_viewer", q => q.eq("key", key)).take(2))).toEqual([]);
-  expect(await t.run(ctx => ctx.db.query("diceDemoV2TrackMetadata").withIndex("by_room_viewer", q => q.eq("key", key)).take(2))).toEqual([]);
 });
 
 test("bounded expiry cleans legacy rooms without removing live ones", async () => {

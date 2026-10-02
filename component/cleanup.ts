@@ -14,7 +14,6 @@ export const expired = mutation({
       "diceDemoV2Tracks",
       "diceDemoV2Presentations",
       "diceDemoV2Sessions",
-      "diceDemoV2TrackMetadata",
       "diceDemoV2PlaybackReceipts",
       "diceDemoRooms",
     ] as const) {

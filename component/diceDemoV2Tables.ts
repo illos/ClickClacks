@@ -66,10 +66,6 @@ export const trackMetadataResult = v.union(v.null(), v.object({
   roll: semanticRoll, activeRolls: v.array(semanticRoll), receipts: v.array(demoReceipt),
 }));
 export const diceDemoV2Tables = {
-  diceDemoV2TrackMetadata: defineTable({
-    key: v.string(), viewer: v.string(), roll: semanticRoll,
-    firstSequence: v.number(), expiresAt: v.number(),
-  }).index("by_room_viewer", ["key", "viewer"]).index("by_expiry", ["expiresAt"]),
   diceDemoV2PlaybackReceipts: defineTable({
     key: v.string(), roller: v.string(), rollId: v.string(), viewer: v.string(),
     sample: demoReceipt, expiresAt: v.number(),
@@ -126,6 +122,7 @@ export const diceDemoV2Tables = {
     viewer: v.string(),
     expiresAt: v.optional(v.number()),
     roll: participantRoll,
+    firstSequence: v.optional(v.number()),
     receipts: v.array(demoReceipt),
   })
     .index("by_room_viewer", ["key", "viewer"])

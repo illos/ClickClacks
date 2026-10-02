@@ -107,7 +107,7 @@ export const leave=mutation({args:{key:v.string(),viewer:v.string(),credential:v
 
 // Typed additive endpoints also compile against an older local generated binding.
 // Deployment/codegen generates the same references; the installed mount stays fixed.
-const compactApi = components.powerroller.diceDemoV2 as typeof components.powerroller.diceDemoV2 & {
+const compactApi = components.powerroller.diceDemoV2 as unknown as {
   trackMetadata: import("convex/server").FunctionReference<"query", "public", { key: string; viewer: string }, Infer<typeof trackMetadataResult>>;
   motion: import("convex/server").FunctionReference<"query", "public", { key: string; viewer: string; rollId: string }, Infer<typeof demoMotion> | null>;
 };

@@ -59,3 +59,19 @@ build and Wrangler 4.134.0 deployment exited 0; landing Worker version is
 `5ad355ec-16c4-477e-97fb-f44160df0859`. Browser timing/layout checks remain held
 for owner viewing. Revision logs:
 `/srv/presidium/home/projects/powerroller/test-artifacts/sharing-chat-publication-9a90d94/`.
+
+The slower chat/reply revision and join integration were published from pushed
+main `ec1ea76` on 2026-10-02. Both demos now use Ariadne and Cato; scripted hero
+participants roll one or two dice per throw. On mobile, the section copy comes
+before the sharing illustration. The shared dark/light wordmarks use the pink
+star in place of the `.APP` dot, including the landing social card generated at
+build time. Combined runtime source review accepted `40b8512`; the actual
+participant-specific join row is awaited before Cato rolls.
+
+Required landing build and Wrangler 4.134.0 publication exited 0. Landing Worker:
+`a7d0de32-40aa-42cb-b8d2-65a67e01245c`. Logs are outside Git at
+`test-artifacts/sharing-reply-publication-ec1ea76/`. The owner's request to view
+live before demo browser checks remains active. App publication is independently
+held by the local-rolls thread for focused reconnect/automatic-roll acceptance;
+this landing publication does not claim those checks passed or update the app
+Worker. The app's shared logo revision awaits that separate publication.

@@ -1,5 +1,7 @@
 # Sharing menu and website recording
 
+The recording described below is superseded by the [live sharing demonstration](live-sharing-demo.md).
+
 The Sharing dialog shows the table code followed by separate copy-code and copy-link buttons. The redundant, truncated URL field is removed. Each action retains its accessible name, confirmation, and clipboard-error fallback.
 
 The website's sharing section uses “share menu” and replaces the example invitation with a square recording: home, Sharing, copy code, return home, second player joins and rolls. Following the owner's revision, the silent clip autoplays and loops without controls. It loads when the sharing section becomes visible, pauses offscreen or in a hidden tab, and resumes when visible. A roll-result poster and visible text alternative accompany it.

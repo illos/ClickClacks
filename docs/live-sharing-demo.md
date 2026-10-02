@@ -27,4 +27,15 @@ The old recordings remain in GitHub releases as historical authored assets.
 The landing build no longer downloads or publishes video files. The previous
 autoplay-video integration checks are superseded by this implementation. The
 owner's live-before-checks request remains in effect; browser verification is
-held for owner viewing. Publication details will be recorded after deployment.
+held for owner viewing. Authoring typecheck passed. Source review accepted
+`c4f31dc`; layout follow-up `887f634` moves the demo left and text right. Neither
+the former video checks nor source review is claimed as browser verification of
+the new live sequence.
+
+Source `8a0bebd` (including the latest main documentation) was merged into main
+and pushed, then published to `https://clickclacks.app/` on 2026-10-02. The required
+landing build and Wrangler 4.134.0 deployment exited 0. Landing Worker version:
+`a91f509f-b536-4401-9ac2-910d2cd35fd1`. The app Worker remains the independently
+published automatic-session version `47f8ca1d-7efe-41c8-8475-6cbc22753a66`.
+Publication logs are outside Git at
+`/srv/presidium/home/projects/powerroller/test-artifacts/sharing-live-publication-8a0bebd/`.

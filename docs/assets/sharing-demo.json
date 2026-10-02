@@ -1,19 +1,19 @@
 {
-  "sourceCommit": "9bb9712",
-  "release": "sharing-demo-20261002",
+  "sourceCommit": "72ae958",
+  "release": "sharing-demo-20261002-v2",
   "width": 720,
   "height": 720,
-  "durationSeconds": 17.433,
+  "durationSeconds": 12.1,
   "assets": [
     {
-      "filename": "sharing-demo-d62eb5139d14.mp4",
-      "url": "https://github.com/illos/powerroller/releases/download/sharing-demo-20261002/sharing-demo-d62eb5139d14.mp4",
-      "sha256": "d62eb5139d1439890afaa99f6e485321e015ffdef16f04577709ad668af50787"
+      "filename": "sharing-demo-672bb7789640.mp4",
+      "url": "https://github.com/illos/ClickClacks/releases/download/sharing-demo-20261002-v2/sharing-demo-672bb7789640.mp4",
+      "sha256": "672bb7789640a21df9fb2015da8e3ea3a73336811d6fcbbcd85527eb421b2c9b"
     },
     {
-      "filename": "sharing-poster-4245ca1965ad.png",
-      "url": "https://github.com/illos/powerroller/releases/download/sharing-demo-20261002/sharing-poster-4245ca1965ad.png",
-      "sha256": "4245ca1965ad08e12b40219aac3ab170b6a190caa49a51e760aa5255862f0c09"
+      "filename": "sharing-poster-5a29ba7f4faf.png",
+      "url": "https://github.com/illos/ClickClacks/releases/download/sharing-demo-20261002-v2/sharing-poster-5a29ba7f4faf.png",
+      "sha256": "5a29ba7f4faf421f7a103dcfd22d32f3eed6ae340400cced9a09be86559ff802"
     }
   ]
 }

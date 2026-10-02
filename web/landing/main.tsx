@@ -26,6 +26,32 @@ if (mini) {
   });
 }
 
+const sharingVideo = document.querySelector<HTMLVideoElement>('.sharing-demo video');
+if (sharingVideo) {
+  let onScreen = false;
+  const source = sharingVideo.querySelector<HTMLSourceElement>('source[data-src]');
+  const updatePlayback = () => {
+    if (!onScreen || document.hidden) {
+      sharingVideo.pause();
+      return;
+    }
+    if (source?.dataset.src) {
+      source.src = source.dataset.src;
+      delete source.dataset.src;
+      sharingVideo.load();
+    }
+    void sharingVideo.play().then(() => {
+      if (!onScreen || document.hidden) sharingVideo.pause();
+    }).catch(() => { /* The poster remains visible if autoplay is unavailable. */ });
+  };
+  const observer = new IntersectionObserver(entries => {
+    onScreen = entries.some(entry => entry.isIntersecting);
+    updatePlayback();
+  });
+  observer.observe(sharingVideo);
+  document.addEventListener('visibilitychange', updatePlayback);
+}
+
 const customizer = document.getElementById('customizer-root');
 if (customizer) {
   const observer = new IntersectionObserver(entries => {

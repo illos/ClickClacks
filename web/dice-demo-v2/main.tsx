@@ -874,7 +874,7 @@ function DiceRoom() {
     <nav className="settings-links" aria-label="Click Clacks links">
       <a href="https://clickclacks.app/" target="_blank" rel="noopener noreferrer"
         aria-label="Website (opens in a new tab)">Website <span aria-hidden="true">↗</span></a>
-      <a href="https://github.com/illos/powerroller" target="_blank" rel="noopener noreferrer"
+      <a href="https://github.com/illos/ClickClacks" target="_blank" rel="noopener noreferrer"
         aria-label="GitHub (opens in a new tab)">GitHub <span aria-hidden="true">↗</span></a>
     </nav>
     {configuring && error && <ErrorAlert message={error} />}

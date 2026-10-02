@@ -1,6 +1,6 @@
 # Click Clacks
 
-Click Clacks is the standalone dice roller published from `illos/powerroller`.
+Click Clacks is the standalone dice roller published from `illos/ClickClacks`.
 The approved High Voltage branding changes the site name; package, API and browser-storage identifiers remain compatible.
 
 [The version-one readiness plan](docs/v1-readiness-plan.md) combines the codebase
@@ -16,7 +16,7 @@ fonts, patterns, roll state and table history stay independent of the app theme.
 A free realtime dice roller for Draw Steel, with a reusable TypeScript library,
 optional React/Three presentation and an isolated Convex backend.
 
-[Website](https://clickclacks.app) · [Live roller](https://dice.clickclacks.app) · [Source](https://github.com/illos/powerroller)
+[Website](https://clickclacks.app) · [Live roller](https://dice.clickclacks.app) · [Source](https://github.com/illos/ClickClacks)
 
 The default interface, materials, recorded physics, customization preview, social
 menus and compact log come from Salient commit
@@ -88,7 +88,7 @@ npm publication is deferred. Install a **pinned Git revision or local source
 checkout** into a TypeScript application using a bundler such as Vite:
 
 ```sh
-pnpm add 'clickclacks@git+https://github.com/illos/powerroller.git#COMMIT'
+pnpm add 'clickclacks@git+https://github.com/illos/ClickClacks.git#COMMIT'
 ```
 
 Replace `COMMIT` with the revision you reviewed. The package exports TypeScript
@@ -264,7 +264,7 @@ modify its deployment, characters or campaign rules.
 The source package and new component installations use `clickclacks`; the React
 entry exports `ClickClacks` and retains `PowerRoller`/`PowerRollerOptions` aliases.
 Existing consumers may install the source under an explicit dependency alias,
-for example `pnpm add 'powerroller@git+https://github.com/illos/powerroller.git#COMMIT'`.
+for example `pnpm add 'powerroller@git+https://github.com/illos/ClickClacks.git#COMMIT'`.
 The community backend deliberately keeps its installed `powerroller` component
 namespace, and browser preferences, identities, channels and history keep their
 existing storage keys. Renaming does not create a new database or discard data.

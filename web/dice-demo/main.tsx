@@ -236,7 +236,7 @@ function DiceLab() {
   return (
     <main className="lab">
       <header className="lab-header">
-        <a href="https://github.com/illos/powerroller">Source</a>
+        <a href="https://github.com/illos/ClickClacks">Source</a>
         <span>Dice lab / concept demo</span>
         <button
           onClick={async () => {

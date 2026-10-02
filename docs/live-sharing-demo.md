@@ -76,3 +76,6 @@ live before demo browser checks remains active. App publication is independently
 held by the local-rolls thread for focused reconnect/automatic-roll acceptance;
 this landing publication does not claim those checks passed or update the app
 Worker. The app's shared logo revision awaits that separate publication.
+
+The interactive hero roller has the brief “Try it live” prompt below it.
+The non-interactive sharing illustration has no separate caption or narration.

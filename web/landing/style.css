@@ -157,3 +157,9 @@ code { font-family: ui-monospace, monospace; }
 @media (max-width: 760px) { .customizer { grid-template-columns: 1fr; } .customize-heading { margin-bottom: 0; } .die-stage { height: 280px; min-height: 280px; } .landing-preview { min-height: 180px; } .color-wheel { width: min(160px, 100%); margin: 18px auto; } .footer-links { gap: 20px; } }
 @media (max-width: 380px) { .footer-links { gap: 14px; font-size: 11px; } }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .button { transition: none; } .button:hover { transform: none; } }
+
+/* Use the app’s wordmark for both landing-page brand links. */
+.site-header .brand img { width: 170px; height: auto; }
+.site-footer .brand img { width: 110px; height: auto; }
+@media (min-width: 1600px) { .site-header .brand img { width: 210px; } }
+@media (max-width: 760px) { .site-header .brand img { width: 130px; } }

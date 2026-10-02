@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-import { generate, validateDice } from '../shared/generate';
-import type { DieSpec, DieResult } from '../shared/contracts/history';
-export { generate, validateDice, MAX_DICE, MAX_SIDES } from '../shared/generate';
-export type { DieSpec, DieResult } from '../shared/contracts/history';
+import { generate, validateDice } from '../shared/generate.ts';
+import type { DieSpec, DieResult } from '../shared/contracts/history.ts';
+export { generate, validateDice, MAX_DICE, MAX_SIDES } from '../shared/generate.ts';
+export type { DieSpec, DieResult } from '../shared/contracts/history.ts';
 export type DiceGroup = { sides: number; count: number; id?: string };
 export type KeepPolicy = { mode: 'highest' | 'lowest'; count: number };
 export type PoolResult = { dice: (DieResult & { kept: boolean })[]; naturalTotal: number; modifier: number; total: number };
@@ -35,4 +35,4 @@ export function resolvePool(dice: readonly DieSpec[], values: readonly number[],
   const naturalTotal = resolved.reduce((sum,die)=>sum+(die.kept?die.value:0),0);
   return { dice:resolved,naturalTotal,modifier,total:naturalTotal+modifier };
 }
-export { resolvePercentile } from '../shared/dice';
+export { resolvePercentile } from '../shared/dice.ts';

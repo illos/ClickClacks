@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Standalone subset of Salient convex/lib/dice.ts: original validation and hash-stream generation.
 import { ConvexError } from 'convex/values';
-import type { DieResult, DieSpec } from './contracts/history';
-import { sha256 } from './sha256';
+import type { DieResult, DieSpec } from './contracts/history.ts';
+import { sha256 } from './sha256.ts';
 
 /** Bounds on one request. Any larger request is not a table roll. */
 export const MAX_DICE = 100;

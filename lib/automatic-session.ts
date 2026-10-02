@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-import type { Identity, Profile, Transport } from './client';
-import type { Room } from '../shared/room';
-import { createLocalTransport } from './local-transport';
+import type { Identity, Profile, Transport } from './client.ts';
+import type { Room } from '../shared/room.ts';
+import { createLocalTransport } from './local-transport.ts';
 
 export const soloReturnDelayMs = 10 * 60 * 1000;
 export const presenceLifetimeMs = 30000;

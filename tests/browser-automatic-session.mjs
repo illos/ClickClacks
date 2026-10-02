@@ -36,6 +36,8 @@ try {
   await roll.click(); await expect(page.locator('.roll-log-entry')).toHaveCount(1, { timeout: 15000 });
   // Show the original physics and repeat locally; neither path reaches authority.
   await page.getByRole('button', { name: 'Show graphics' }).click();
+  // Roll stays usable during lazy renderer loading; wait for the actual 3D tray.
+  await expect(page.locator('.canvas-host canvas')).toBeVisible({ timeout: 30000 });
   await expect(roll).toBeEnabled(); await roll.click();
   await expect(page.locator('.tray-roll-result')).toHaveCount(1, { timeout: 20000 });
   await expect(page.locator('.roll-log-entry')).toHaveCount(2, { timeout: 15000 });

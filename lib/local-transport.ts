@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
-import type { Identity, Profile, Transport } from './client';
-import { generatePool } from './dice';
-import { resolvePowerRoll } from './draw-steel';
-import { defaultDice, dicePoolSides, genericModifier, naturalDiceTotal, rollCooldownMs, validateDiceConfiguration, type DiceConfiguration } from '../shared/dice';
-import type { ParticipantRoll, Room } from '../shared/room';
-import type { Motion } from '../shared/model';
-import { recordedRevealDelay } from '../shared/timing';
-import { validateMotion } from '../component/lib/recordedMotion';
+import type { Identity, Profile, Transport } from './client.ts';
+import { generatePool } from './dice.ts';
+import { resolvePowerRoll } from './draw-steel.ts';
+import { defaultDice, dicePoolSides, genericModifier, naturalDiceTotal, rollCooldownMs, validateDiceConfiguration, type DiceConfiguration } from '../shared/dice.ts';
+import type { ParticipantRoll, Room } from '../shared/room.ts';
+import type { Motion } from '../shared/model.ts';
+import { recordedRevealDelay } from '../shared/timing.ts';
+import { validateMotion } from '../component/lib/recordedMotion.ts';
 
 /** One browser session, shared by its main page and same-origin floating tray. */
 export function createLocalTransport(identity: Identity, initialRoom: Room, initialProfile: Profile, clock = Date.now) {

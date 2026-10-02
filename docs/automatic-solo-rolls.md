@@ -41,10 +41,13 @@ cannot repeatedly reset the tray's ten-minute solo-return delay. Local motion is
 only while visible; request fingerprints and semantic retry results are bounded
 and expire after one hour.
 
-Authoring checks: focused automatic-session and clock-sync runs passed 22/22
+Authoring checks: focused automatic-session, native-client and clock-sync runs passed 23/23
 tests, and `pnpm typecheck` exited 0 after copying the unchanged generated bindings
-from main into the ignored worktree directories. No backend code/schema change,
-deployment or external publication is part of this preparation.
+from main into the ignored worktree directories. No backend behavior/schema change, deployment or external publication is part of
+this preparation. The shared recorded-motion validator uses an explicit TypeScript
+import and type-only validator dependency so native Node can load the public client.
+A child-process test imports the real public client with Node’s built-in TypeScript
+support and completes a local roll without a browser or backend connection.
 
 Coordinator acceptance requested: the complete focused controller/cooldown suite,
 site build, installed public API check if applicable, and the isolated-backend
@@ -58,7 +61,7 @@ browser coverage. Accepted results and any limitations will be recorded here.
 
 Run coordinator commands from the committed worktree or its disposable test copy:
 
-- `pnpm test` and `pnpm typecheck`.
+- `pnpm test` and `pnpm typecheck` (including `tests/native-client.test.ts`).
 - `pnpm build`, with the isolated deployment's `VITE_CONVEX_URL`.
 - `URL=http://127.0.0.1:<port>/powerroller/ node tests/browser-automatic-session.mjs`.
 - Repeat that browser journey with `CLOCK_SKEW_MS=120000` and `CLOCK_SKEW_MS=-120000`.

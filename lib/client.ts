@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { ConvexClient } from 'convex/browser';
-export { createAutomaticSession, type AutomaticSession, type RollSessionSnapshot } from './automatic-session';
+export { createAutomaticSession, type AutomaticSession, type RollSessionSnapshot } from './automatic-session.ts';
 import type { ConvexReactClient } from 'convex/react';
 import { redactError } from './errors.ts';
 export { redactError, RollerError, type RollerErrorCode } from './errors.ts';

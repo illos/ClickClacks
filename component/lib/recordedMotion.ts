@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { ConvexError, type Infer } from "convex/values";
-import { authorityError } from "./errors";
-import { demoMotion } from "../diceDemoTables";
+import { authorityError } from "./errors.ts";
+import type { demoMotion } from "../diceDemoTables.ts";
 export function decodedSamples(
   motion: Infer<typeof demoMotion>,
 ): readonly number[] | Float64Array {

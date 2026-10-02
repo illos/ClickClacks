@@ -3,7 +3,8 @@ export type RollerErrorCode = 'REQUEST_CONFLICT'|'CONFLICT'|'REQUEST_EXPIRED'|'E
 const knownCodes:readonly string[]=['REQUEST_CONFLICT','CONFLICT','REQUEST_EXPIRED','EXPIRED','CURSOR_EXPIRED','ROOM_EXPIRED','UNAUTHORIZED','INVALID','INVALID_REQUEST'];
 /** Serializable public diagnostics; codes preserve explicit source codes rather than classifying prose. */
 export class RollerError extends Error {
- constructor(public readonly code:RollerErrorCode,message:string){super(message);this.name='RollerError';}
+ readonly code:RollerErrorCode;
+ constructor(code:RollerErrorCode,message:string){super(message);this.code=code;this.name='RollerError';}
  toJSON(){return{code:this.code,message:this.message};}
 }
 function sourceCode(value:unknown,message:string):RollerErrorCode{

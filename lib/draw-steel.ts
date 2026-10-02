@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
-import { resolveEdgeBane, tierOf } from '../shared/resolve/index';
-export { resolveEdgeBane, baseTierOf, tierOf } from '../shared/resolve/index';
+import { resolveEdgeBane, tierOf } from '../shared/resolve/index.ts';
+export { resolveEdgeBane, baseTierOf, tierOf } from '../shared/resolve/index.ts';
 /** Compendium rule/dice/{power-roll,edge,bane,tier-outcome,natural-roll}.md.
  * This basic power roll makes no ability-specific critical-hit claim. */
 export function resolvePowerRoll(faces: readonly number[], edges = 0, banes = 0, characteristic = 0) {

@@ -192,3 +192,13 @@ passed Chromium computed-size/overflow checks at 430 and 320 pixels; WebKit was
 unavailable due to host libraries, so physical Safari behavior was not tested.
 The expanded menu proof is `tests/browser-app-settings.mjs`; reporting's browser
 proof uses the updated Settings entry path.
+
+Expanded runtime `c0048d9` received Test and final QC PASS. Both local browser
+scripts exited 0 at 1440/430/320 pixels and the 480-pixel tray, proving Settings
+placement, theme/accessibility persistence after reload, tab keyboard wrap,
+report handoff/focus and 16px fields. The reporting script repeated lost-save
+response → 429 → identical retry/download and read back four distinct saved
+reports from isolated local D1. Backend HTTP and WebSockets were blocked.
+Evidence: `/srv/presidium/home/projects/powerroller/test-artifacts/settings-037a5ee/RESULT.md`.
+Prior 172-test runtime and CLI authorization results were reused; temporary
+Test services/worktree were removed. Mobile Settings screenshot was inspected.

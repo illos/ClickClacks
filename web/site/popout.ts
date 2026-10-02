@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 import type { Identity } from './session';
+import type { AutomaticSession } from '../../lib/client';
 import type { SitePreferences } from './storage';
 import { applyDocumentTheme, type ColorTheme } from '../dice-demo-v2/theme';
 import type { RollControls } from 'clickclacks/react';
 
-export type TraySession = { identity: Identity; roomKey: string; preferences: SitePreferences; controls?: RollControls; onControls?: (controls:RollControls)=>void; onJoin?: (key:string)=>void; roomLink?: (code:string)=>string };
+export type TraySession = { identity: Identity; roomKey: string; preferences: SitePreferences; automaticSession?: AutomaticSession; controls?: RollControls; onControls?: (controls:RollControls)=>void; onJoin?: (key:string)=>void; roomLink?: (code:string)=>string };
 type MiniWindow = Window & { clickclacksTraySession?: TraySession; powerrollerTraySession?: TraySession };
 type PictureInPicture = { window: Window | null; requestWindow(options: {width:number;height:number}): Promise<Window> };
 const pip = (window as Window & { documentPictureInPicture?: PictureInPicture }).documentPictureInPicture;

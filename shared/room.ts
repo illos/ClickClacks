@@ -10,6 +10,8 @@ export type Participant = {
   seenAt: number;
 };
 export type ParticipantRoll = Roll & {
+  /** Browser-only solo result; never submitted to Convex or playback telemetry. */
+  local?: boolean;
   roller: string;
   name: string;
   total?: number;

@@ -6,6 +6,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useSyncExternalStore,
   useMemo,
   useRef,
   useState,
@@ -17,7 +18,7 @@ import clickClacksLogo from '../branding/click-clacks.svg';
 import clickClacksLightLogo from '../branding/click-clacks-light.svg';
 import { useColorTheme } from './theme';
 import { ThemeOptions } from './theme-controls';
-import { createController, reactTransport, type Controller, type Identity, type Profile, type DeliveredRoll } from '../../lib/client';
+import { createController, reactTransport, type AutomaticSession, type Controller, type Identity, type Profile, type DeliveredRoll } from '../../lib/client';
 import { displayError, redactError } from '../../lib/errors';
 import { dicePoolCount, genericModifierValue, rollCooldownMs } from '../../shared/dice';
 import { describeRoll, rollDiceNotation, rollNaturalTotal, rollFacesText } from '../../lib/format';
@@ -62,6 +63,8 @@ import { ErrorAlert } from './error-alert';
 import { scrubDiagnosticText, type BugContext } from '../../shared/bug-report';
 export type RollControls = { diceCount: number; bonusD4: boolean; edges: number; banes: number; readyAt?: number };
 export type ClickClacksOptions = {
+  /** Opt-in solo authority; share the same session with the floating tray. */
+  automaticSession?: AutomaticSession;
   client: ConvexReactClient;
   roomKey: string;
   identity?: Identity;
@@ -104,6 +107,9 @@ export function ClickClacks(options: ClickClacksOptions) {
 }
 type Clock = { offset: number; uncertainty: number };
 type Tray = ReturnType<typeof createRoomTray>;
+const defaultRollSession = { mode: 'shared' as const, revision: 0 };
+const sharedSessionSnapshot = () => defaultRollSession;
+const noSessionSubscription = () => () => {};
 
 
 type SelectedDice = NonNullable<RollerPreferences['selectedDice']>;
@@ -172,6 +178,12 @@ function DiceRoom() {
   const instanceId = useId();
   const options = useRoller();
   const { roomKey, client } = options;
+  const automaticSession = options.automaticSession;
+  const rollSession = useSyncExternalStore(
+    automaticSession?.subscribe ?? noSessionSubscription,
+    automaticSession?.getSnapshot ?? sharedSessionSnapshot,
+  );
+  const localRolls = rollSession.mode === 'local';
   const [preferences, setSavedPreferences] = useState<RollerPreferences>(() => options.preferences ?? { motion: 'device', hidden: false, highContrast: false, announcements: 'all' });
   useEffect(() => { if (options.preferences) setSavedPreferences(options.preferences); }, [options.preferences]);
   const colorTheme = useColorTheme(preferences.theme);
@@ -310,7 +322,8 @@ function DiceRoom() {
   }, [options.controls]);
   const [clock, setClock] = useState<Clock | null>(null);
   const [clockConnection, setClockConnection] = useState(-1);
-  const clockReady = !!clock && clockConnection === connection.connectionCount;
+  const [clockMode, setClockMode] = useState(rollSession.mode);
+  const clockReady = !!clock && clockConnection === connection.connectionCount && clockMode === rollSession.mode;
   const clockRef = useRef(clock);
   useEffect(() => {
     clockRef.current = clockReady ? clock : null;
@@ -343,7 +356,11 @@ function DiceRoom() {
     tray = useRef<Tray | null>(null);
   const room = useQuery(demoV2.view, { key: roomKey });
   codeRef.current = room?.code ?? null;
+  useLayoutEffect(() => {
+    automaticSession?.observe(room, performance.now() + (clock?.offset ?? Date.now() - performance.now()), connection.isWebSocketConnected);
+  }, [automaticSession, room, clock, connection.isWebSocketConnected]);
   useEffect(() => {
+    if (localRolls) { setHistoryReady(true); return; }
     if (!room?.code || !options.loadHistory) return;
     let active = true;
     void options.loadHistory(room.code).then(history => {
@@ -352,7 +369,7 @@ function DiceRoom() {
       setRollLog(current => [...current, ...history.filter(roll => historyDeadline(roll) > Date.now() && !current.some(value => value.id === roll.id && value.roller === roll.roller))].sort((a,b) => b.startsAt-a.startsAt).slice(0,100));
     }).catch(() => {}).finally(() => { if (active) setHistoryReady(true); });
     return () => { active = false; };
-  }, [room?.code]);
+  }, [room?.code, localRolls]);
   const tracks = useRef(new Map<string, ParticipantRoll>());
   const [trayRolls, setTrayRolls] = useState<
     Record<string, Pick<ParticipantRoll, 'id' | 'roller' | 'startsAt' | 'duration'> & { motionReady: boolean }>
@@ -381,6 +398,17 @@ function DiceRoom() {
     setTrayRolls(old => { const next = { ...old }; for (const id of expired) delete next[id]; return next; });
   }, [now, clock]);
   const audibleOwners = useRef(new Set<string>());
+  useLayoutEffect(() => {
+    if (!automaticSession) return;
+    sound.current?.cancel();
+    for (const owner of new Set([...tracks.current.values()].map(roll => roll.roller))) tray.current?.clear(owner);
+    tracks.current.clear();
+    setTrayRolls({}); setRollLog([]); delivered.current.clear();
+    setAnnouncements([]); setAnnouncement(''); setError('');
+    retryThrow.current = null;
+    // A stalled preparation from the previous mode must not hold up shared rolls.
+    rollQueue.current = Promise.resolve();
+  }, [automaticSession, rollSession.revision]);
   useEffect(() => {
     const owners = new Set([...tracks.current.values()].map(roll => roll.roller));
     for (const owner of audibleOwners.current) if (!owners.has(owner)) sound.current?.cancel(owner);
@@ -438,16 +466,35 @@ function DiceRoom() {
     }
   }
   useEffect(() => {
+    if (automaticSession && rollSession.mode !== 'shared') {
+      // Epoch time is sufficient for one local authority; keep the socket for presence.
+      const refresh = () => {
+        if (document.hidden) return;
+        setClock({ offset: Date.now() - performance.now(), uncertainty: 0 });
+        setClockConnection(connection.connectionCount);
+        setClockMode(rollSession.mode);
+      };
+      refresh();
+      document.addEventListener('visibilitychange', refresh);
+      window.addEventListener('pageshow', refresh);
+      window.addEventListener('focus', refresh);
+      return () => {
+        document.removeEventListener('visibilitychange', refresh);
+        window.removeEventListener('pageshow', refresh);
+        window.removeEventListener('focus', refresh);
+      };
+    }
     const stop = startClockSync(
       () => ping({}),
       () => client.connectionState().isWebSocketConnected,
       value => {
         setClock(value);
         setClockConnection(value ? connection.connectionCount : -1);
+        setClockMode(rollSession.mode);
       },
     );
     return stop;
-  }, [ping, connection.isWebSocketConnected, connection.connectionCount]);
+  }, [ping, connection.isWebSocketConnected, connection.connectionCount, automaticSession, rollSession.mode]);
   useEffect(() => {
     const change = () => {
       setVisible(!document.hidden);
@@ -510,11 +557,12 @@ function DiceRoom() {
       timing?: { firstFrame: number; revealFrame: number; frames: number; maxFrameGap: number },
     ) => {
       if (historyDeadline(roll) <= Date.now()) return;
+      if (roll.local && automaticSession?.getSnapshot().mode !== 'local') return;
       const rollKey = `${roll.roller}:${roll.id}`;
       if (!delivered.current.has(rollKey)) {
         delivered.current.add(rollKey);
         if (delivered.current.size > 5000) delivered.current.delete(delivered.current.values().next().value!);
-        if (codeRef.current) void optionsRef.current.onRoll?.(codeRef.current, roll);
+        if (!roll.local && codeRef.current) void optionsRef.current.onRoll?.(codeRef.current, roll);
         const prefs = preferencesRef.current;
         if (!(roll as DeliveredRoll).historical && (prefs.announcements === 'all' || prefs.announcements === 'mine' && roll.roller === viewer)) setAnnouncements(queue => [...queue, describeRoll(roll).concise]);
       }
@@ -525,39 +573,40 @@ function DiceRoom() {
           .sort((a, b) => b.startsAt - a.startsAt)
           .slice(0, 100);
       });
-      if ((roll as DeliveredRoll).historical && !timing) return;
+      if (roll.local || (roll as DeliveredRoll).historical && !timing) return;
       const time = performance.now() + (clockRef.current?.offset ?? 0);
       receiptReports.report(rollKey, timing ?? { firstFrame: time, revealFrame: time, frames: 0, maxFrameGap: 0 }, uncertainty);
     },
-    [receiptReports, viewer],
+    [receiptReports, viewer, automaticSession],
   );
   const delivery = useRef<Controller | null>(null);
   const [deliveryReady, setDeliveryReady] = useState(false);
   const joinedForDelivery = room?.participants.some(member => member.id === viewer);
   useEffect(() => {
-    if (!joinedForDelivery || !historyReady || !clockReady) return;
+    if (!joinedForDelivery || !historyReady || !clockReady || rollSession.mode === 'checking') return;
     let active = true;
+    const current = () => active && (!automaticSession || automaticSession.getSnapshot().revision === rollSession.revision);
     const controller = createController({ key: roomKey, identity, profile: profileRef.current,
       clock: () => performance.now(), clockEstimate: () => clockRef.current ?? { offset: 0, uncertainty: 10000 },
-      transport: reactTransport(client),
+      transport: localRolls ? automaticSession!.localTransport(profileRef.current) : reactTransport(client),
     });
     delivery.current = controller;
     controller.on('track', ({ owner, roll, activeRolls }) => {
-      if (!active) return;
+      if (!current()) return;
       if (!roll) { rememberTrack(owner, null); tray.current?.clear(owner); }
       else for (const current of activeRolls ?? [roll]) rememberTrack(owner, current);
     });
-    controller.on('available', roll => report(roll, controller.clockEstimate().uncertainty));
-    controller.on('error', error => setError(displayError(error, credential)));
-    void controller.observe().then(() => { if (active) setDeliveryReady(true); })
-      .catch(error => { if (active) setError(displayError(error, credential)); });
+    controller.on('available', roll => { if (current()) report(roll, controller.clockEstimate().uncertainty); });
+    controller.on('error', error => { if (current()) setError(displayError(error, credential)); });
+    void controller.observe().then(() => { if (current()) setDeliveryReady(true); })
+      .catch(error => { if (current()) setError(displayError(error, credential)); });
     return () => {
       active = false;
       setDeliveryReady(false);
       if (delivery.current === controller) delivery.current = null;
       void controller.dispose();
     };
-  }, [joinedForDelivery, historyReady, clockReady, roomKey, viewer, credential, client, report, rememberTrack]);
+  }, [joinedForDelivery, historyReady, clockReady, roomKey, viewer, credential, client, report, rememberTrack, automaticSession, rollSession.revision, localRolls]);
   useEffect(() => {
     let cancelled = false;
     let current: Tray | null = null;
@@ -764,7 +813,8 @@ function DiceRoom() {
     setError('');
     for (const owner of new Set([...tracks.current.values()].map(roll => roll.roller))) tray.current?.clear(owner);
     try {
-      await clearSharedTray({ key: roomKey, viewer, credential });
+      if (localRolls) await delivery.current?.clear();
+      else await clearSharedTray({ key: roomKey, viewer, credential });
     } catch (e) {
       if (clockRef.current)
         for (const roll of tracks.current.values()) tray.current?.play(roll, clockRef.current);
@@ -785,12 +835,15 @@ function DiceRoom() {
     setPending(true);
     // Capture this tap's configuration; serialize authority requests while the
     // original recorded dice paths continue playing independently in the tray.
-    rollQueue.current = rollQueue.current.catch(() => {}).then(submit).finally(() => {
+    const controller = delivery.current;
+    rollQueue.current = rollQueue.current.catch(() => {}).then(() => {
+      if (controller && delivery.current === controller) return submit(controller);
+    }).finally(() => {
       submissions.current--;
       setPending(submissions.current > 0);
     });
   }
-  async function submit() {
+  async function submit(controller: Controller) {
     setError('');
     const retry = retryThrow.current;
     const request: NonNullable<typeof retryThrow.current> = retry &&
@@ -802,8 +855,6 @@ function DiceRoom() {
     };
     retryThrow.current = request;
     try {
-      const controller = delivery.current;
-      if (!controller) throw new Error('The table is reconnecting. Try again shortly.');
       const matches = (known: Profile | undefined) => !!known &&
         known.name === profile.name && known.style.color === profile.style.color &&
         known.style.ink === profile.style.ink && known.style.pattern === profile.style.pattern &&
@@ -821,10 +872,12 @@ function DiceRoom() {
           performance.now() + (clockRef.current?.offset ?? 0), faces.length);
         return (await planner.current.prepareThrow(faces, { ...scene, dice })).motion;
       });
+      if (delivery.current !== controller) return;
       retryThrow.current = null;
       setEdges(current => current === edges ? 0 : current);
       setBanes(current => current === banes ? 0 : current);
     } catch (e) {
+      if (delivery.current !== controller) return;
       setError(displayError(e, credential));
       if (['REQUEST_EXPIRED','REQUEST_CONFLICT','CONFLICT','INVALID','INVALID_REQUEST','ROOM_EXPIRED','UNAUTHORIZED'].includes(redactError(e, [credential]).code))
         retryThrow.current = null;
@@ -880,7 +933,7 @@ function DiceRoom() {
     {configuring && error && <ErrorAlert message={error} />}
   </>;
   return (
-    <main onPointerDown={unlockSound} onPointerUp={unlockSound} onKeyDown={unlockSound} data-theme={colorTheme} className={`lab v2${preferences.highContrast ? ' high-contrast' : ''}`}>
+    <main onPointerDown={unlockSound} onPointerUp={unlockSound} onKeyDown={unlockSound} data-theme={colorTheme} data-roll-mode={rollSession.mode} className={`lab v2${preferences.highContrast ? ' high-contrast' : ''}`}>
       <div className="roll-area">
         <header className="lab-header">
           <h1 className="power-title"><img className="click-clacks-logo" src={colorTheme === 'light' ? clickClacksLightLogo : clickClacksLogo} alt="Click Clacks" width="640" height="280" /></h1>

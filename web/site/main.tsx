@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
-import { Component, type ReactNode, StrictMode, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Component, type ReactNode, StrictMode, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { makeFunctionReference } from 'convex/server';
 import { ConvexReactClient } from 'convex/react';
 import { ClickClacks, type RollControls } from 'clickclacks/react';
-import { parseRoomKey } from 'clickclacks/client';
+import { createAutomaticSession, parseRoomKey } from 'clickclacks/client';
 import { claimIdentity, readIdentity, type Identity } from './session';
 import { randomClassicalName } from './classical-names';
 import { createTrayPopout, traySession } from './popout';
@@ -27,6 +27,7 @@ const initialRoom = miniSession?.roomKey ?? parseRoomKey(invite ?? '') ?? (saved
 function Site({ onReportBug }: { onReportBug: (context: BugContext) => void }) {
   const [room, setRoom] = useState(initialRoom);
   const [identity, setIdentity] = useState<Identity | undefined>(miniSession?.identity);
+  const automaticSession = useMemo(() => miniSession?.automaticSession ?? (identity ? createAutomaticSession(identity) : undefined), [identity, room]);
   const [preferences, setPreferences] = useState(saved);
   const colorTheme = useColorTheme(preferences.theme);
   useLayoutEffect(() => { applyDocumentTheme(colorTheme); popout.setTheme(colorTheme); }, [colorTheme]);
@@ -84,9 +85,9 @@ function Site({ onReportBug }: { onReportBug: (context: BugContext) => void }) {
     return () => { active = false; };
   }, []);
   if (!identity) return null;
-  return <ClickClacks onReportBug={onReportBug} client={client} roomKey={room} identity={identity} profile={preferences.profile} preferences={preferences} nameProvider={randomClassicalName}
+  return <ClickClacks automaticSession={automaticSession} onReportBug={onReportBug} client={client} roomKey={room} identity={identity} profile={preferences.profile} preferences={preferences} nameProvider={randomClassicalName}
     trayHistory={document.getElementById('root')?.dataset.trayHistory === 'true'}
-    onPopout={!miniSession && popout.supported ? () => void popout.open({identity, roomKey:room, preferences:loadPreferences(), controls, onControls:updateControls, onJoin:joinTable, roomLink}) : undefined}
+    onPopout={!miniSession && popout.supported ? () => void popout.open({identity, roomKey:room, preferences:loadPreferences(), automaticSession, controls, onControls:updateControls, onJoin:joinTable, roomLink}) : undefined}
     popoutActive={popoutActive} popoutError={popoutError}
     controls={controls} onControls={updateControls}
     onPreferences={value => { savePreferences({ ...value, profile: loadPreferences().profile, room: loadPreferences().room, roomBackend: backend }); setPreferences(loadPreferences()); }}

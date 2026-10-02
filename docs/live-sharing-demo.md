@@ -96,3 +96,11 @@ jump into the full app.” Source review accepted this one-line text revision;
 no tests ran. Required landing build and Wrangler 4.134.0 deploy exited 0.
 Landing Worker: `6218a32d-f0d1-4260-abd2-8f549b1dcfff`. Logs remain outside Git at
 `test-artifacts/hero-copy-publication-1a44719/`. The app Worker is unchanged.
+
+Main homepage headings were changed to all caps in `4c29eda` on 2026-10-02;
+the mobile hero minimum was reduced to 36px for the wider capital letters.
+Source review passed, and required landing build/deploy exited 0. Landing Worker:
+`1b2b60b3-993c-41e7-b3ab-7bc9cc696529`. Logs remain outside Git at
+`test-artifacts/uppercase-headings-publication-4c29eda/`. No browser fit checks
+ran under the owner's live-before-checks preference. The separate PWA candidate
+remains frozen for its focused app-installability checks.

@@ -102,7 +102,7 @@ function Demo() {
   useEffect(() => {
     if (expired) {
       root.dataset.autoplay = 'expired';
-      setStatus('Automatic demo finished. You can still roll.');
+      setStatus('');
     } else root.dataset.autoplay = active ? 'active' : 'paused';
   }, [active, expired]);
 

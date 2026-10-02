@@ -67,7 +67,7 @@ function Customizer() {
   return (
     <div className="customizer" style={{ '--die-color': style.color, '--die-ink': style.ink } as CSSProperties}>
       <div className="die-stage">
-        <div ref={host} className="landing-preview" role="img" aria-label={`3D ten-sided die, ${style.color} body, ${style.ink} numbers, ${style.pattern} finish. Drag to rotate.`} />
+        <div ref={host} className="landing-preview" role="img" aria-label={`3D ten-sided die, ${style.color} body, ${style.ink} numbers, ${style.pattern} finish.`} />
         {status !== 'ready' && <p className="preview-status" role="status">{status === 'failed' ? '3D preview unavailable on this device. You can still explore the colors.' : 'Loading your die…'}</p>}
       </div>
       <div className="customizer-controls">

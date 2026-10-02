@@ -79,8 +79,7 @@ h2 em { font-style: normal; color: var(--pink); }
 .stage-topline, .stage-bottomline { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 22px 26px; font-size: 9px; letter-spacing: .1em; color: var(--muted); z-index: 1; }
 .stage-topline .live-dot { margin-right: 6px; }
 .stage-bottomline button { padding: 7px 12px; border: 1px solid #455456; background: transparent; font-size: 10px; border-radius: 4px; color: #c8d0ce; }
-.landing-preview { width: 100%; min-height: 380px; flex: 1; position: relative; touch-action: none; cursor: grab; }
-.landing-preview:active { cursor: grabbing; }
+.landing-preview { width: 100%; min-height: 380px; flex: 1; position: relative; pointer-events: none; touch-action: auto; cursor: default; }
 .landing-preview canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .landing-preview::before { content: ''; position: absolute; width: 30%; height: 8%; bottom: 7%; left: 35%; background: radial-gradient(ellipse, #0008, transparent 70%); pointer-events: none; }
 .preview-status { position: absolute; inset: 38% 12% auto; text-align: center; font-size: 14px; line-height: 1.8; color: var(--muted); pointer-events: none; }

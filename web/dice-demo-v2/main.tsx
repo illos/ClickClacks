@@ -693,11 +693,16 @@ function DiceRoom() {
     ...rollLog.map(roll => historyDeadline(roll) - serverOffset),
   ], now, setNow);
   useEffect(() => {
-    setRollLog(current => {
-      const retained = current.filter(roll => historyDeadline(roll) > now + serverOffset);
-      return retained.length === current.length ? current : retained;
-    });
-  }, [now, serverOffset]);
+    const cutoff = now + serverOffset;
+    if (!rollLog.some(roll => historyDeadline(roll) <= cutoff)) return;
+    setRollLog(current => current.filter(roll => historyDeadline(roll) > cutoff));
+    // The built-in indexed read also prunes expired disk rows. Sweep only when
+    // visible entries actually expire; never restore the returned rows or renew
+    // their deadlines, and keep storage effects outside the React state updater.
+    const loadHistory = optionsRef.current.loadHistory;
+    const code = codeRef.current;
+    if (loadHistory && code) void Promise.resolve().then(() => loadHistory(code)).catch(() => {});
+  }, [now, serverOffset, rollLog]);
   useEffect(() => {
     const deadline = (options.controls?.readyAt ?? 0) - performance.timeOrigin;
     if (deadline > rollLock.current) { rollLock.current = deadline; setRollLockUntil(deadline); setNow(performance.now()); }

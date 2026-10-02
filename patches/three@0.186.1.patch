@@ -1,0 +1,70 @@
+--- a/src/renderers/WebGLRenderer.js
++++ b/src/renderers/WebGLRenderer.js
+@@ -302,6 +302,7 @@
+ 
+ 		let _isContextLost = false;
+ 		let _nodesHandler = null;
++		let _dfgLUT = null;
+ 
+ 		let _scratchFramebuffer = null;
+ 		let _srcFramebuffer = null;
+@@ -1089,6 +1090,15 @@
+ 			canvas.removeEventListener( 'webglcontextrestored', onContextRestore, false );
+ 			canvas.removeEventListener( 'webglcontextcreationerror', onContextCreationError, false );
+ 
++			// Dispose the renderer-owned LUT before its texture properties are reset.
++			// The module-scoped lookup must not retain retired renderer listeners.
++			if ( _dfgLUT !== null ) {
++
++				_dfgLUT.dispose();
++				_dfgLUT = null;
++
++			}
++
+ 			background.dispose();
+ 			renderLists.dispose();
+ 			renderStates.dispose();
+@@ -2742,7 +2752,7 @@
+ 			// Set DFG LUT for physically-based materials
+ 			if ( m_uniforms.dfgLUT !== undefined ) {
+ 
+-				m_uniforms.dfgLUT.value = getDFGLUT();
++				m_uniforms.dfgLUT.value = _dfgLUT || ( _dfgLUT = getDFGLUT().clone() );
+ 
+ 			}
+ 
+--- a/build/three.module.js
++++ b/build/three.module.js
+@@ -16339,6 +16339,7 @@
+ 
+ 		let _isContextLost = false;
+ 		let _nodesHandler = null;
++		let _dfgLUT = null;
+ 
+ 		let _scratchFramebuffer = null;
+ 		let _srcFramebuffer = null;
+@@ -17126,6 +17127,15 @@
+ 			canvas.removeEventListener( 'webglcontextrestored', onContextRestore, false );
+ 			canvas.removeEventListener( 'webglcontextcreationerror', onContextCreationError, false );
+ 
++			// Dispose the renderer-owned LUT before its texture properties are reset.
++			// The module-scoped lookup must not retain retired renderer listeners.
++			if ( _dfgLUT !== null ) {
++
++				_dfgLUT.dispose();
++				_dfgLUT = null;
++
++			}
++
+ 			background.dispose();
+ 			renderLists.dispose();
+ 			renderStates.dispose();
+@@ -18779,7 +18789,7 @@
+ 			// Set DFG LUT for physically-based materials
+ 			if ( m_uniforms.dfgLUT !== undefined ) {
+ 
+-				m_uniforms.dfgLUT.value = getDFGLUT();
++				m_uniforms.dfgLUT.value = _dfgLUT || ( _dfgLUT = getDFGLUT().clone() );
+ 
+ 			}
+ 

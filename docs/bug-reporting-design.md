@@ -1,5 +1,8 @@
 # In-app bug reports
 
+Historical design proposal. Implemented scope and current publication/access
+instructions are in [Bug reports](bug-reports.md); that document takes precedence.
+
 Design proposal, 2026-10-02. Confirmed direction: Click Clacks users should report
 bugs inside the app, attaching useful browser/app context; GitHub Issues is a
 candidate destination. The owner also proposed D1 storage accessible to Presidium

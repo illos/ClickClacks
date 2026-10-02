@@ -35,7 +35,9 @@ resets the submission queue. A pending local preparation cannot submit to the
 shared backend. Shared mode resamples the server clock and waits for delivery
 readiness before enabling Roll. The same local transport lets PiP observe rolls
 and clear the tray without joining a second participant or issuing roll RPCs.
-Closing PiP leaves the opener's local transport usable. Local motion is retained
+Closing PiP leaves the opener's local transport usable.
+The tray also owns presence observation while open; the opener's suspended clock
+cannot repeatedly reset the tray's ten-minute solo-return delay. Local motion is retained
 only while visible; request fingerprints and semantic retry results are bounded
 and expire after one hour.
 

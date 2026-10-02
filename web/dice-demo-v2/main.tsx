@@ -359,8 +359,10 @@ function DiceRoom() {
   const room = useQuery(demoV2.view, { key: roomKey });
   codeRef.current = room?.code ?? null;
   useLayoutEffect(() => {
+    // The tray owns presence while open; a hidden opener has no usable clock.
+    if (options.popoutActive) return;
     automaticSession?.observe(room, presenceClock ? performance.now() + presenceClock.estimate.offset : 0, connection.isWebSocketConnected && presenceReady);
-  }, [automaticSession, room, presenceClock, presenceReady, connection.isWebSocketConnected]);
+  }, [automaticSession, room, presenceClock, presenceReady, connection.isWebSocketConnected, options.popoutActive]);
   useEffect(() => {
     if (localRolls) { setHistoryReady(true); return; }
     if (!room?.code || !options.loadHistory) return;

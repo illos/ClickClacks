@@ -11,7 +11,7 @@
   border-radius: 14px;
   overflow-y: auto;
   font:
-    15px/1.5 system-ui,
+    16px/1.5 system-ui,
     sans-serif;
 }
 .bug-report-dialog::backdrop {
@@ -72,6 +72,8 @@
   display: block;
   width: 100%;
   font: inherit;
+  /* Safari on iOS zooms focused text fields when their font is below 16px. */
+  font-size: 16px;
   color: inherit;
   background: rgb(127 127 127 / 8%);
   border: 1px solid #707b7d;

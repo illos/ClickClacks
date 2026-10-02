@@ -3,6 +3,12 @@
 Click Clacks is the standalone dice roller published from `illos/powerroller`.
 The approved High Voltage branding changes the site name; package, API and browser-storage identifiers remain compatible.
 
+Use the appearance icon in the top menu to choose **System**, **Light**, or **Dark**.
+System is the default and follows device changes live; an explicit choice is saved
+in this browser. Appearance is also available in Customize dice and the floating
+tray’s Dice settings. The main page and PiP share the preference. Dice colors,
+fonts, patterns, roll state and table history stay independent of the app theme.
+
 A free realtime dice roller for Draw Steel, with a reusable TypeScript library,
 optional React/Three presentation and an isolated Convex backend.
 

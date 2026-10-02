@@ -14,6 +14,9 @@ import {
 import { Check, Copy, X, Users, Eraser, Volume2, VolumeX, PictureInPicture2, Settings, Link as LinkIcon } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import clickClacksLogo from '../branding/click-clacks.svg';
+import clickClacksLightLogo from '../branding/click-clacks-light.svg';
+import { useColorTheme } from './theme';
+import { ThemeSwitcher, ThemeOptions } from './theme-controls';
 import { makeFunctionReference } from 'convex/server';
 import { createController, type Identity, type Profile, type DeliveredRoll } from '../../lib/client';
 import { displayError, redactError } from '../../lib/errors';
@@ -441,6 +444,7 @@ function DiceRoom() {
   const { roomKey, client } = options;
   const [preferences, setSavedPreferences] = useState<SitePreferences>(() => options.preferences ?? { motion: 'device', hidden: false, highContrast: false, announcements: 'all' });
   useEffect(() => { if (options.preferences) setSavedPreferences(options.preferences); }, [options.preferences]);
+  const colorTheme = useColorTheme(preferences.theme);
   const preferencesRef = useRef(preferences);
   preferencesRef.current = preferences;
   const sound = useRef<ReturnType<typeof createDiceSound> | null>(null);
@@ -853,7 +857,7 @@ function DiceRoom() {
               setFallback(true);
             },
             (roll, timing, uncertainty) => report(roll, uncertainty, timing),
-            { ...preferencesRef.current, transparent: options.trayHistory },
+            { ...preferencesRef.current, colorTheme, transparent: options.trayHistory },
           );
           tray.current = current;
           setGraphics(true);
@@ -874,8 +878,8 @@ function DiceRoom() {
     };
   }, [report, preferences.hidden, options.trayHistory]);
   useEffect(() => {
-    tray.current?.setPreferences(preferences);
-  }, [preferences.motion, preferences.highContrast, graphics]);
+    tray.current?.setPreferences({...preferences, colorTheme});
+  }, [preferences.motion, preferences.highContrast, colorTheme, graphics]);
   const members = useMemo(
     () =>
       (room?.participants ?? [])
@@ -1108,6 +1112,7 @@ function DiceRoom() {
     <fieldset disabled={busy} className="profile-fields">
       <DiceDesignControls disabled={busy} active={customizing} style={profile.style} onChange={edit} />
     </fieldset>
+    <ThemeOptions value={preferences.theme} onChange={theme => changePreferences({...preferences, theme})} />
     <AccessibilityControls preferences={preferences} onChange={changePreferences} />
     {customizing && error && (
       <p className="error" role="alert">
@@ -1116,10 +1121,11 @@ function DiceRoom() {
     )}
   </>;
   return (
-    <main onPointerDown={unlockSound} onPointerUp={unlockSound} onKeyDown={unlockSound} className={`lab v2${preferences.highContrast ? ' high-contrast' : ''}`}>
+    <main onPointerDown={unlockSound} onPointerUp={unlockSound} onKeyDown={unlockSound} data-theme={colorTheme} className={`lab v2${preferences.highContrast ? ' high-contrast' : ''}`}>
       <div className="roll-area">
         <header className="lab-header">
-          <h1 className="power-title"><img className="click-clacks-logo" src={clickClacksLogo} alt="Click Clacks" width="640" height="280" /></h1>
+          <h1 className="power-title"><img className="click-clacks-logo" src={colorTheme === 'light' ? clickClacksLightLogo : clickClacksLogo} alt="Click Clacks" width="640" height="280" /></h1>
+          <ThemeSwitcher value={preferences.theme} onChange={theme => changePreferences({...preferences, theme})} />
           {options.onPopout && <button type="button" className="customize-trigger"
             aria-label={options.popoutActive ? 'Focus dice tray' : 'Pop out dice tray'}
             title={options.popoutActive ? 'Focus dice tray' : 'Pop out dice tray'}

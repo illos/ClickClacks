@@ -5,6 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#111415" />
     <link rel="icon" type="image/svg+xml" href="/web/branding/click-clacks-mark.svg" />
+    <script>
+      // Apply the saved/device appearance before the app bundle paints.
+      let choice = 'system';
+      try {
+        const saved = JSON.parse(localStorage.getItem('powerroller.preferences.v2') || 'null');
+        if (saved?.version === 2) choice = saved.preferences?.theme;
+      } catch { /* Device appearance still works when storage is blocked. */ }
+      const theme = choice === 'light' || choice === 'dark' ? choice : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.dataset.theme = theme;
+      document.documentElement.style.colorScheme = theme;
+      document.querySelector('meta[name="theme-color"]').content = theme === 'light' ? '#f4f1eb' : '#111415';
+    </script>
     <title>Click Clacks</title>
   </head>
   <body>

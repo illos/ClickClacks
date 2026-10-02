@@ -8,6 +8,14 @@ const roll=(id:string,startsAt:number):ParticipantRoll=>({id,name:'River',roller
 beforeEach(()=>{vi.stubGlobal('localStorage',storage());vi.stubGlobal('sessionStorage',storage());vi.stubGlobal('indexedDB',undefined);});
 afterEach(()=>{vi.useRealTimers();vi.unstubAllGlobals();});
 describe('site-owned persistence and private identity',()=>{
+ it('defaults old and invalid appearance settings to System and preserves profile while saving theme',()=>{
+  expect(loadPreferences().theme).toBe('system');
+  saveProfile(profile);
+  savePreferences({...loadPreferences(),theme:'light'});
+  expect(loadPreferences()).toMatchObject({theme:'light',profile});
+  localStorage.setItem('powerroller.preferences.v2',JSON.stringify({version:2,preferences:{profile,theme:'invalid'}}));
+  expect(loadPreferences()).toMatchObject({theme:'system',profile});
+ });
  it('defaults sound off and persists only an explicit boolean preference',()=>{
   expect(loadPreferences().sound).toBe(false);
   savePreferences({...loadPreferences(),sound:true});expect(loadPreferences().sound).toBe(true);

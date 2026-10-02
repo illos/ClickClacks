@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import { StrictMode, useEffect, useState } from 'react';
+import { StrictMode, useEffect, useLayoutEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { makeFunctionReference } from 'convex/server';
 import { ConvexReactClient } from 'convex/react';
@@ -11,6 +11,7 @@ import { createTrayPopout, traySession } from './popout';
 import { loadPreferences, savePreferences, saveProfile, rememberRoom, cacheRoll, loadHistory } from './storage';
 import 'powerroller/styles.css';
 import './style.css';
+import { applyDocumentTheme, useColorTheme } from '../dice-demo-v2/theme';
 
 const backend = import.meta.env.VITE_CONVEX_URL as string;
 if (!backend) throw new Error('Set VITE_CONVEX_URL to the intended Convex deployment.');
@@ -24,6 +25,8 @@ function Site() {
   const [room, setRoom] = useState(initialRoom);
   const [identity, setIdentity] = useState<Identity | undefined>(miniSession?.identity);
   const [preferences, setPreferences] = useState(saved);
+  const colorTheme = useColorTheme(preferences.theme);
+  useLayoutEffect(() => { applyDocumentTheme(colorTheme); popout.setTheme(colorTheme); }, [colorTheme]);
   const [popoutActive, setPopoutActive] = useState(false);
   const [popoutError, setPopoutError] = useState('');
   const [controls, setControls] = useState<RollControls | undefined>(miniSession?.controls);

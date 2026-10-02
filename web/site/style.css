@@ -1,3 +1,4 @@
 /* SPDX-License-Identifier: MIT */
 :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #111415; color: #e8e5df; font-synthesis: none; }
+:root[data-theme='light'] { color-scheme: light; background: #f4f1eb; color: #202a2c; }
 body { margin: 0; }

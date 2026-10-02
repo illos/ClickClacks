@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 import type { Identity } from './session';
 import type { SitePreferences } from './storage';
+import { applyDocumentTheme, type ColorTheme } from '../dice-demo-v2/theme';
 import type { RollControls } from 'powerroller/react';
 
 export type TraySession = { identity: Identity; roomKey: string; preferences: SitePreferences; controls?: RollControls; onControls?: (controls:RollControls)=>void; onJoin?: (key:string)=>void; roomLink?: (code:string)=>string };
@@ -31,6 +32,7 @@ export function createTrayPopout() {
     mini.powerrollerTraySession.controls = controls;
     frame.contentWindow.dispatchEvent(new CustomEvent('powerroller-controls', {detail:controls}));
   }
+  function setTheme(theme: ColorTheme) { if (mini) applyDocumentTheme(theme, mini.document); }
   async function open(session: TraySession) {
     if (!supported || !pip || opening) return;
     if (mini && !mini.closed) {
@@ -46,8 +48,9 @@ export function createTrayPopout() {
       target.powerrollerTraySession = session;
       target.document.title = 'Click Clacks tray';
       const style = target.document.createElement('style');
-      style.textContent = 'html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#111415;color:#e8e5df;font:14px system-ui,sans-serif}iframe{display:block;width:100%;height:100%;border:0}.pip-loading{position:absolute;inset:0;margin:0;padding:24px;background:#111415}.pip-loading[hidden]{display:none}';
+      style.textContent = 'html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--page-bg,#111415);color:var(--page-ink,#e8e5df);font:14px system-ui,sans-serif}html[data-theme=light]{--page-bg:#f4f1eb;--page-ink:#202a2c}iframe{display:block;width:100%;height:100%;border:0}.pip-loading{position:absolute;inset:0;margin:0;padding:24px;background:var(--page-bg,#111415)}.pip-loading[hidden]{display:none}';
       target.document.head.append(style);
+      applyDocumentTheme(document.documentElement.dataset.theme === 'light' ? 'light' : 'dark', target.document);
       const loading = target.document.createElement('p');
       loading.className = 'pip-loading'; loading.setAttribute('role', 'status');
       loading.textContent = 'Loading dice tray…';
@@ -76,7 +79,7 @@ export function createTrayPopout() {
       update(false, 'Could not open the floating tray. Try again.');
     } finally { opening = false; }
   }
-  return { supported, open, close, setControls, subscribe(listener: (active:boolean,error:string)=>void) {
+  return { supported, open, close, setControls, setTheme, subscribe(listener: (active:boolean,error:string)=>void) {
     listeners.add(listener); listener(active, error);
     return () => { listeners.delete(listener); };
   } };

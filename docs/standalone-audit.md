@@ -572,3 +572,34 @@ name/color changes without extra writes; generated/local names persisted; one
 local name edit emitted one write under StrictMode; reload restored final values.
 Both builds and typecheck passed. The narrow native mini-settings journey passed
 again with the repaired handlers and restored counter position.
+
+
+### System / Light / Dark appearance (2026-10-02)
+
+Owner requested a light theme and mode switcher defaulting to the device. Added
+validated local preference `theme` (`system`, `light`, `dark`), with missing/invalid
+values falling back to System without changing existing profiles/settings. The
+header offers an icon menu; the customization and mini Dice settings offer native
+radio controls. System follows `prefers-color-scheme` changes; explicit overrides
+remain fixed. Preference/storage events sync the main page and PiP. The early head
+bootstrap applies saved/device appearance before the app bundle paints, including
+when storage is blocked. The popout shell and browser theme-color follow too.
+
+Light mode uses warm off-white surfaces/graphite text and readable mint/coral
+status colors. The existing dark palette is preserved. Menus/dialogs, controls,
+history, crit labels/results, and high contrast have light variants. The logo
+keeps its geometry/accents with a darker foreground. The WebGL tray clear color
+updates in place; PiP retains alpha transparency. No physics, result generation,
+roll timing, dice design, table or history behavior changes. `preferences.theme`
+also exposes the choice through the existing React API.
+
+Validation: `pnpm typecheck`, both production builds, and focused storage tests
+(10 passed). Built headed Chromium `tests/browser-theme.mjs` passed: System/default
+and live OS changes; explicit choices and reload before bundle execution; profile
+retention; keyboard/focus; light dialogs/dice picker/high contrast; retained canvas;
+changing theme during a real d6 roll preserves the final log result; native PiP
+two-way theme sync and compact settings; header/menu fit at 1280×900, 430×932,
+320×568 and 320×225; no page errors. Visual checks also inspected 320px menus/design
+and 360×320 native PiP. Firefox/WebKit checks could not launch because host GUI/
+media libraries are absent; these attempts are not browser passes. Physical
+iOS/Safari and assistive-technology checks remain pending as previously approved.

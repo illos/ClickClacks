@@ -27,7 +27,7 @@ type Lane = {
   frames: number;
   maxFrameGap: number;
 };
-export type TrayPreferences = { motion?: 'device' | 'reduce' | 'full'; highContrast?: boolean; transparent?: boolean };
+export type TrayPreferences = { motion?: 'device' | 'reduce' | 'full'; highContrast?: boolean; transparent?: boolean; colorTheme?: 'light' | 'dark' };
 /** One WebGL context with independent playback tracks; no per-viewer physics simulation. */
 export function createRoomTray(
   host: HTMLElement,
@@ -38,6 +38,7 @@ export function createRoomTray(
   let preferences = {
     motion: options.motion ?? 'device',
     highContrast: options.highContrast ?? false,
+    colorTheme: options.colorTheme ?? 'dark',
   };
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
@@ -45,7 +46,7 @@ export function createRoomTray(
     powerPreference: 'low-power',
   });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.setClearColor('#151a1b', options.transparent ? 0 : 1);
+  renderer.setClearColor(preferences.colorTheme === 'light' ? '#f7f8f4' : '#151a1b', options.transparent ? 0 : 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.35;
@@ -331,6 +332,7 @@ export function createRoomTray(
   return {
     setPreferences(value: TrayPreferences) {
       preferences = { ...preferences, ...value };
+      renderer.setClearColor(preferences.colorTheme === 'light' ? '#f7f8f4' : '#151a1b', options.transparent ? 0 : 1);
       motionChanged();
       for (const lane of lanes.values()) style(lane, { style: lane.appearance } as Participant);
       wake();

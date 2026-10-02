@@ -13,3 +13,6 @@ built-site Chromium check at 1280×900, 430×932, 320×568 and 320×225 confirme
 the accessible Click Clacks heading, loaded wordmark/favicon, browser title,
 no header-control overlap, no horizontal document overflow and no page errors.
 Existing ignored Convex bindings were reused; no backend changes or deployment.
+
+The light-mode wordmark keeps the same geometry and accent colors; only the ivory
+foreground changes to graphite (`#202a2c`) for contrast on the light page.

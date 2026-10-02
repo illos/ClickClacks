@@ -5,7 +5,7 @@ body { margin: 0; }
 .sharing-app :is(button, input, select, a) { pointer-events: none; }
 .sharing-status { position: absolute; inset: 45% 24px auto; text-align: center; color: #acb6b7; font-size: 14px; line-height: 1.7; }
 .sharing-app button.demo-tap { position: relative; transform: scale(.92); background: #6edbc033; border-color: #6edbc0; }
-.sharing-app button.demo-tap::after { content: ''; position: absolute; inset: -8px; border: 2px solid #6edbc0; border-radius: 50%; pointer-events: none; animation: sharing-tap 200ms ease-out both; }
+.sharing-app button.demo-tap::after { content: ''; position: absolute; inset: -8px; border: 2px solid #6edbc0; border-radius: 50%; pointer-events: none; animation: sharing-tap 300ms ease-out both; }
 @keyframes sharing-tap { from { transform: scale(.65); opacity: 1; } to { transform: scale(1.25); opacity: .2; } }
 .sharing-chat { position: fixed; z-index: 5; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 460px; padding: 20px; border: 1px solid #586171; border-radius: 16px; background: #252831; box-shadow: 0 20px 70px #0009; animation: chat-appear 180ms ease-out; }
 @keyframes chat-appear { from { opacity: 0; margin-top: 10px; } to { opacity: 1; margin-top: 0; } }
@@ -28,3 +28,8 @@ body { margin: 0; }
 .chat-send { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 7px; color: #c1cbdf; }
 .chat-send svg { width: 24px; height: 24px; }
 .chat-sending .chat-send { color: #142d26; background: #6edbc0; transform: scale(.92); }
+
+.chat-message + .chat-message { margin-top: 18px; }
+.chat-avatar.chat-sam { background: #eaa0b3; color: #492233; }
+.chat-author.chat-sam { color: #eaa0b3; }
+.chat-typing { margin: 18px 0 0 50px; color: #afb6c5; font-size: 13px; }

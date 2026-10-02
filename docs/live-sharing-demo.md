@@ -8,10 +8,13 @@ Powerroller backend. Each page load has an isolated table and two fresh identiti
 The repeating sequence is Alex rolling 1d12, waiting a beat, opening Sharing
 with a tap ripple, copying the code, and closing the menu after three seconds.
 An example chat card then types Alex's invitation, pastes the actual table code,
-and shows the message being sent. The card closes before Sam joins and rolls
-2d4. Sharing now opens 700ms after Alex's result is observed, including the final
-200ms tap indicator (200ms longer than the original gap). The chat is a local
-illustration and does not contact Discord or send any external message.
+and shows the message being sent. Sam types and replies ‘Got it, joining now!’
+before the card closes and he joins the actual table and rolls 2d4. Sharing opens
+1200ms after Alex's result is observed, including the final 300ms tap indicator.
+The menu holds for 1200ms before copying and three seconds after confirmation.
+Chat typing uses 70ms per character; the pasted code holds for 1400ms, followed
+by a 300ms send press, a 1400ms sent hold, 1400ms of Sam typing and a 2200ms reply hold.
+The chat is a local illustration and does not contact Discord or send any external message.
 The result remains visible briefly. Sam leaves, the tray clears, and the
 visible log resets before the next cycle. One table is reused across cycles;
 the host's presentation boundary hides older accepted history without deleting

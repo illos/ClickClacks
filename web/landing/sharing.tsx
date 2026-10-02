@@ -29,7 +29,7 @@ function Demo() {
   const [active, setActive] = useState(parent === window);
   const [historySince, setHistorySince] = useState(Infinity);
   const [status, setStatus] = useState('');
-  const [chat, setChat] = useState<{ stage: 'typing' | 'pasted' | 'sending' | 'sent'; text: string; code: string } | null>(null);
+  const [chat, setChat] = useState<{ stage: 'typing' | 'pasted' | 'sending' | 'sent' | 'sam-typing' | 'sam-replied'; text: string; code: string } | null>(null);
   const code = useRef<string | undefined>(undefined);
   const latestAlex = useRef<string | undefined>(undefined);
   const cleanupPending = useRef<Promise<void>>(Promise.resolve());
@@ -73,7 +73,7 @@ function Demo() {
     const phase = (value: string) => { root.dataset.phase = value; };
     const tap = async (target: HTMLButtonElement) => {
       target.classList.add('demo-tap');
-      try { await pause(200); target.click(); }
+      try { await pause(300); target.click(); }
       finally { target.classList.remove('demo-tap'); }
     };
     async function run() {
@@ -86,16 +86,16 @@ function Demo() {
           phase('ready');
           await until(() => !!code.current && !!rollButton() && !rollButton()!.disabled);
           const previous = latestAlex.current;
-          await pause(800);
+          await pause(1200);
           phase('alex-roll');
           rollButton()!.click();
           await until(() => latestAlex.current !== previous);
-          await pause(500);
+          await pause(900);
           phase('sharing-tap');
           await tap(button('Open social menu')!);
           phase('sharing');
           await until(() => !!root.querySelector('dialog[open] .share-code'));
-          await pause(800);
+          await pause(1200);
           button('Copy table code')!.click();
           await until(() => !!button('Code copied'));
           phase('copied');
@@ -104,19 +104,25 @@ function Demo() {
           phase('chat-invite');
           const invitation = 'Sam, join the game!';
           setChat({ stage: 'typing', text: '', code: '' });
-          await pause(350);
+          await pause(600);
           for (let length = 1; length <= invitation.length; length++) {
             setChat({ stage: 'typing', text: invitation.slice(0, length), code: '' });
-            await pause(45);
+            await pause(70);
           }
           phase('chat-paste');
           setChat({ stage: 'pasted', text: invitation, code: code.current! });
-          await pause(900);
+          await pause(1400);
           phase('chat-send');
           setChat({ stage: 'sending', text: invitation, code: code.current! });
-          await pause(200);
+          await pause(300);
           setChat({ stage: 'sent', text: invitation, code: code.current! });
-          await pause(1100);
+          await pause(1400);
+          phase('sam-chat-typing');
+          setChat({ stage: 'sam-typing', text: invitation, code: code.current! });
+          await pause(1400);
+          phase('sam-chat-reply');
+          setChat({ stage: 'sam-replied', text: invitation, code: code.current! });
+          await pause(2200);
           setChat(null);
           phase('sam-joining');
           await controller.join(code.current!);
@@ -134,7 +140,7 @@ function Demo() {
           button('Clear tray')?.click();
           setHistorySince(Infinity);
           phase('reset');
-          await pause(800);
+          await pause(1200);
         } catch {
           if (signal.aborted) break;
           setChat(null);
@@ -158,6 +164,7 @@ function Demo() {
   }, [active]);
 
   if (!client) return <p className="sharing-status">The live demonstration is unavailable.</p>;
+  const invitationSent = chat && ['sent', 'sam-typing', 'sam-replied'].includes(chat.stage);
   return <>
     {active && <ClickClacks client={client} roomKey={roomKey} identity={alex.identity} profile={alex.profile}
       preferences={{ theme: 'dark', selectedDice: 12, motion: 'full', sound: false, hidden: false, highContrast: false, announcements: 'off' }}
@@ -174,13 +181,18 @@ function Demo() {
     {chat && <div className={`sharing-chat chat-${chat.stage}`} aria-hidden="true">
       <header><span className="chat-channel"># game-night</span><span className="chat-example">EXAMPLE CHAT</span></header>
       <div className="chat-messages">
-        {chat.stage === 'sent' && <div className="chat-message">
+        {invitationSent && <div className="chat-message">
           <span className="chat-avatar">A</span>
           <div><div className="chat-author">Alex <span>Just now</span></div><p>{chat.text}<br /><code>{chat.code}</code></p></div>
         </div>}
+        {chat.stage === 'sam-typing' && <p className="chat-typing">Sam is typing…</p>}
+        {chat.stage === 'sam-replied' && <div className="chat-message">
+          <span className="chat-avatar chat-sam">S</span>
+          <div><div className="chat-author chat-sam">Sam <span>Just now</span></div><p>Got it, joining now!</p></div>
+        </div>}
       </div>
       <div className="chat-composer">
-        <div>{chat.stage === 'sent' ? <span className="chat-placeholder">Message #game-night</span> : <>{chat.text}<span className="chat-caret" />{chat.code && <code>{chat.code}</code>}</>}</div>
+        <div>{invitationSent ? <span className="chat-placeholder">Message #game-night</span> : <>{chat.text}<span className="chat-caret" />{chat.code && <code>{chat.code}</code>}</>}</div>
         <span className="chat-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"><path d="m3 3 18 9-18 9 4-9-4-9Z M7 12h14" /></svg></span>
       </div>
     </div>}

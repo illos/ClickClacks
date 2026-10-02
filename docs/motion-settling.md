@@ -38,3 +38,8 @@ Final QC accepted this repair on 2026-10-02. Full evidence remains outside Git a
 `test-artifacts/motion-recovery-42c47cb/RESULT.md`. Three attempts improve settling
 recovery while preserving a bounded text fallback; every scene is not guaranteed
 to settle.
+
+Published app source `8a54404` on 2026-10-02 at `https://dice.clickclacks.app/`,
+Worker `66f954e1-d2bc-41ef-b286-98852ba68585`. The required Cloudflare build and
+deployment both exited 0. Accepted coordinator results were reused; no backend
+deployment or post-release tests ran.

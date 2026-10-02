@@ -11,6 +11,8 @@ instructions and package entry points.
 - [Automatic solo rolls](automatic-solo-rolls.md): local and shared modes,
   transitions and floating-tray behavior.
 - [Phone installation](pwa-install.md): home-screen launch and app icons.
+- [Activity stats](stats-dashboard.md): visitors, countries, multiplayer duration
+  and dashboard sign-in.
 - [Hosting](cloudflare-hosting.md): hosting configuration and deployment records.
 - [Bug reports](bug-reports.md): captured diagnostics, retention, support CLI
   and Worker setup.

@@ -96,3 +96,25 @@ persisted convex-test/SQLite state. Real wall-clock midnight and live-site
 acceptance were not run. Artifacts are outside Git in
 `powerroller/test-artifacts/stats-0d0e851/RESULT.md`; private services were stopped.
 Publication reuses these results and requires only builds/deployment records.
+
+## Publication result — 2026-10-02
+
+Published from pushed main `b383599`, with runtime identical to accepted `0d0e851`:
+
+- Dedicated **dev** `nautical-partridge-636`: headless auth configuration and
+  `convex dev --once --env-file` both **exit 0**, unrelated ambient deployment key
+  removed. Auth keys were not printed or committed. Backend ready at 20:48:45 UTC.
+- Existing D1 `clickclacks-bug-reports`: only pending additive migration
+  `0003_metrics.sql` applied, **exit 0** (eight SQL commands, 1.88 ms).
+- Required app/landing/stats build sequence: **exit 0**, Vite phases
+  343/282/92 ms. Landing retained the previously reviewed mixed-import warning.
+- App Worker: **exit 0**, version `497eefb6-cb0e-4cff-a305-d2887d09b067`.
+- Landing Worker: **exit 0**, version `25516ab2-5dda-404b-b41e-ca66038540dd`.
+- Stats Worker: **exit 0**, version `90de77b7-a599-4201-b67d-b76ed98b34e1`;
+  Wrangler confirmed `stats.clickclacks.app` as its custom domain.
+
+The dashboard is at <https://stats.clickclacks.app>. Choose **Create an account**
+to set an email/password login. Collection begins with this publication; test
+records stayed in the isolated backend/D1. No live acceptance or post-publication
+suite was run. Publication logs are outside Git in
+`powerroller/test-artifacts/stats-publication-b383599/`.

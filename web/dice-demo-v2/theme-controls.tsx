@@ -58,7 +58,7 @@ export function ThemeSwitcher({value = 'system', onChange}: {value?: ThemeChoice
     </div>}
   </div>;
 }
-/** The mini tray keeps its top-right cog; appearance is available in its Dice tab. */
+/** Appearance controls shared by the full Settings dialog and the tray Settings tab. */
 export function ThemeOptions({value = 'system', onChange}: {value?: ThemeChoice; onChange:(value:ThemeChoice)=>void}) {
   const group = useId();
   return <fieldset className="theme-settings"><legend>Appearance</legend><div className="theme-options">

@@ -57,6 +57,7 @@ try {
   await expect(page.getByRole('button',{name:'Marble',exact:true})).toHaveAttribute('aria-pressed','true');
   await expect(page.getByRole('button',{name:'Rune',exact:true})).toHaveAttribute('aria-pressed','true');
   await page.getByRole('button',{name:'Close customization',exact:true}).click();
+  await menu.getByRole('tab', { name: 'Settings', exact: true }).click();
   await menu.getByText('Accessibility',{exact:true}).click();
   await menu.getByRole('combobox',{name:/Motion/}).selectOption('reduce');
   await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('powerroller.preferences.v2')).preferences.motion)).toBe('reduce');

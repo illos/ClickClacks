@@ -107,7 +107,7 @@ function ReportHost() {
   function open(context: BugContext) { returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; setDraft({ id: crypto.randomUUID(), diagnostics: captureBugDiagnostics(context) }); }
   return <><ReportBoundary onReport={() => open({ surface: 'startup' })}><Site onReportBug={open} /></ReportBoundary>
     <BugReportDialog draft={draft} onClose={() => { setDraft(null); const visible = (element: HTMLElement | null) => !!element?.isConnected && !!element.getClientRects().length && !element.closest('dialog:not([open])');
-      const target = visible(returnFocus.current) ? returnFocus.current : [...document.querySelectorAll<HTMLButtonElement>('[aria-label="Open tray settings"], [aria-label="Report a bug"]')].find(visible);
+      const target = visible(returnFocus.current) ? returnFocus.current : [...document.querySelectorAll<HTMLButtonElement>('[aria-label="Open tray settings"], [aria-label="Open settings"], [aria-label="Report a bug"]')].find(visible);
       target?.focus(); }} /></>;
 }
 createRoot(document.getElementById('root')!).render(<StrictMode><ReportHost /></StrictMode>);

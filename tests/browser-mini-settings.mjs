@@ -47,6 +47,7 @@ try {
     const member = (await view(room)).participants.find(member => member.name === 'Mini Roller Check');
     return member?.style.pattern === 'marble' && member.style.font === 'rune';
   }).toBe(true);
+  await menu.getByRole('tab', { name: 'Settings', exact: true }).click();
   await menu.getByText('Accessibility', { exact: true }).click();
   await menu.getByRole('combobox', { name: /Motion/ }).selectOption('reduce');
   const frame = page.frames().find(frame => frame.url().includes('/embed/index.html'));

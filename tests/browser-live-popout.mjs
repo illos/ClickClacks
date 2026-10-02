@@ -150,13 +150,13 @@ try {
   await rollMain.click();
   await expect(log.locator('.roll-log-entry')).toHaveCount(8,{timeout:15000});
   expect(await page.evaluate(() => window.logMoves)).toHaveLength(0);
-  await page.getByRole('button',{name:'Customize dice',exact:true}).click();
+  await page.getByRole('button',{name:'Open settings',exact:true}).click();
   await page.getByText('Accessibility',{exact:true}).click();
   await page.getByRole('checkbox',{name:'High contrast',exact:true}).check();
   await page.getByRole('combobox',{name:'Motion',exact:true}).selectOption('reduce');
   await expect(page.locator('.lab.v2')).toHaveClass(/high-contrast/);
   expect(await log.evaluate(el => getComputedStyle(el).maskImage)).toBe('none');
-  await page.getByRole('button',{name:'Close customization',exact:true}).click();
+  await page.getByRole('button',{name:'Close settings',exact:true}).click();
   await page.getByRole('button',{name:'Pop out dice tray',exact:true}).click();
   const departing = context.pages().find(p => p !== page);
   await expect(departing.frameLocator('iframe').getByRole('button',{name:'Roll',exact:true})).toBeEnabled({timeout:30000});

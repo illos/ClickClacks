@@ -42,11 +42,14 @@ try {
   await page.keyboard.press('Escape');
   await expect(picker).toBeFocused();
   await expect(page.getByRole('menu')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Customize dice', exact: true }).click();
+  await page.getByRole('button', { name: 'Open settings', exact: true }).click();
   await page.locator('details summary').click();
   await expect(page.getByRole('combobox', { name: /Motion/ })).toHaveValue('reduce');
   await expect(page.getByLabel('High contrast', { exact: true })).toBeChecked();
   await expect(page.getByLabel('Hide 3D dice', { exact: true })).toBeChecked();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('button', { name: 'Open settings', exact: true })).toBeFocused();
+  await page.getByRole('button', { name: 'Customize dice', exact: true }).click();
   await expect(page.getByRole('combobox', { name: 'Pattern', exact: true })).toHaveValue('marble');
   await expect(page.getByRole('combobox', { name: 'Font style', exact: true })).toHaveValue(
     'gothic',

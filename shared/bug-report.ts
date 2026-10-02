@@ -10,7 +10,7 @@ export const reportStatuses = [
 export type ReportStatus = (typeof reportStatuses)[number];
 export type BugContext = {
   surface?:
-    "roller" | "tray" | "table-menu" | "customization" | "error" | "startup";
+    "roller" | "tray" | "table-menu" | "customization" | "settings" | "error" | "startup";
   selectedDice?: string | number;
   diceCount?: number;
   bonusD4?: boolean;
@@ -128,6 +128,7 @@ export function cleanBugContext(value: unknown): BugContext {
       "tray",
       "table-menu",
       "customization",
+      "settings",
       "error",
       "startup",
     ],

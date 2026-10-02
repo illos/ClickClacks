@@ -21,16 +21,17 @@ try {
   await page.goto(address);
   const main = page.locator('.lab.v2');
   await expect(main).toHaveAttribute('data-theme','light');
-  await expect(page.getByRole('button',{name:'Color theme: System',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Open settings',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Roll',exact:true})).toBeEnabled({timeout:30000});
   const stored = () => page.evaluate(()=>JSON.parse(localStorage.getItem('powerroller.preferences.v2')).preferences);
   const original = await stored();
   expect(original.theme).toBe('system');
   async function select(choice) {
-    await page.getByRole('button',{name:/^Color theme:/}).click();
-    await page.getByRole('menuitemradio',{name:choice,exact:true}).click();
-    await expect(page.getByRole('menu',{name:'Color theme'})).toHaveCount(0);
-    await expect(page.getByRole('button',{name:`Color theme: ${choice}`,exact:true})).toBeFocused();
+    await page.getByRole('button',{name:'Open settings',exact:true}).click();
+    const settings = page.getByRole('dialog',{name:'Settings',exact:true});
+    await settings.getByRole('radio',{name:choice,exact:true}).check();
+    await settings.getByRole('button',{name:'Close settings',exact:true}).click();
+    await expect(page.getByRole('button',{name:'Open settings',exact:true})).toBeFocused();
   }
   await expect(page.locator('.canvas-host canvas')).toBeVisible({timeout:30000});
   await page.evaluate(()=>{window.themeCanvas=document.querySelector('.canvas-host canvas');});
@@ -60,14 +61,13 @@ try {
   release();
   await expect(page.getByRole('button',{name:'Roll',exact:true})).toBeEnabled({timeout:30000});
   await page.unroute(pattern);
-  await page.getByRole('button',{name:/^Color theme:/}).press('ArrowDown');
-  await page.getByRole('menuitemradio',{name:'Light',exact:true}).press('End');
-  await expect(page.getByRole('menuitemradio',{name:'Dark',exact:true})).toBeFocused();
-  await page.getByRole('menuitemradio',{name:'Dark',exact:true}).press('Escape');
-  await expect(page.getByRole('button',{name:'Color theme: Light',exact:true})).toBeFocused();
+  await page.getByRole('button',{name:'Open settings',exact:true}).focus();
+  await page.keyboard.press('Enter');
+  await page.getByRole('dialog',{name:'Settings',exact:true}).press('Escape');
+  await expect(page.getByRole('button',{name:'Open settings',exact:true})).toBeFocused();
   // Surface checks include real dialogs and menus, rather than just the document background.
-  await page.getByRole('button',{name:'Customize dice',exact:true}).click();
-  const dialog=page.getByRole('dialog',{name:'Customize dice',exact:true});
+  await page.getByRole('button',{name:'Open settings',exact:true}).click();
+  const dialog=page.getByRole('dialog',{name:'Settings',exact:true});
   await expect(dialog).toHaveCSS('background-color','rgb(255, 253, 248)');
   await expect(dialog.getByRole('radio',{name:'Light',exact:true})).toBeChecked();
   await dialog.getByRole('radio',{name:'Dark',exact:true}).check();
@@ -77,7 +77,7 @@ try {
   await dialog.getByRole('checkbox',{name:'High contrast',exact:true}).check();
   await expect(main).toHaveClass(/high-contrast/);
   await dialog.getByRole('checkbox',{name:'High contrast',exact:true}).uncheck();
-  await page.getByRole('button',{name:'Close customization',exact:true}).click();
+  await page.getByRole('button',{name:'Close settings',exact:true}).click();
   await page.getByRole('button',{name:'Select dice',exact:true}).click();
   await expect(page.getByRole('menu',{name:'Dice to roll',exact:true})).toHaveCSS('background-color','rgb(255, 253, 248)');
   await page.getByRole('menuitemradio',{name:'d6',exact:true}).click();
@@ -102,7 +102,7 @@ try {
     await expect(tray.locator('.lab.v2')).toHaveAttribute('data-theme','light');
     await expect(mini.locator('html')).toHaveAttribute('data-theme','light');
     await tray.getByRole('button',{name:'Open tray settings',exact:true}).click();
-    await tray.getByRole('tab',{name:'Dice',exact:true}).click();
+    await tray.getByRole('tab',{name:'Settings',exact:true}).click();
     await tray.getByRole('radio',{name:'Dark',exact:true}).check();
     await expect(main).toHaveAttribute('data-theme','dark');
     await expect(mini.locator('html')).toHaveAttribute('data-theme','dark');
@@ -122,11 +122,11 @@ try {
       })&&document.documentElement.scrollWidth<=innerWidth;
     });
     expect(layout,`header and page fit ${width}x${height}`).toBe(true);
-    await page.getByRole('button',{name:/^Color theme:/}).click();
-    const menu=page.getByRole('menu',{name:'Color theme'});
+    await page.getByRole('button',{name:'Open settings',exact:true}).click();
+    const menu=page.getByRole('dialog',{name:'Settings',exact:true});
     await expect(menu).toBeVisible();
     expect(await menu.evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight;})).toBe(true);
-    await page.getByRole('menuitemradio',{name:'Light',exact:true}).press('Escape');
+    await menu.press('Escape');
   }
   expect(errors).toEqual([]);
   console.log(`PASS ${engine}: default System/live OS changes, explicit override and reload/bootstrap, storage/profile retention, keyboard/focus, light dialogs/picker/highcontrast, no canvas recreation, four viewport fit${engine==='chromium'?', native PiP two-way theme sync':''}.`);

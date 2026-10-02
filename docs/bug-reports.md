@@ -9,7 +9,7 @@ Reports go to a same-origin Cloudflare Worker and private D1 database, independe
 of the game backend. Success includes a report ID after persisted readback. A
 failed or uncertain submission keeps the text, retries the identical payload,
 and offers a local JSON download. Cancel sends nothing. The popup is available
-from the app header, table menu and recoverable errors, including tray mode;
+from Settings and recoverable errors, including the tray Settings tab;
 a React render failure offers reporting outside the failed application subtree.
 
 ## Captured context
@@ -175,3 +175,19 @@ The manual GitHub publication workflow now applies the D1 migration and uses
 `wrangler.bugs.jsonc`. Its repository Actions secret remains an operator setup
 item inherited from the hosting release: the available GitHub credential cannot
 manage repository secrets. This publication used the host's broker credential.
+
+## Settings consolidation and mobile form sizing
+
+The header keeps Dice customization and Sharing, with one Settings cog for
+appearance, accessibility and reporting. Light/Dark/System choices and
+accessibility controls are removed from Dice customization. The tray keeps its
+single cog with Sharing, Dice and Settings tabs. Existing preference persistence
+and synchronization are reused. Reporting snapshots Settings before it closes
+and returns focus to the visible Settings trigger after dismissal.
+
+Bug-report text/contact fields explicitly use 16px fonts, with a 16px dialog
+base. Settings selects retain their existing 16px sizing. Font-only `29a7a1b`
+passed Chromium computed-size/overflow checks at 430 and 320 pixels; WebKit was
+unavailable due to host libraries, so physical Safari behavior was not tested.
+The expanded menu proof is `tests/browser-app-settings.mjs`; reporting's browser
+proof uses the updated Settings entry path.

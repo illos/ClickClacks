@@ -35,19 +35,19 @@ try {
     const tray = path !== "/";
     const trigger = tray
       ? page.getByRole("button", { name: "Open tray settings", exact: true })
-      : page.getByRole("button", { name: "Report a bug", exact: true }).first();
+      : page.getByRole("button", { name: "Open settings", exact: true });
     async function openReport() {
       await trigger.click();
-      if (tray)
-        await page
-          .getByRole("dialog")
-          .getByRole("button", { name: "Report a bug", exact: true })
-          .click();
+      if (tray) await page.getByRole("tab", { name: "Settings", exact: true }).click();
+      await page.getByRole("dialog", { name: "Settings", exact: true })
+        .getByRole("button", { name: "Report a bug", exact: true }).click();
     }
     await openReport();
     const dialog = page.getByRole("dialog", { name: "Report a bug" });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByLabel("What went wrong?")).toBeFocused();
+    await expect(dialog.getByLabel("What went wrong?")).toHaveCSS("font-size", "16px");
+    await expect(dialog.getByLabel("Contact info")).toHaveCSS("font-size", "16px");
     await expect(
       dialog.getByRole("button", { name: "Send report" }),
     ).toBeDisabled();
@@ -129,7 +129,7 @@ try {
     } else {
       expect(row.diagnostics.viewport.width).toBe(width);
       expect(row.diagnostics.context.surface).toBe(
-        tray ? "table-menu" : "roller",
+        "settings",
       );
       expect(JSON.stringify(row.diagnostics)).not.toMatch(
         /credential|roomKey|viewer/,

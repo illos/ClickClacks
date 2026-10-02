@@ -11,12 +11,12 @@ import {
   useState,
   type PointerEvent,
 } from 'react';
-import { Check, Copy, X, Users, Eraser, Volume2, VolumeX, PictureInPicture2, Settings, Link as LinkIcon, Bug } from 'lucide-react';
+import { Check, Copy, X, Users, Eraser, Volume2, VolumeX, PictureInPicture2, Settings, Link as LinkIcon } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import clickClacksLogo from '../branding/click-clacks.svg';
 import clickClacksLightLogo from '../branding/click-clacks-light.svg';
 import { useColorTheme } from './theme';
-import { ThemeSwitcher, ThemeOptions } from './theme-controls';
+import { ThemeOptions } from './theme-controls';
 import { createController, reactTransport, type Controller, type Identity, type Profile, type DeliveredRoll } from '../../lib/client';
 import { displayError, redactError } from '../../lib/errors';
 import { dicePoolCount, genericModifierValue, rollCooldownMs } from '../../shared/dice';
@@ -230,12 +230,16 @@ function DiceRoom() {
 
   const [customizing, setCustomizing] = useState(false);
   const [socializing, setSocializing] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<'sharing' | 'dice'>('sharing');
-  function selectSettingsTab(tab: 'sharing' | 'dice') {
+  const [configuring, setConfiguring] = useState(false);
+  const settingsDialog = useRef<HTMLDialogElement>(null);
+  const settingsTabs = ['sharing', 'dice', 'settings'] as const;
+  const [settingsTab, setSettingsTab] = useState<(typeof settingsTabs)[number]>('sharing');
+  function selectSettingsTab(tab: (typeof settingsTabs)[number]) {
     setSettingsTab(tab);
     setCustomizing(tab === 'dice');
+    setConfiguring(tab === 'settings');
   }
-  useMenuScrollLock(customizing || socializing);
+  useMenuScrollLock(customizing || socializing || configuring);
   const [profile, setProfile] = useState(initial);
   const profileRef = useRef(profile);
   useEffect(() => {
@@ -838,7 +842,7 @@ function DiceRoom() {
     const secrets = [credential, viewer, roomKey, room?.code ?? '', profile.name,
       ...(room?.participants ?? []).flatMap(member => [member.id, member.name])];
     const context: BugContext = {
-      surface: error ? 'error' : socializing ? 'table-menu' : customizing ? 'customization' : options.trayHistory ? 'tray' : 'roller',
+      surface: error ? 'error' : configuring ? 'settings' : socializing ? 'table-menu' : customizing ? 'customization' : options.trayHistory ? 'tray' : 'roller',
       selectedDice, diceCount, bonusD4, edges, banes, joined, expired: room?.expired, participants: room?.participants.length ?? 0,
       connected: connection.isWebSocketConnected, ready, pending, clearing, historyReady,
       clockOffset: clock?.offset, clockUncertainty: clock?.uncertainty, webgl: graphics && !fallback,
@@ -848,7 +852,7 @@ function DiceRoom() {
     };
     // Snapshot before closing any existing dialog.
     options.onReportBug(context);
-    socialDialog.current?.close(); customization.current?.close();
+    socialDialog.current?.close(); customization.current?.close(); settingsDialog.current?.close();
   }
   const customizationContent = <>
     {customizing && fontsReady && !preferences.hidden && (
@@ -860,17 +864,20 @@ function DiceRoom() {
     <fieldset disabled={busy} className="profile-fields">
       <DiceDesignControls disabled={busy} active={customizing} style={profile.style} onChange={edit} />
     </fieldset>
+
+    {customizing && error && <ErrorAlert message={error} onReportBug={options.onReportBug ? reportBug : undefined} />}
+  </>;
+  const settingsContent = <>
     <ThemeOptions value={preferences.theme} onChange={theme => changePreferences({...preferences, theme})} />
     <AccessibilityControls preferences={preferences} onChange={changePreferences} />
-    {customizing && error && <ErrorAlert message={error} onReportBug={options.onReportBug ? reportBug : undefined} />}
+    {options.onReportBug && <button type="button" className="leave-table" onClick={reportBug}>Report a bug</button>}
+    {configuring && error && <ErrorAlert message={error} onReportBug={options.onReportBug ? reportBug : undefined} />}
   </>;
   return (
     <main onPointerDown={unlockSound} onPointerUp={unlockSound} onKeyDown={unlockSound} data-theme={colorTheme} className={`lab v2${preferences.highContrast ? ' high-contrast' : ''}`}>
       <div className="roll-area">
         <header className="lab-header">
           <h1 className="power-title"><img className="click-clacks-logo" src={colorTheme === 'light' ? clickClacksLightLogo : clickClacksLogo} alt="Click Clacks" width="640" height="280" /></h1>
-          {options.onReportBug && <button type="button" className="customize-trigger" aria-label="Report a bug" title="Report a bug" onClick={reportBug}><Bug aria-hidden /></button>}
-          <ThemeSwitcher value={preferences.theme} onChange={theme => changePreferences({...preferences, theme})} />
           {options.onPopout && <button type="button" className="customize-trigger"
             aria-label={options.popoutActive ? 'Focus dice tray' : 'Pop out dice tray'}
             title={options.popoutActive ? 'Focus dice tray' : 'Pop out dice tray'}
@@ -913,6 +920,11 @@ function DiceRoom() {
           >
             <Users aria-hidden />
           </button>
+          <button type="button" className="customize-trigger" aria-label="Open settings"
+            title="Settings" aria-haspopup="dialog" onClick={() => {
+              settingsDialog.current?.showModal();
+              setConfiguring(true);
+            }}><Settings aria-hidden /></button>
         </header>
         <div className="dice-card">
           <section className="stage" aria-label="Shared 3D dice tray">
@@ -1175,8 +1187,8 @@ function DiceRoom() {
         )}
 
       </RollLog>
-      {createPortal(<span className="visually-hidden" role="status" aria-live="polite" aria-atomic="true">{announcement}</span>, (options.trayHistory && socializing ? socialDialog.current : customizing ? customization.current : socializing ? socialDialog.current : null) ?? host.current?.parentElement ?? document.body)}
-      {error && !customizing && !socializing && <ErrorAlert message={error} onReportBug={options.onReportBug ? reportBug : undefined} />}
+      {createPortal(<span className="visually-hidden" role="status" aria-live="polite" aria-atomic="true">{announcement}</span>, (options.trayHistory && socializing ? socialDialog.current : customizing ? customization.current : socializing ? socialDialog.current : configuring ? settingsDialog.current : null) ?? host.current?.parentElement ?? document.body)}
+      {error && !customizing && !socializing && !configuring && <ErrorAlert message={error} onReportBug={options.onReportBug ? reportBug : undefined} />}
       {options.popoutError && <p className="error" role="alert">{options.popoutError}</p>}
       {presenceError && <ErrorAlert message={presenceError} onReportBug={options.onReportBug ? reportBug : undefined} />}
       {room?.expired && (
@@ -1186,7 +1198,7 @@ function DiceRoom() {
       )}
       <dialog
         ref={socialDialog}
-        onClose={() => { setSocializing(false); if (options.trayHistory) setCustomizing(false); }}
+        onClose={() => { setSocializing(false); if (options.trayHistory) { setCustomizing(false); setConfiguring(false); } }}
         onPointerDown={backdropDown}
         onPointerUp={backdropUp}
         onPointerCancel={() => {
@@ -1196,7 +1208,7 @@ function DiceRoom() {
         aria-labelledby={`${instanceId}-join-table-title`}
       >
         <header>
-          <h2 id={`${instanceId}-join-table-title`}>{options.trayHistory ? 'Settings' : 'Table'}</h2>
+          <h2 id={`${instanceId}-join-table-title`}>{options.trayHistory ? 'Settings' : 'Sharing'}</h2>
           <button
             type="button"
             aria-label={options.trayHistory ? 'Close settings' : 'Close social menu'}
@@ -1206,17 +1218,18 @@ function DiceRoom() {
           </button>
         </header>
         {options.trayHistory && <div className="mini-settings-tabs" role="tablist" aria-label="Tray settings">
-          {(['sharing', 'dice'] as const).map((tab, index) => <button key={tab} type="button" role="tab"
+          {settingsTabs.map((tab, index) => <button key={tab} type="button" role="tab"
             id={`${instanceId}-settings-${tab}`} aria-selected={settingsTab === tab}
             aria-controls={`${instanceId}-settings-${tab}-panel`} tabIndex={settingsTab === tab ? 0 : -1}
             onClick={() => selectSettingsTab(tab)} onKeyDown={event => {
-              const next = event.key === 'ArrowRight' || event.key === 'ArrowLeft' ? 1 - index
-                : event.key === 'Home' ? 0 : event.key === 'End' ? 1 : -1;
+              const next = event.key === 'ArrowRight' ? (index + 1) % settingsTabs.length
+                : event.key === 'ArrowLeft' ? (index + settingsTabs.length - 1) % settingsTabs.length
+                : event.key === 'Home' ? 0 : event.key === 'End' ? settingsTabs.length - 1 : -1;
               if (next < 0) return;
               event.preventDefault();
-              selectSettingsTab(next === 0 ? 'sharing' : 'dice');
+              selectSettingsTab(settingsTabs[next]);
               event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
-            }}>{tab === 'sharing' ? 'Sharing' : 'Dice'}</button>)}
+            }}>{tab === 'sharing' ? 'Sharing' : tab === 'dice' ? 'Dice' : 'Settings'}</button>)}
         </div>}
         <div role={options.trayHistory ? 'tabpanel' : undefined}
           id={`${instanceId}-settings-sharing-panel`} aria-labelledby={options.trayHistory ? `${instanceId}-settings-sharing` : undefined}
@@ -1341,12 +1354,16 @@ function DiceRoom() {
           {changingTable ? 'Leaving table…' : 'Leave table'}
         </button>
         <p className="leave-table-note">Leave this table and continue rolling on your own.</p>
-        {options.onReportBug && <button type="button" className="leave-table" onClick={reportBug}>Report a bug</button>}
         </div>
         {options.trayHistory && <div className="profile-dialog mini-settings-dice" role="tabpanel"
           id={`${instanceId}-settings-dice-panel`} aria-labelledby={`${instanceId}-settings-dice`}
           hidden={settingsTab !== 'dice'}>
           {customizationContent}
+        </div>}
+        {options.trayHistory && <div className="profile-dialog mini-settings-preferences" role="tabpanel"
+          id={`${instanceId}-settings-settings-panel`} aria-labelledby={`${instanceId}-settings-settings`}
+          hidden={settingsTab !== 'settings'}>
+          {settingsContent}
         </div>}
       </dialog>
       {!options.trayHistory && <dialog
@@ -1371,6 +1388,16 @@ function DiceRoom() {
           </button>
         </header>
         {customizationContent}
+      </dialog>}
+      {!options.trayHistory && <dialog ref={settingsDialog}
+        className="dice-customization profile-dialog app-settings" aria-labelledby={`${instanceId}-app-settings-title`}
+        onClose={() => setConfiguring(false)} onPointerDown={backdropDown} onPointerUp={backdropUp}
+        onPointerCancel={() => { backdropPointer.current = null; }}>
+        <header>
+          <h2 id={`${instanceId}-app-settings-title`}>Settings</h2>
+          <button type="button" aria-label="Close settings" onClick={() => settingsDialog.current?.close()}><X aria-hidden /></button>
+        </header>
+        {settingsContent}
       </dialog>}
     </main>
   );

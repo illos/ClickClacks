@@ -2,7 +2,9 @@
 import { chromium, expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 
-const url = process.env.URL ?? 'http://127.0.0.1:9695/';
+const url = process.env.CLICKCLACKS_TEST_URL ?? process.env.URL ?? 'http://127.0.0.1:9695/';
+if (!['127.0.0.1', 'localhost'].includes(new URL(url).hostname))
+  throw new Error('This check requires an isolated local Worker.');
 const artifacts = process.env.SUPPORT_TEST_ARTIFACT_DIR ?? '.preview/app-settings';
 await mkdir(artifacts, { recursive: true });
 const browser = await chromium.launch();
@@ -12,6 +14,7 @@ try {
     const context = await browser.newContext({ viewport: { width, height }, colorScheme: 'light' });
     await context.route(/https:\/\/.*\.convex\.(cloud|site)\//, route => route.abort());
     const page = await context.newPage();
+    await page.routeWebSocket(/convex\.(cloud|site)/, socket => socket.close());
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.addInitScript(() => { if (!localStorage.getItem('powerroller.preferences.v2')) localStorage.setItem('powerroller.preferences.v2', JSON.stringify({

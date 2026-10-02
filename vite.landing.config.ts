@@ -6,6 +6,7 @@ import { diceFontNotices } from './scripts/lib/dice-font-build.ts';
 /** Isolated demo build; the published roller's entry points stay in vite.config.ts. */
 export default defineConfig({
   base: '/',
+  server: { allowedHosts: ['presidium-iv.tail41404c.ts.net'] },
   publicDir: 'web/landing/public',
   plugins: [react(), diceFontNotices()],
   build: {

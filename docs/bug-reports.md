@@ -202,3 +202,10 @@ reports from isolated local D1. Backend HTTP and WebSockets were blocked.
 Evidence: `/srv/presidium/home/projects/powerroller/test-artifacts/settings-037a5ee/RESULT.md`.
 Prior 172-test runtime and CLI authorization results were reused; temporary
 Test services/worktree were removed. Mobile Settings screenshot was inspected.
+
+Settings/mobile follow-up source `0411959` was merged/pushed into standalone
+main and published to <https://app.clickclacks.app> on 2026-10-02. Root-path
+build and pinned Wrangler deployment exited 0. Worker version:
+`f5d188fc-da99-4428-afa0-7f0989b21063`. The deployment reported the existing D1,
+rate limiter, assets and daily cleanup schedule. Accepted tests were reused;
+publication did not repeat live checks or change database/secret provisioning.

@@ -18,26 +18,22 @@ const periods: {value: StatsPeriod; label: string}[] = [
 ];
 function SignIn() {
   const {signIn} = useAuthActions();
-  const [flow, setFlow] = useState<"signIn" | "signUp">("signIn");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   return <main className="login"><p className="eyebrow">Project activity</p><h1>Click Clacks stats</h1>
     <p>Website traffic and anonymous multiplayer activity.</p>
     <form onSubmit={async event => {
       event.preventDefault(); setBusy(true); setError("");
-      const data = new FormData(event.currentTarget); data.set("flow", flow);
+      const data = new FormData(event.currentTarget); data.set("flow", "signIn");
       try {await signIn("password", data);}
-      catch {setError(flow === "signUp" ? "Could not create this account. Try signing in, or use a different email." : "Could not sign in. Check your email and password.");}
+      catch {setError("Could not sign in. Check your email and password.");}
       finally {setBusy(false);}
     }}>
-      <h2>{flow === "signIn" ? "Sign in" : "Create an account"}</h2>
+      <h2>Sign in</h2>
       <label>Email<input name="email" type="email" autoComplete="email" required maxLength={254} /></label>
-      <label>Password<input name="password" type="password" autoComplete={flow === "signIn" ? "current-password" : "new-password"} required minLength={8} /></label>
+      <label>Password<input name="password" type="password" autoComplete="current-password" required minLength={8} /></label>
       {error && <p role="alert">{error}</p>}
-      <button className="primary" disabled={busy}>{busy ? "Please wait…" : flow === "signIn" ? "Sign in" : "Create account"}</button>
-      <button type="button" disabled={busy} onClick={() => {setFlow(flow === "signIn" ? "signUp" : "signIn"); setError("");}}>
-        {flow === "signIn" ? "Create an account" : "Already have an account? Sign in"}
-      </button>
+      <button className="primary" disabled={busy}>{busy ? "Please wait…" : "Sign in"}</button>
     </form>
   </main>;
 }

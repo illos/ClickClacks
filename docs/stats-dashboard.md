@@ -1,8 +1,9 @@
 # Activity dashboard
 
 `stats.clickclacks.app` shows anonymous website/app traffic and multiplayer
-activity. Convex Auth provides email/password sign-in and self-service account
-creation. Any signed-in account can read the summaries. There are no roles,
+activity. Convex Auth provides email/password sign-in for existing accounts. New account
+creation is disabled in the backend and absent from the UI. Any signed-in account
+can read the summaries. There are no roles,
 invitations, verification emails or player login changes.
 
 ## Definitions
@@ -113,8 +114,7 @@ Published from pushed main `b383599`, with runtime identical to accepted `0d0e85
 - Stats Worker: **exit 0**, version `90de77b7-a599-4201-b67d-b76ed98b34e1`;
   Wrangler confirmed `stats.clickclacks.app` as its custom domain.
 
-The dashboard is at <https://stats.clickclacks.app>. Choose **Create an account**
-to set an email/password login. Collection begins with this publication; test
+The dashboard is at <https://stats.clickclacks.app>. Sign in with an existing email/password account; new registration is closed. Collection begins with this publication; test
 records stayed in the isolated backend/D1. No live acceptance or post-publication
 suite was run. Publication logs are outside Git in
 `powerroller/test-artifacts/stats-publication-b383599/`.

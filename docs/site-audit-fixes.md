@@ -41,8 +41,25 @@ wordmark. Pause controls were explicitly excluded.
 ## Validation and publication
 
 Authoring typecheck passed. Focused route, resource lifetime/cache and support
-credential-origin tests passed (3 files, 10 tests). Independent review and the
-assigned Test coordinator's candidate checks will be recorded before release.
+credential-origin tests passed (3 files, 10 tests). Independent source review
+passed `88f71a8` and root repair `e9c8d8c`. The assigned Test coordinator passed
+the combined candidate: four focused files/18 tests, both production builds
+and deployment dry runs, local routes and reporting readback, mobile keyboard
+interaction, lazy loading and retained preview canvas, demo startup, responsive
+layout and the 1200×630 social image. Bane text measured 5.33:1 normal/selected
+and 4.69:1 hover. Axe reported no violations in the page scans; some contrast
+and frame nodes were incomplete, including Bane's icon/count children.
+
+The initial candidate returned 404 at the app root after removing SPA fallback.
+`e9c8d8c` adds an explicit root-to-index 200 asset rewrite while preserving
+genuine 404s. Wrangler's local custom-domain inference also produced an HTTP
+redirect loop in the fixture; explicit localhost routing resolved that without
+changing production redirects. Root GET/HEAD, room queries, tray aliases and
+legacy API readback then passed.
+
+Evidence: `/srv/presidium/home/projects/powerroller/test-artifacts/site-audit-88f71a8/RESULT.md`.
+These results are reused for publication; no suite or browser test is repeated
+merely because the accepted code is merged or deployed.
 
 Publication uses `wrangler.bugs.jsonc` (reporting API/D1 retained) and
 `wrangler.landing.jsonc`, with the public backend set explicitly to

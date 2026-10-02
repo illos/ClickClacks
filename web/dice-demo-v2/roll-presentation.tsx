@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Users } from 'lucide-react';
+import type { JoinLogEntry } from './membership-log';
 import type { RollerPreferences } from '../../shared/preferences';
 import type { Style } from '../dice-demo/model';
 import type { ParticipantRoll } from './model';
@@ -11,6 +13,19 @@ export type LogRoll = Pick<
   ParticipantRoll,
   'id' | 'roller' | 'name' | 'faces' | 'power' | 'styles' | 'startsAt' | 'dice' | 'modifier' | 'total' | 'edges' | 'banes' | 'source'
 > & { historyExpiresAt?: number };
+export type TableLogEntry = { kind: 'roll'; roll: LogRoll } | JoinLogEntry;
+export const logEntryTime = (entry: TableLogEntry) => entry.kind === 'roll' ? entry.roll.startsAt : entry.startsAt;
+export const logEntryKey = (entry: TableLogEntry) => entry.kind === 'roll' ? `${entry.roll.roller}:${entry.roll.id}` : `join:${entry.id}`;
+export function TableEntry({ entry, viewer, avatarStyle }: { entry: TableLogEntry; viewer: string; avatarStyle?: Style }) {
+  if (entry.kind === 'roll') return <RollEntry roll={entry.roll} viewer={viewer} avatarStyle={avatarStyle} />;
+  return <article className="join-log-entry" data-participant={entry.participant}>
+    <Users size={18} aria-hidden="true" />
+    <span className="join-log-message"><strong>{entry.name}</strong> joined</span>
+    <time dateTime={new Date(entry.startsAt).toISOString()}>
+      {new Date(entry.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+    </time>
+  </article>;
+}
 export function DiceAvatar({ style, className = '' }: { style?: Style; className?: string }) {
   return (
     <svg className={`dice-avatar ${className}`} viewBox="0 0 32 36" aria-hidden="true">
@@ -95,7 +110,7 @@ export function RollEntry({ roll, viewer, avatarStyle }: { roll: LogRoll; viewer
   );
 }
 
-export function TrayHistory({ rolls, viewer, motion }: { rolls: LogRoll[]; viewer: string; motion: RollerPreferences['motion'] }) {
+export function TrayHistory({ entries, viewer, motion }: { entries: TableLogEntry[]; viewer: string; motion: RollerPreferences['motion'] }) {
   const host = useRef<HTMLDivElement>(null);
   const positions = useRef(new Map<string, number>());
   const reduced = motion === 'reduce' || (motion === 'device' && matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -118,11 +133,11 @@ export function TrayHistory({ rolls, viewer, motion }: { rolls: LogRoll[]; viewe
       }
     }
     positions.current = next;
-  }, [rolls, reduced]);
+  }, [entries, reduced]);
   return <div className="tray-history" ref={host} role="region" aria-label="Recent tray rolls" data-motion={reduced ? 'reduce' : 'full'}>
-    {rolls.slice(0, 6).map(roll => <div className="tray-history-row"
-      key={`${roll.roller}:${roll.id}`} data-history-key={`${roll.roller}:${roll.id}`}>
-      <RollEntry roll={roll} viewer={viewer} />
+    {entries.slice(0, 6).map(entry => <div className="tray-history-row"
+      key={logEntryKey(entry)} data-history-key={logEntryKey(entry)}>
+      <TableEntry entry={entry} viewer={viewer} />
     </div>)}
   </div>;
 }

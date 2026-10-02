@@ -10,6 +10,7 @@ const output = process.env.OUT || '/tmp/clickclacks-frontend-profile.json';
 const throttle = process.env.THROTTLE === '1';
 const startupOnly = process.env.STARTUP_ONLY === '1';
 const timingOnly = process.env.TIMING_ONLY === '1';
+const continuationOnly = process.env.CONTINUATION_ONLY === '1';
 let display, browser;
 function instrument() {
   const stats = window.frontendProfile = {
@@ -154,6 +155,7 @@ try {
   }
   if(!startupOnly) {
     result.graphics=await page.evaluate(()=>{const gl=document.querySelector('.canvas-host canvas').getContext('webgl2'); const e=gl?.getExtension('WEBGL_debug_renderer_info');return {vendor:e?gl.getParameter(e.UNMASKED_VENDOR_WEBGL):null,renderer:e?gl.getParameter(e.UNMASKED_RENDERER_WEBGL):null,pixelRatio:devicePixelRatio};});
+    if(!continuationOnly) {
     await runPhase(page,cdp,'empty-idle',12000);
     await runPhase(page,cdp,'power-roll',14000,()=>roll(page));
     await runPhase(page,cdp,'settled-idle',12000);
@@ -169,13 +171,16 @@ try {
     await page.getByRole('menuitemradio',{name:'Light',exact:true}).click();
     await runPhase(page,cdp,'light-idle',12000);
     await runPhase(page,cdp,'light-1d20-roll',14000,()=>roll(page));
+    }
+    }
+    if(!timingOnly) {
     const popout=page.getByRole('button',{name:'Pop out dice tray',exact:true});
     if(await popout.count()) {
       await popout.click();
       await page.waitForTimeout(3000);
       const mini=context.pages().find(p=>p!==page);
       if(!mini) throw new Error('Native PiP window not created');
-      const tray=mini.frames().find(f=>f.url().includes('/pip/'));
+      const tray=mini.frames().find(f=>f.url().includes('/web/popout/tray.html'));
       if(!tray) throw new Error('Native PiP iframe not loaded');
       await tray.waitForFunction(()=>window.frontendProfile?.marks.buttonReady,undefined,{timeout:45000});
       const miniCdp=await context.newCDPSession(mini); await miniCdp.send('Performance.enable');
@@ -220,7 +225,7 @@ try {
         await popout.click(); await page.waitForTimeout(4000);
         const mini=context.pages().find(p=>p!==page);
         if(!mini) throw new Error('PiP lifecycle window missing');
-        const tray=mini.frames().find(f=>f.url().includes('/pip/'));
+        const tray=mini.frames().find(f=>f.url().includes('/web/popout/tray.html'));
         await tray.waitForFunction(()=>window.frontendProfile?.marks.buttonReady,undefined,{timeout:45000});
         await mini.close(); await page.waitForTimeout(2000);
         await retained(`after-pip-close-${i}`);

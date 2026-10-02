@@ -16,6 +16,13 @@ and optimization. The subsequent history decision is **one hour**, without clean
 triggered by the last participant leaving. That decision supersedes the earlier
 30-day browser-history preservation requirement.
 
+On 2026-10-02 the owner authorized executing the combined cleanup/performance/Convex
+plan, then instructed this thread to wait until POWERROLLER lands its current work
+before starting implementation. No implementation began before that instruction.
+The owner also requested proper Click Clacks naming throughout the codebase. The
+naming work below supersedes this plan's earlier recommendation to leave the old
+package/component branding as the primary name.
+
 ## Current state and evidence
 
 - `05b6c42` is main/live according to POWERROLLER's handoff. It includes System,
@@ -162,8 +169,9 @@ at minimum its expired rooms must be physically removed in bounded batches.
 
 ## Intended module boundaries
 
-Keep the present stack and source-package model. Public `powerroller/*` paths,
-`PowerRoller` props, endpoint names and the original models remain compatible.
+Keep the present stack and source-package model. Make Click Clacks the primary
+name while supporting existing `powerroller/*` installation aliases, `PowerRoller`
+props/exports and endpoint names through the explicit compatibility plan below.
 Folder names below describe proposed ownership, not a compulsory mass rename.
 
 | Layer | Owns | Must not own |
@@ -201,7 +209,7 @@ are for the concrete changed paths.
 | V1-06 | Index browser history and serialize persistence | Medium | V1-03; site storage boundary from V1-04 |
 | V1-07 | Reuse graphics assets, reduce frame allocations and coalesce warm work | Medium–large | V1-01; planner boundary from V1-04 |
 | V1-08 | Share build assets and simplify PiP ownership | Medium | V1-04, V1-05; build assets can precede connection sharing |
-| V1-09 | Finish module/CSS/tooling/docs cleanup and verify the release candidate | Medium | Relevant earlier slices |
+| V1-09 | Finish Click Clacks naming, module/CSS/tooling/docs cleanup and verify the release candidate | Medium | Relevant earlier slices; coordinated hosting rename |
 
 Start with the confirmed lifecycle leak. Ship the independent direct-clock,
 cursor-gating, canonical-leave and legacy-expiry fixes early; they do not need to
@@ -401,7 +409,47 @@ sockets only if lifecycle evidence supports it; asset reuse can ship independent
 Move document-level theme styles into the site/PiP shell, consolidate roller theme
 tokens, and remove verified unused inherited selectors. Preserve host styling and
 two independently themed embeds. Keep public import paths and source-consumption
-behavior; renaming the internal `powerroller` package/component is unnecessary.
+behavior through compatibility aliases while making Click Clacks primary.
+
+### Naming pass — Click Clacks throughout the maintained app
+
+Use **Click Clacks** for human-readable names, **clickclacks** as the proposed
+machine/package/repository slug, and **ClickClacks** for the React component.
+Existing hosting/publication settings need to be coordinated with the owner and
+the active thread; do not rename a live repository or deployment during its build.
+This task initially updates the plan, with runtime changes waiting for POWERROLLER's
+current work to land.
+
+| Surface | Change and compatibility |
+| --- | --- |
+| UI, CLI help, workflow labels, maintained docs and examples | Replace product-name references with Click Clacks. Preserve Draw Steel's actual “power roll” mode and truthful historical extraction/commit records |
+| Package and imports | Rename the private source package to `clickclacks`, update self imports/examples and current consumption instructions. Support existing consumers through an explicit dependency installation alias, rather than claiming two self-package names automatically resolve |
+| React exports and types | Add primary `ClickClacks` / `ClickClacksOptions`; retain `PowerRoller` / `PowerRollerOptions` aliases with identical behavior |
+| CSS | Use the branded container class; retain the legacy class/selector compatibility while theme scoping is refactored. Avoid changing approved styling or host isolation |
+| Build configuration | Introduce `CLICKCLACKS_BASE` with `POWERROLLER_BASE` fallback. Coordinate the default asset base, PiP paths and source/live links with the actual hosting address at publication |
+| Preferences, private identity and history | Centralize naming constants. Validate/migrate or deliberately retain legacy persisted identifiers so existing choices/session ownership survive. Do not blindly open a fresh empty IndexedDB database under the new name; combine any transition with V1-03/V1-06's one-hour/indexed history work |
+| PiP/events/channels | Rename maintained identifiers with explicit mixed-name compatibility where required. Avoid duplicate event/result delivery and preserve one participant across the opener and tray |
+| Convex component | Use Click Clacks in the component's maintained name/new installation instructions. Keep the existing app's mounted component namespace explicit during transition; renaming a mount is not merely a display-label change and must not silently create an empty second backend |
+| GitHub repository | Rename the existing repository in place if the owner selects the proposed slug; retain its history. Update remotes, links and Pages asset paths together. No replacement repository is required |
+| Convex project settings | Update the existing project's name/slug through Project Settings when authorized; use the same dedicated deployment rather than creating another project merely to change branding |
+| Host checkout/project paths | Coordinate any filesystem/project-registration rename after active worktrees and peer endpoint dependencies are settled. A legacy path may remain explicitly for compatibility; never move another thread's checkout during its work |
+
+Both services support renaming an existing project/repository: [GitHub repository
+rename](https://docs.github.com/en/repositories/creating-and-managing-repositories/renaming-a-repository)
+and [Convex Project Settings](https://docs.convex.dev/dashboard/projects#project-settings).
+GitHub redirects repository/git traffic, but its project Pages URL is an exception;
+the site/base-path transition must be coordinated rather than assuming the old
+`/powerroller/` page automatically redirects. Convex project display/slug naming and
+the component's mounted storage namespace are separate concerns.
+
+Acceptance: new code/docs use the primary Click Clacks names; maintained old
+branding occurrences are limited to documented compatibility identifiers, historical
+records and still-live URLs pending transition. Existing preferences, private
+sessions and unexpired logs survive the intended upgrade. Both build bases/PiP
+routes, old/new React names, explicitly aliased consumers and the installed backend
+remain usable. Record the final repository/project names and publication URLs.
+
+### Remaining module, tooling and documentation cleanup
 
 Classify legacy UI and sound experiments explicitly. `dice-clack`, `wood-clack` and
 the cinematic cue source are not the normal site's current recorded sound path;

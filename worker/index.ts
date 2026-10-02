@@ -4,6 +4,7 @@ import {
   reportBodyLimit,
   reportStatuses,
 } from "../shared/bug-report";
+import { canonicalPage } from './canonical';
 interface Statement {
   bind(...values: unknown[]): Statement;
   first<T = Record<string, unknown>>(): Promise<T | null>;
@@ -107,6 +108,8 @@ function privateView(row: ReportRow, now = Date.now()) {
   };
 }
 async function handle(request: Request, env: SupportEnv): Promise<Response> {
+  const redirect = canonicalPage(request);
+  if (redirect) return redirect;
   const url = new URL(request.url);
   if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
   if (!env.BUG_REPORTS)

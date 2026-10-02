@@ -9,6 +9,7 @@ button, select { color: inherit; }
 button, a, select, input { -webkit-tap-highlight-color: transparent; }
 button { cursor: pointer; }
 button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--mint); outline-offset: 5px; }
+pre:focus-visible { outline: 2px solid var(--mint); outline-offset: 5px; }
 [hidden] { display: none !important; }
 ::selection { color: #111415; background: var(--mint); }
 .wrap { width: min(1200px, calc(100% - 96px)); margin-inline: auto; }
@@ -162,3 +163,7 @@ code { font-family: ui-monospace, monospace; }
 .site-footer .brand img { width: 110px; height: auto; }
 @media (min-width: 1600px) { .site-header .brand img { width: 210px; } }
 @media (max-width: 760px) { .site-header .brand img { width: 130px; } }
+
+/* Reserve space while the customizer chunk loads near the viewport. */
+#customizer-root { min-height: 530px; }
+@media (max-width: 760px) { #customizer-root { min-height: 810px; } }

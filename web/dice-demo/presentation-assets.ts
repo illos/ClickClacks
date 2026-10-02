@@ -52,8 +52,12 @@ export function releasePresentationAssets(resources: Iterable<{ dispose(): void 
 }
 export class PresentationAssets {
   // 128 256-square face canvases: 32 MiB of base RGBA pixels, excluding GPU mipmaps.
-  private textures = new AssetCache<THREE.Texture>(128);
-  private geometries = new AssetCache<THREE.BufferGeometry>(128);
+  private textures: AssetCache<THREE.Texture>;
+  private geometries: AssetCache<THREE.BufferGeometry>;
+  constructor(limits: { textures?: number; geometries?: number } = {}) {
+    this.textures = new AssetCache(limits.textures ?? 128);
+    this.geometries = new AssetCache(limits.geometries ?? 128);
+  }
   texture(key: string, create: () => THREE.Texture) {
     return this.textures.acquire(key, create);
   }

@@ -106,12 +106,12 @@ function Demo() {
     } else root.dataset.autoplay = active ? 'active' : 'paused';
   }, [active, expired]);
 
-  if (!client) return <p className="demo-notice">The live demo is unavailable. <a href="https://app.clickclacks.app/">Open the roller</a> to try it.</p>;
+  if (!client) return <p className="demo-notice">The live demo is unavailable. <a href="https://dice.clickclacks.app/">Open the roller</a> to try it.</p>;
   return <>
     <ClickClacks client={client} roomKey={roomKey} identity={visitor} profile={visitorProfile}
       trayHistory preferences={{ theme: 'dark', motion: 'device', sound: false, hidden: false, highContrast: false, announcements: 'mine' }}
       onRoom={code => { root.dataset.room = code; }}
-      roomLink={code => `https://app.clickclacks.app/?room=${encodeURIComponent(code)}`} />
+      roomLink={code => `https://dice.clickclacks.app/?room=${encodeURIComponent(code)}`} />
     {status && <p className="demo-notice" role="status">{status}</p>}
   </>;
 }

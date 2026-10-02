@@ -16,7 +16,7 @@ fonts, patterns, roll state and table history stay independent of the app theme.
 A free realtime dice roller for Draw Steel, with a reusable TypeScript library,
 optional React/Three presentation and an isolated Convex backend.
 
-[Website](https://clickclacks.app) · [Live roller](https://app.clickclacks.app) · [Source](https://github.com/illos/powerroller)
+[Website](https://clickclacks.app) · [Live roller](https://dice.clickclacks.app) · [Source](https://github.com/illos/powerroller)
 
 The default interface, materials, recorded physics, customization preview, social
 menus and compact log come from Salient commit

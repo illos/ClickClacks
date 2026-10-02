@@ -25,7 +25,7 @@ export async function runBugs(args = process.argv.slice(2), request = fetch) {
   const base = new URL(
     values.url ??
       process.env.CLICKCLACKS_SUPPORT_URL ??
-      "https://app.clickclacks.app",
+      "https://dice.clickclacks.app",
   );
   if (
     base.protocol !== "https:" &&
@@ -39,7 +39,7 @@ export async function runBugs(args = process.argv.slice(2), request = fetch) {
   const token = writing
     ? process.env.BUG_REPORT_WRITE_TOKEN
     : process.env.BUG_REPORT_READ_TOKEN ??
-      (base.origin === "https://app.clickclacks.app" &&
+      (base.origin === "https://dice.clickclacks.app" &&
       process.env.CLOUDFLARE_API_TOKEN
         ? deriveSupportToken(process.env.CLOUDFLARE_API_TOKEN, "read")
         : undefined);

@@ -27,7 +27,7 @@ it("uses distinct reproducible role credentials and sends only the reader to pro
 it("never derives credentials for an alternate origin or staff write commands", async () => {
   brokerEnv();
   const request = vi.fn<typeof fetch>(async () => Response.json({}));
-  for (const url of ["https://other.example", "https://app.clickclacks.app:444", "http://localhost:9695"])
+  for (const url of ["https://app.clickclacks.app", "https://other.example", "https://dice.clickclacks.app:444", "http://localhost:9695"])
     await expect(runBugs(["list", "--url", url], request)).rejects.toThrow("BUG_REPORT_READ_TOKEN");
   await expect(runBugs(["submit"], request)).rejects.toThrow("BUG_REPORT_WRITE_TOKEN");
   expect(request).not.toHaveBeenCalled();

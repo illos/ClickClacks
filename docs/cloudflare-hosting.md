@@ -1,5 +1,12 @@
 # Click Clacks hosting migration
 
+Current canonical roller: **https://dice.clickclacks.app/**. The owner corrected
+the hostname on 2026-10-02. `app.clickclacks.app` now remains a legacy entry
+point; navigation redirects preserve room queries. Current publication uses
+`wrangler.bugs.jsonc` for the app and `wrangler.landing.jsonc` for the landing
+page. See [the audit fixes](site-audit-fixes.md). Earlier sections below record
+the original migration and its former hostname.
+
 The subsequent [bug-reporting release](bug-reports.md#publication-result--2026-10-02)
 adds a Worker API and D1 inbox. Current app publication uses
 `wrangler.bugs.jsonc`; the static-only `wrangler.jsonc` below records the initial

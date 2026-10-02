@@ -14,9 +14,9 @@ function request(
   value: unknown = { id, description: "Dice did not appear", contact: "" },
   method = "POST",
   token?: string,
-  origin = "https://app.clickclacks.app",
+  origin = "https://dice.clickclacks.app",
 ) {
-  return new Request(`https://app.clickclacks.app${path}`, {
+  return new Request(`https://dice.clickclacks.app${path}`, {
     method,
     headers: {
       Origin: origin,
@@ -290,21 +290,21 @@ describe("private bug reports", () => {
     expect(
       (
         await worker.fetch(
-          new Request("https://app.clickclacks.app/api/missing"),
+          new Request("https://dice.clickclacks.app/api/missing"),
           env,
         )
       ).status,
     ).toBe(404);
     expect(
       await (
-        await worker.fetch(new Request("https://app.clickclacks.app/"), env)
+        await worker.fetch(new Request("https://dice.clickclacks.app/"), env)
       ).text(),
     ).toBe("asset");
   });
   it("redacts supplied errors and enforces description/contact limits", () => {
     const context = cleanBugContext({
       error:
-        'credential: "secret", URL https://app.clickclacks.app/?room=ABCDEFGH id 2a03b414-0339-40b6-8c1c-9a9479945791',
+        'credential: "secret", URL https://dice.clickclacks.app/?room=ABCDEFGH id 2a03b414-0339-40b6-8c1c-9a9479945791',
     });
     expect(context.error).not.toMatch(/secret|ABCDEFGH|2a03b414/);
     expect(() =>

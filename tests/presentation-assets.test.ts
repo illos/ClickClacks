@@ -43,6 +43,23 @@ it('evicts only idle textures and drops the entire renderer cache on disposal', 
   expect(held).toHaveBeenCalledTimes(1);
   expect(evicted).toBe(140);
 });
+it('keeps preview textures bounded without disposing maps still displayed', () => {
+  const assets = new PresentationAssets({ textures: 40, geometries: 8 });
+  const displayed = assets.texture('displayed', () => new THREE.Texture());
+  const held = vi.fn();
+  displayed.addEventListener('dispose', held);
+  let evicted = 0;
+  for (let i = 0; i < 60; i++) {
+    const texture = assets.texture(String(i), () => new THREE.Texture());
+    texture.addEventListener('dispose', () => evicted++);
+    releasePresentationAssets([texture]);
+  }
+  expect(evicted).toBe(21);
+  expect(held).not.toHaveBeenCalled();
+  assets.dispose();
+  expect(held).toHaveBeenCalledTimes(1);
+  expect(evicted).toBe(60);
+});
 it('reuses twenty authored face maps for a twenty-die pool without changing glyphs', async () => {
   const { createDie } = await import('../web/dice-demo/dice-models');
   let canvases = 0;

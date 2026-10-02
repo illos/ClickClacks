@@ -16,3 +16,8 @@ Existing ignored Convex bindings were reused; no backend changes or deployment.
 
 The light-mode wordmark keeps the same geometry and accent colors; only the ivory
 foreground changes to graphite (`#202a2c`) for contrast on the light page.
+
+The 2026-10-02 owner-requested `.app` trial adds mint angular path lettering to
+both wordmark variants; the emblem remains unchanged. `build:landing` renders
+the dark SVG into a 1200×630 PNG social card with pinned resvg. The PNG is built
+into `dist/landing-demo`, rather than committed or downloaded by the page itself.

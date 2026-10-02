@@ -16,7 +16,8 @@ export function createDicePreview(
     highContrast: options.highContrast ?? false,
   };
   let appearance: Style | null = null;
-  const assets = new PresentationAssets();
+  // A single die needs a much smaller idle cache than a multiplayer tray.
+  const assets = new PresentationAssets({ textures: 40, geometries: 8 });
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     alpha: true,
@@ -46,6 +47,7 @@ export function createDicePreview(
   let pending: Style | null = null,
     styleKey = '';
   let frame = 0,
+    active = true,
     stopped = false,
     lastDraw = -Infinity;
   const orientation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.3);
@@ -63,7 +65,7 @@ export function createDicePreview(
   }
   function tick(now: number) {
     frame = 0;
-    if (stopped || document.hidden) return;
+    if (stopped || !active || document.hidden) return;
     const elapsed = Math.min(50, Math.max(0, now - lastTick));
     lastTick = now;
     if (!dragging && !reduced()) {
@@ -103,7 +105,7 @@ export function createDicePreview(
     if (!reduced()) frame = requestAnimationFrame(tick);
   }
   function wake() {
-    if (!frame && !stopped && !document.hidden) frame = requestAnimationFrame(tick);
+    if (!frame && active && !stopped && !document.hidden) frame = requestAnimationFrame(tick);
   }
   const resize = new ResizeObserver(() => {
     const width = host.clientWidth,
@@ -194,6 +196,21 @@ export function createDicePreview(
   renderer.domElement.addEventListener('webglcontextlost', lost);
   let disposed = false;
   return {
+    setActive(value: boolean) {
+      active = value;
+      if (!active) {
+        cancelAnimationFrame(frame);
+        frame = 0;
+        velocityX = velocityY = 0;
+        const pointer = dragging?.id;
+        dragging = null;
+        if (pointer !== undefined && host.hasPointerCapture(pointer)) host.releasePointerCapture(pointer);
+      } else {
+        lastTick = performance.now();
+        lastDraw = -Infinity;
+        wake();
+      }
+    },
     setPreferences(value: TrayPreferences) {
       preferences = { ...preferences, ...value };
       if (appearance)

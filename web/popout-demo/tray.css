@@ -42,14 +42,8 @@ body.mini-tray { margin: 0; }
     grid-template-rows: repeat(6, minmax(0, 1fr));
     pointer-events: none;
     overflow: hidden;
-    mask-image: linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%);
   }
-  .v2 .tray-history-row { min-height: 0; opacity: .9; transition: opacity 360ms ease; }
-  .v2 .tray-history-row:nth-child(2) { opacity: .72; }
-  .v2 .tray-history-row:nth-child(3) { opacity: .55; }
-  .v2 .tray-history-row:nth-child(4) { opacity: .38; }
-  .v2 .tray-history-row:nth-child(5) { opacity: .22; }
-  .v2 .tray-history-row:nth-child(6) { opacity: .12; }
+  .v2 .tray-history-row { min-height: 0; opacity: 1; }
   .v2 .tray-history[data-motion='reduce'] .tray-history-row { transition: none; }
   .v2.high-contrast .tray-history { mask-image: none; }
   .v2.high-contrast .tray-history-row { opacity: 1; }
@@ -67,6 +61,7 @@ body.mini-tray { margin: 0; }
   .v2 .tray-history .roll-author-name { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .v2 .tray-history .roll-avatar { display: none; }
   .v2 .tray-history .roll-author { font-size: 11px; }
+  .v2 .tray-history .roll-log-entry time { opacity: 1; }
   .v2 .tray-history .roll-result-line { font-size: 12px; line-height: 1.25; gap: 3px 6px; flex-wrap: nowrap; }
   .v2 .tray-history .roll-equation { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
   .v2 .tray-history .roll-total { font-size: 15px; color: #e8e5df; }

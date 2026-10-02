@@ -55,7 +55,7 @@ pnpm run bugs update REPORT_ID --status resolved --revision 1 --owner THREAD_ID 
 `BUG_REPORT_READ_TOKEN` permits list/show; `BUG_REPORT_WRITE_TOKEN` permits
 headless submission and triage. Tokens must be at least 32 characters and must
 never be Vite build variables or command-line arguments. The endpoint defaults
-to `https://app.clickclacks.app`; `--url` or `CLICKCLACKS_SUPPORT_URL` selects a
+to `https://dice.clickclacks.app`; `--url` or `CLICKCLACKS_SUPPORT_URL` selects a
 local or staged service. Output is JSON; failed requests exit nonzero. The inbox
 lists the newest 50 reports for the requested status without contact/diagnostics.
 Show returns private details only to authorized support readers.

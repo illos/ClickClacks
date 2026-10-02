@@ -78,6 +78,10 @@ emits the old tray document under `dist/pip/` as a compatibility alias.
 Deploy the whole `dist/` directory. Set `CLICKCLACKS_BASE` (with a trailing slash)
 when building for a hosting path other than `/powerroller/`.
 
+For a dedicated Cloudflare hostname, `pnpm build:cloudflare` builds the same app
+at `/`. The prepared static-assets configuration and backend/team cutover steps
+are documented in [docs/cloudflare-hosting.md](docs/cloudflare-hosting.md).
+
 ## Embed without adopting the site
 
 npm publication is deferred. Install a **pinned Git revision or local source

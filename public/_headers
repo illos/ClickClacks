@@ -1,0 +1,4 @@
+# Vite fingerprints the files in this directory. HTML uses Cloudflare's
+# default revalidation policy so a new release points to its new asset hashes.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

@@ -76,6 +76,7 @@ for (const form of ["uuid", "code", "normalized"] as const) test(`leave via ${fo
   await t.mutation(api.diceDemoV2.join, join);
   await t.mutation(api.diceDemoV2.acceptSupplied, roll);
   const code = (await t.query(api.diceDemoV2.view, { key })).code!;
+  expect((await t.query(api.diceDemoV2.view, { key: ` ${code.toLowerCase()} ` })).canonicalKey).toBe(key);
   await t.mutation(api.diceDemoV2.leave, { ...session, key: form === "uuid" ? key : form === "code" ? code : ` ${code.toLowerCase()} ` });
   expect(await t.run(ctx => ctx.db.query("diceDemoV2Tracks").withIndex("by_room_viewer", q => q.eq("key", key)).take(2))).toEqual([]);
 });

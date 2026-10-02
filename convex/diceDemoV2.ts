@@ -13,6 +13,7 @@ const viewReturns=v.object({
     participants: v.array(participant),
     code: v.union(v.string(), v.null()),
     cursor: v.optional(v.number()),
+    canonicalKey: v.optional(v.string()),
   });
 export const view=query({args:{ key: v.string() },returns:viewReturns,handler:async(ctx,args):Promise<Infer<typeof viewReturns>>=>ctx.runQuery(components.powerroller.diceDemoV2.view,args)});
 const trackReturns=v.union(

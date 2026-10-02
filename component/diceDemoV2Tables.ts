@@ -126,5 +126,6 @@ export const diceDemoV2Tables = {
     receipts: v.array(demoReceipt),
   })
     .index("by_room_viewer", ["key", "viewer"])
-    .index("by_expiry", ["expiresAt"]),
+    .index("by_expiry", ["expiresAt"])
+    .index("by_history_expiry", ["roll.historyExpiresAt"]),
 };

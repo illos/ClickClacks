@@ -105,6 +105,7 @@ export const view = query({
     participants: v.array(participant),
     code: v.union(v.string(), v.null()),
     cursor: v.optional(v.number()),
+    canonicalKey: v.optional(v.string()),
   }),
   handler: async (ctx, { key }) => {
     const found = await room(ctx, key);
@@ -114,6 +115,7 @@ export const view = query({
       participants: expired ? [] : (found?.participants ?? []),
       code: found?.code ?? null,
       cursor: found?.sequence ?? 0,
+      ...(found && !expired ? { canonicalKey: found.key } : {}),
     };
   },
 });
@@ -723,7 +725,10 @@ export const leave = mutation({
 
 /** Resolve code aliases; canonical UUID clients avoid the presence-bearing room read. */
 async function capabilityKey(ctx: QueryCtx, key: string) {
-  if (codePattern.test(key.trim().toUpperCase())) return (await room(ctx, key))?.key ?? null;
+  if (codePattern.test(key.trim().toUpperCase())) {
+    const found = await room(ctx, key);
+    return found && found.expiresAt > Date.now() ? found.key : null;
+  }
   validKey(key);
   return key;
 }
@@ -778,9 +783,14 @@ async function compactCurrent(ctx: QueryCtx, key: string, viewer: string,
   if (!track) return null;
   let expiresAt = track.roll.historyExpiresAt;
   if (expiresAt === undefined) {
+    // Only legacy rows need a presence-bearing room read. A shortened host TTL
+    // or deleted room must invalidate UUID reads before normalization runs.
+    const found = await room(ctx, key);
+    if (!found || found.expiresAt <= Date.now()) return null;
     const request = await ctx.db.query("diceDemoV2Requests")
       .withIndex("by_request", q => q.eq("key", key).eq("viewer", viewer).eq("id", track.roll.id)).unique();
-    expiresAt = request?.roll ? request.expiresAt : Math.min(track.expiresAt ?? Infinity, track.roll.startsAt + 3600000);
+    expiresAt = Math.min(found.expiresAt, track.expiresAt ?? Infinity,
+      request?.roll ? (request.roll.historyExpiresAt ?? request.expiresAt) : track.roll.startsAt + 3600000);
   }
   const { motion: _motion, ...roll } = track.roll;
   return { roll: { ...roll, historyExpiresAt: expiresAt },

@@ -65,3 +65,27 @@ Publication uses `wrangler.bugs.jsonc` (reporting API/D1 retained) and
 `wrangler.landing.jsonc`, with the public backend set explicitly to
 `https://nautical-partridge-636.convex.cloud`. No backend publication, database
 migration or reset is part of these changes.
+
+## Publication result
+
+Source `1412527` was fast-forwarded to standalone main and pushed on
+2026-10-02. Both required builds and pinned Wrangler deployments exited 0.
+
+- Roller: <https://dice.clickclacks.app/>, `clickclacks-app` Worker version
+  `f65042c1-e8d8-46ce-8a8f-edcf549559d9`.
+- Landing: <https://clickclacks.app/>, `clickclacks-landing` Worker version
+  `ce5083b6-e630-4260-9f75-4810d2d35485`.
+- Wrangler reported the dice and legacy app custom domains on the app Worker;
+  Cloudflare's Workers Domains API readback confirmed those two bindings and
+  the apex landing binding. Existing D1/rate-limit/cron bindings were retained.
+- Final QC clearance accepted the root repair and coordinator evidence. Tests
+  were reused; publication did not launch repeated suites or live browser tests.
+- No zone-wide HTTPS setting was changed: available credentials could not read
+  that zone setting. Known HTML navigation redirects are implemented in Workers.
+- Browser preferences/identity are scoped to the new origin; visitors can use
+  existing room links, but their browser preferences are not automatically moved.
+
+Further profiling can establish field performance gains and inspect the
+contrast nodes that axe could not resolve. Reduced-motion preview readiness
+was checked; its frame-by-frame motion was not measured. Search Console and
+actual indexed URLs were outside the available access.

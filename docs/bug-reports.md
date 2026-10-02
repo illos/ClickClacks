@@ -111,3 +111,21 @@ After release approval, publish the complete app build with
 ID/Worker version. Reuse the accepted test results. Do not publish the config
 with its placeholder ID or without the rate limiter/salt: public intake fails
 closed when those bindings are absent. The landing Worker is unaffected.
+
+## Accepted validation
+
+On 2026-10-02, the assigned Test coordinator accepted runtime `fbd3982`:
+172 tests across 38 files, root build, actual local D1 migration, popup checks at
+1440/430/320 pixels and the 480-pixel tray, lost-response → 429 → identical retry,
+download, focus/Escape, opt-out and persisted support-CLI readback. Unauthorized
+reads were refused. The game backend was blocked throughout browser checks.
+
+`b25f1f0` corrects only command/help wording to `pnpm run bugs`; the coordinator
+and QC reused the accepted evidence. Final QC PASS closed the retry and command
+findings. Evidence is outside Git at
+`/srv/presidium/home/projects/powerroller/test-artifacts/bug-reports-fbd3982/RESULT.md`.
+Phone popup screenshots were visually inspected. All test-owned services and
+checkouts were removed. Local authoring typecheck and Worker dry-run also passed.
+
+The implementation branch is retained for release approval. No cloud database,
+server secret, GitHub push or app publication has been performed by this task.

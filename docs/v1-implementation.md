@@ -94,3 +94,36 @@ No GitHub repository rename, Convex project rename, main merge/push or shared li
 promotion has been performed by this implementation thread. Those publication steps
 must use the assigned coordinator and the session's authorization. Preserve all other
 threads' branches, worktrees and running previews.
+
+## Release acceptance — 2026-10-02
+
+The implementation candidate is `847dbbf`, reviewed independently without a concrete
+remaining blocker. The assigned Test coordinator accepted:
+
+- 160/160 unit and Convex tests at `e2a541b`; final backend budget adjustment at
+  `847dbbf` passed 14/14 targeted legacy checks and post-codegen TypeScript checking.
+- Actual isolated Convex schema/function registration and the preserved component mount.
+- Connected D100, bonus d4 and modifier checks; IndexedDB upgrade, blocked-open and
+  recovery checks; PiP, repeated rolls, clear, preview and audio transitions.
+- Thirty preview cycles with native WebGL contexts 1→1, textures 4→4 and DOM nodes
+  436→436. This addresses the confirmed preview lifecycle leak; it is not a claim
+  that every form of memory use is constant.
+- Full frontend phase/continuation and throttled startup captures, indexed storage
+  benchmarks, and independent package installation with the included Three patch
+  registered in the consumer host.
+
+Evidence is outside Git in `test-artifacts/v1-readiness-a43eaa6/`,
+`v1-readiness-e8d33d6/`, `v1-readiness-e2a541b/` and `v1-readiness-847dbbf/`.
+The frontend captures span the documented commits; the final budget adjustment
+changes backend cleanup limits only. Existing acceptance is reused for publication.
+
+A real one-hour soak started at 02:22:06 UTC on frozen `847dbbf`. Its dedicated
+thread owns the private stack and will check original-deadline expiry in the UI,
+IndexedDB and backend, together with resource retention and errors. The owner
+explicitly authorized publishing before this check finishes and requested follow-up
+fixes for any issues it finds. The soak has not yet passed.
+
+Publication order is pushed main, dedicated Convex dev backend, then an explicit
+Pages workflow dispatch. The release commit uses `[skip ci]` to prevent the main
+push from automatically publishing the new frontend before its backend exists.
+The frozen soak worktree remains in place until the test thread releases it.

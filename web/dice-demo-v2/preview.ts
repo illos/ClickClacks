@@ -213,17 +213,12 @@ export function createDicePreview(
     },
     setPreferences(value: TrayPreferences) {
       preferences = { ...preferences, ...value };
-      if (appearance)
-        pending = preferences.highContrast
-          ? { ...appearance, color: '#ffffff', ink: '#000000', pattern: 'solid' }
-          : appearance;
+      if (appearance) pending = appearance;
       motion();
     },
     style(value: Style) {
       appearance = value;
-      pending = preferences.highContrast
-        ? { ...value, color: '#ffffff', ink: '#000000', pattern: 'solid' }
-        : value;
+      pending = value;
       wake();
     },
     dispose() {

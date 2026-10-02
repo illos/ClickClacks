@@ -148,9 +148,7 @@ export function createRoomTray(
   }
   function style(lane: Lane, member: Participant) {
     lane.appearance = member.style;
-    const appearance: Style = preferences.highContrast
-      ? { ...member.style, color: '#ffffff', ink: '#000000', pattern: 'solid' }
-      : member.style;
+    const appearance = member.style;
     const key = JSON.stringify([appearance, lane.roll?.dice]);
     if (lane.styleKey !== key) {
       for (const die of lane.dice) {

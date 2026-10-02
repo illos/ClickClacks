@@ -23,6 +23,11 @@ The owner also requested proper Click Clacks naming throughout the codebase. The
 naming work below supersedes this plan's earlier recommendation to leave the old
 package/component branding as the primary name.
 
+Implementation is now underway from settled D100 baseline **87b0646**.
+See [implementation and coordinated acceptance](v1-implementation.md) for actual
+changes, checks and remaining boundaries; historical findings below retain their
+original measurement revisions.
+
 ## Current state and evidence
 
 - `05b6c42` is main/live according to POWERROLLER's handoff. It includes System,

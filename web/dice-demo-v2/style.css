@@ -528,6 +528,18 @@
   }
 }
 
+.v2 .track-results:has(> .empty-log) {
+  align-content: center;
+}
+.empty-log {
+  margin: 0;
+  padding: 24px 16px;
+  text-align: center;
+  color: #a9b2b4;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
 .roll-log-entry {
   position: relative;
   padding: 10px 6px 10px 41px;

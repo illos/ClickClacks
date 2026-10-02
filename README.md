@@ -172,6 +172,8 @@ a frontend that requires them. The live Cloudflare roller uses
 `pnpm build:cloudflare` to build at `/`; see the
 [Cloudflare hosting guide](docs/cloudflare-hosting.md) for configuration.
 
+<a id="embed-without-adopting-the-site"></a>
+
 ## Embedding
 
 The package is not published to npm. Install a pinned Git revision or local

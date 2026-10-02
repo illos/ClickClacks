@@ -5,9 +5,14 @@ Click Clacks app. The square iframe runs at 720 × 720 and scales to its website
 column, to the left of the section copy (above it on narrow screens). It uses the existing component, renderer, roll lifecycle and dedicated
 Powerroller backend. Each page load has an isolated table and two fresh identities.
 
-The repeating sequence is Alex rolling 1d12, opening Sharing, copying the code,
-holding the menu for three seconds, closing it, then Sam joining and rolling
-2d4. The result remains visible briefly. Sam leaves, the tray clears, and the
+The repeating sequence is Alex rolling 1d12, waiting a beat, opening Sharing
+with a tap ripple, copying the code, and closing the menu after three seconds.
+An example chat card then types Alex's invitation, pastes the actual table code,
+and shows the message being sent. The card closes before Sam joins and rolls
+2d4. Sharing now opens 700ms after Alex's result is observed, including the final
+200ms tap indicator (200ms longer than the original gap). The chat is a local
+illustration and does not contact Discord or send any external message.
+The result remains visible briefly. Sam leaves, the tray clears, and the
 visible log resets before the next cycle. One table is reused across cycles;
 the host's presentation boundary hides older accepted history without deleting
 backend records. Ordinary app consumers retain their existing full log.

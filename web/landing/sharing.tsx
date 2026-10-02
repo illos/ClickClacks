@@ -29,6 +29,7 @@ function Demo() {
   const [active, setActive] = useState(parent === window);
   const [historySince, setHistorySince] = useState(Infinity);
   const [status, setStatus] = useState('');
+  const [chat, setChat] = useState<{ stage: 'typing' | 'pasted' | 'sending' | 'sent'; text: string; code: string } | null>(null);
   const code = useRef<string | undefined>(undefined);
   const latestAlex = useRef<string | undefined>(undefined);
   const cleanupPending = useRef<Promise<void>>(Promise.resolve());
@@ -70,11 +71,17 @@ function Demo() {
     const button = (label: string) => root.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`);
     const rollButton = () => root.querySelector<HTMLButtonElement>('.roll-button-group .primary');
     const phase = (value: string) => { root.dataset.phase = value; };
+    const tap = async (target: HTMLButtonElement) => {
+      target.classList.add('demo-tap');
+      try { await pause(200); target.click(); }
+      finally { target.classList.remove('demo-tap'); }
+    };
     async function run() {
       await cleanupPending.current;
       while (!signal.aborted) {
         try {
           setStatus('');
+          setChat(null);
           setHistorySince(Infinity);
           phase('ready');
           await until(() => !!code.current && !!rollButton() && !rollButton()!.disabled);
@@ -84,8 +91,9 @@ function Demo() {
           rollButton()!.click();
           await until(() => latestAlex.current !== previous);
           await pause(500);
+          phase('sharing-tap');
+          await tap(button('Open social menu')!);
           phase('sharing');
-          button('Open social menu')!.click();
           await until(() => !!root.querySelector('dialog[open] .share-code'));
           await pause(800);
           button('Copy table code')!.click();
@@ -93,6 +101,23 @@ function Demo() {
           phase('copied');
           await pause(3000);
           button('Close social menu')!.click();
+          phase('chat-invite');
+          const invitation = 'Sam, join the game!';
+          setChat({ stage: 'typing', text: '', code: '' });
+          await pause(350);
+          for (let length = 1; length <= invitation.length; length++) {
+            setChat({ stage: 'typing', text: invitation.slice(0, length), code: '' });
+            await pause(45);
+          }
+          phase('chat-paste');
+          setChat({ stage: 'pasted', text: invitation, code: code.current! });
+          await pause(900);
+          phase('chat-send');
+          setChat({ stage: 'sending', text: invitation, code: code.current! });
+          await pause(200);
+          setChat({ stage: 'sent', text: invitation, code: code.current! });
+          await pause(1100);
+          setChat(null);
           phase('sam-joining');
           await controller.join(code.current!);
           if (signal.aborted) break;
@@ -112,6 +137,7 @@ function Demo() {
           await pause(800);
         } catch {
           if (signal.aborted) break;
+          setChat(null);
           await controller.leave().catch(() => undefined);
           setStatus('The live demonstration is reconnecting…');
           phase('reconnecting');
@@ -122,6 +148,7 @@ function Demo() {
     const task = run();
     return () => {
       abort.abort();
+      setChat(null);
       cleanupPending.current = task.catch(() => undefined).then(async () => {
         await controller.leave().catch(() => undefined);
         await controller.dispose();
@@ -144,6 +171,19 @@ function Demo() {
           setHistorySince(roll.startsAt);
         }
       }} />}
+    {chat && <div className={`sharing-chat chat-${chat.stage}`} aria-hidden="true">
+      <header><span className="chat-channel"># game-night</span><span className="chat-example">EXAMPLE CHAT</span></header>
+      <div className="chat-messages">
+        {chat.stage === 'sent' && <div className="chat-message">
+          <span className="chat-avatar">A</span>
+          <div><div className="chat-author">Alex <span>Just now</span></div><p>{chat.text}<br /><code>{chat.code}</code></p></div>
+        </div>}
+      </div>
+      <div className="chat-composer">
+        <div>{chat.stage === 'sent' ? <span className="chat-placeholder">Message #game-night</span> : <>{chat.text}<span className="chat-caret" />{chat.code && <code>{chat.code}</code>}</>}</div>
+        <span className="chat-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"><path d="m3 3 18 9-18 9 4-9-4-9Z M7 12h14" /></svg></span>
+      </div>
+    </div>}
     {status && <p className="sharing-status">{status}</p>}
   </>;
 }

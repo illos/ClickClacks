@@ -34,14 +34,8 @@ h1 span, .customize-heading h2 span, .last-call h2 span { color: var(--mint); }
 .hero-actions { display: flex; align-items: center; gap: 24px; }
 .text-link { display: inline-flex; align-items: center; gap: 16px; font-size: 13px; font-weight: 600; line-height: 1.7; }
 .hero-note { color: var(--muted); font-size: 11px; margin: 18px 0 0; }
-.mini-player { overflow: hidden; border: 1px solid #3d4c4d; border-radius: 12px; background: #111415; box-shadow: 0 28px 70px #0003; }
-.mini-player-heading, .mini-player-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 20px; color: var(--muted); font-size: 9px; letter-spacing: .07em; }
-.mini-player-heading { border-bottom: 1px solid var(--line); }
-.mini-player-heading > span:first-child { display: inline-flex; align-items: center; gap: 8px; }
-.mini-player-heading > span:last-child { color: var(--mint); font-size: 8px; }
+.mini-player { min-width: 0; }
 .hero-tray { display: block; width: 100%; height: 420px; border: 0; color-scheme: dark; }
-.mini-player-footer { border-top: 1px solid var(--line); font-size: 10px; letter-spacing: 0; }
-.mini-player-footer a { color: var(--mint); }
 .together { padding-block: 68px 110px; display: grid; grid-template-columns: 1fr 1.08fr; align-items: center; gap: 80px; border-top: 1px solid var(--line); }
 h2 { font-size: clamp(34px, 3.4vw, 48px); font-weight: 750; line-height: 1.1; letter-spacing: -.045em; margin-bottom: 24px; }
 h2 em { font-style: normal; color: var(--pink); }
@@ -126,5 +120,5 @@ code { font-family: ui-monospace, monospace; }
 @media (min-width: 1600px) { .hero { padding-block: 90px 120px; } }
 @media (max-width: 1000px) { .wrap { width: calc(100% - 64px); } .hero { gap: 30px; } .hero-actions { gap: 16px; flex-wrap: wrap; } .together, .build-section { gap: 40px; } .customizer { grid-template-columns: 1fr 330px; } .customizer-controls { padding: 25px; } .players > div { min-width: 78px; } }
 @media (max-width: 760px) { .wrap { width: calc(100% - 40px); } .site-header { height: 86px; } nav { gap: 12px; } .nav-detail { display: none; } .brand { font-size: 11px; gap: 8px; } .hero { grid-template-columns: 1fr; padding-block: 38px 65px; gap: 38px; } h1 { font-size: clamp(42px, 8.5vw, 62px); } .hero-copy { max-width: 540px; } .intro { font-size: 15px; } .together, .build-section { grid-template-columns: 1fr; gap: 38px; padding-block: 60px; } .section-heading > p:not(.eyebrow) { max-width: 540px; } .customize-section { padding-block: 60px; } .customize-heading { display: block; margin-bottom: 30px; } .customize-heading > p { margin-top: 20px; } .customizer { grid-template-columns: 1fr; } .die-stage { min-height: 390px; } .landing-preview { min-height: 280px; } .customizer-controls { border-left: 0; border-top: 1px solid #3b4849; padding: 26px; } .color-wheel { width: 200px; margin: 24px auto; } .customizer-controls .color-slider { grid-template-columns: 70px minmax(0, 1fr); } .customizer-note { font-size: 11px; } .support { flex-wrap: wrap; gap: 15px; } .support > div { flex: 1; } .support > a { margin-left: 47px; } .last-call { padding-block: 75px; } .site-footer { flex-wrap: wrap; gap: 14px; } .site-footer p { order: 3; width: 100%; } }
-@media (max-width: 380px) { .wrap { width: calc(100% - 32px); } .site-header .brand span { font-size: 9px; } .button-small { padding: 10px 12px; gap: 12px; } .hero-actions { align-items: flex-start; gap: 20px; } .mini-player-heading, .mini-player-footer { padding-inline: 12px; } .mini-player-heading { font-size: 8px; } .players > div { min-width: 80px; } .players small { font-size: 8px; } .table-caption { font-size: 8px; } .customizer-controls { padding: 20px; } .stage-topline, .stage-bottomline { padding-inline: 18px; } .code-window { padding: 18px; } pre { font-size: 11px; } }
+@media (max-width: 380px) { .wrap { width: calc(100% - 32px); } .site-header .brand span { font-size: 9px; } .button-small { padding: 10px 12px; gap: 12px; } .hero-actions { align-items: flex-start; gap: 20px; } .players > div { min-width: 80px; } .players small { font-size: 8px; } .table-caption { font-size: 8px; } .customizer-controls { padding: 20px; } .stage-topline, .stage-bottomline { padding-inline: 18px; } .code-window { padding: 18px; } pre { font-size: 11px; } }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .button { transition: none; } .button:hover { transform: none; } }

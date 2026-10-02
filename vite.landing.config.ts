@@ -10,6 +10,6 @@ export default defineConfig({
   build: {
     outDir: 'dist/landing-demo',
     assetsInlineLimit: 0,
-    rollupOptions: { input: 'landing.html' },
+    rollupOptions: { input: { landing: 'landing.html', mini: 'web/landing/mini.html' } },
   },
 });

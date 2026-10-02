@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Test coordinator: focused cross-origin embed proof, in fresh visitor rooms.
+// Test coordinator: focused owned embed proof, in fresh visitor rooms.
 import { chromium, expect } from '@playwright/test';
 import { ConvexHttpClient } from 'convex/browser';
 import { makeFunctionReference } from 'convex/server';
@@ -21,9 +21,9 @@ try {
     await tray.getByRole('button', { name: 'Close settings', exact: true }).click();
     await roll.click();
     await expect(tray.locator('.tray-history .roll-log-entry').first()).toBeVisible({ timeout: 20000 });
-    const frame = page.frames().find(candidate => candidate.url().includes('/web/popout/tray.html'));
+    const frame = page.frames().find(candidate => candidate.url().includes('/web/landing/mini.html'));
     const backend = process.env.LANDING_ROLLER_BACKEND ?? 'https://nautical-partridge-636.convex.cloud';
-    const viewer = await frame.evaluate(endpoint => JSON.parse(sessionStorage.getItem('powerroller.identity.v1:' + endpoint)).viewer, backend);
+    const viewer = await frame.locator('#root').getAttribute('data-viewer');
     const stored = await new ConvexHttpClient(backend).query(makeFunctionReference('diceDemoV2:track'), { key: room.trim(), viewer });
     expect(stored?.roll.faces.length).toBeGreaterThan(0);
     await expect(tray.locator('.canvas-host canvas')).toBeVisible();

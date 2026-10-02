@@ -92,6 +92,25 @@ function Customizer() {
 
 createRoot(document.getElementById('customizer-root')!).render(<Customizer />);
 
+const mini = document.querySelector<HTMLIFrameElement>('.hero-tray');
+if (mini) {
+  let onScreen = false;
+  const sendVisibility = () => mini.contentWindow?.postMessage({
+    type: 'clickclacks-demo-visibility', active: onScreen && !document.hidden,
+  }, location.origin);
+  const observer = new IntersectionObserver(entries => {
+    onScreen = entries.some(entry => entry.isIntersecting);
+    sendVisibility();
+  });
+  observer.observe(mini);
+  mini.addEventListener('load', sendVisibility);
+  document.addEventListener('visibilitychange', sendVisibility);
+  addEventListener('message', event => {
+    if (event.origin === location.origin && event.source === mini.contentWindow &&
+        event.data?.type === 'clickclacks-demo-ready') sendVisibility();
+  });
+}
+
 for (const button of document.querySelectorAll<HTMLButtonElement>('[data-example]')) {
   button.addEventListener('click', () => {
     const framework = button.dataset.example === 'framework';

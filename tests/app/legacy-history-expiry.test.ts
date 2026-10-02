@@ -72,13 +72,15 @@ for (const roomState of ["shortened", "expired", "orphaned"] as const) test(`leg
   } finally { clock.mockRestore(); }
 });
 
-test("eight-row legacy normalization progresses rather than repeatedly selecting stamped rows", async () => {
+test("four-row legacy normalization progresses rather than repeatedly selecting stamped rows", async () => {
   const clock = vi.spyOn(Date, "now").mockReturnValue(1_000_000);
   try {
     const { t, roll } = await legacy();
     await t.run(async ctx => {
       for (let i = 0; i < 8; i++) await ctx.db.insert("diceDemoV2Tracks", { key, viewer: `legacy-${i}`, roll, receipts: [] });
     });
+    await t.mutation(api.cleanup.expired, {});
+    expect(await t.run(ctx => ctx.db.query("diceDemoV2Tracks").withIndex("by_history_expiry", q => q.eq("roll.historyExpiresAt", undefined)).take(10))).toHaveLength(5);
     await t.mutation(api.cleanup.expired, {});
     expect(await t.run(ctx => ctx.db.query("diceDemoV2Tracks").withIndex("by_history_expiry", q => q.eq("roll.historyExpiresAt", undefined)).take(10))).toHaveLength(1);
     await t.mutation(api.cleanup.expired, {});

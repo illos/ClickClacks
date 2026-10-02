@@ -12,8 +12,8 @@ export const expired = mutation({
     // Normalize pre-upgrade full-motion rows in bounded, progressing batches.
     // Optional legacy expiresAt could otherwise leave a recording indefinitely.
     const legacyTracks = await ctx.db.query("diceDemoV2Tracks")
-      .withIndex("by_history_expiry", q => q.eq("roll.historyExpiresAt", undefined)).take(8);
-    more ||= legacyTracks.length === 8;
+      .withIndex("by_history_expiry", q => q.eq("roll.historyExpiresAt", undefined)).take(4);
+    more ||= legacyTracks.length === 4;
     for (const track of legacyTracks) {
       const room = await ctx.db.query("diceDemoV2Rooms")
         .withIndex("by_key", q => q.eq("key", track.key)).unique();

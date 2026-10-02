@@ -1,8 +1,9 @@
 # Click Clacks hosting migration
 
-Prepared from standalone main `6c15c17` on 2026-10-02. This is configuration
-preparation: no Cloudflare deployment, DNS change, Convex team creation, project
-transfer or production backend publication has occurred.
+Prepared from standalone main `6c15c17` on 2026-10-02. The owner confirmed the
+app hostname and active domain in Blackgate Studio. Frontend publication now
+uses the current dedicated backend; Convex team transfer and production backend
+selection follow separately. Publication results are recorded below once known.
 
 ## Target architecture
 
@@ -23,7 +24,7 @@ The landing demo remains a separate branch and is not included in this migration
   The ordinary Pages build keeps its `/powerroller/` default.
 - `wrangler.jsonc` names an independent `clickclacks-app` Worker and serves
   `dist/`. It selects the accessible Blackgate Studio account and binds only
-  the approved `app.clickclacks.app` hostname; zone access is needed at cutover.
+  the approved `app.clickclacks.app` hostname.
 - HTML handling is disabled to preserve the explicit tray `.html` URLs;
   navigation fallback serves the app shell. Room links use query parameters.
 - `public/_headers` gives fingerprinted `/assets/*` a one-year immutable
@@ -91,32 +92,46 @@ Evidence is outside Git at `test-artifacts/cloudflare-hosting-4062d5c/RESULT.md`
 These are local routing/load checks, not measured hosting speed gains or proof
 of a Cloudflare/DNS/production-backend cutover.
 
-The available Cloudflare token can access the Blackgate Studio account, but
-its zone lookup returned no accessible `clickclacks.app` zone. Domain onboarding
-or access to its existing zone is still needed. The destination Convex team and
-production backend are also not yet selected. The owner has selected
-`app.clickclacks.app`; this configuration change does not publish it.
+On 2026-10-02 at 04:36 UTC, the token's zone lookup confirmed active
+`clickclacks.app` in Blackgate Studio. The Workers domain lookup found no
+existing `app.clickclacks.app` binding. DNS-record reads return 403 with this
+token; Wrangler's custom-domain operation must report successful binding before
+claiming publication. The destination Convex team and production backend remain
+unselected. Initial frontend publication uses the existing dedicated dev backend
+`https://nautical-partridge-636.convex.cloud`.
+
+`.github/workflows/cloudflare.yml` builds at `/` and publishes the approved app
+Worker on manual dispatch. Its public backend URL comes from
+repository variable `VITE_CONVEX_URL`; its server-only Cloudflare token comes
+from the repository Actions secret. No Convex deploy key is used by this job.
+The original Pages workflow remains available during the transition. The
+current GitHub credential receives 403 from the repository Actions secrets
+API; it cannot configure this workflow's secret. Until an owner sets the
+repository secret, publication runs from the host's existing Cloudflare
+credential. Automatic main-push publication is deferred until that setup is
+complete, avoiding a failing deploy job on ordinary pushes.
 
 ## Cutover sequence
 
 1. Verify ownership/access to the `clickclacks.app` zone in the selected
    Cloudflare account. The app hostname is approved as `app.clickclacks.app`.
    Keep the existing Pages URL live during preparation.
-2. Confirm or create the Click Clacks Convex team, confirm its plan, and transfer
-   only the standalone project. Verify its existing deployment addresses and
-   permissions in the dashboard.
-3. Select a dedicated production deployment for real users. Publish the accepted
-   backend there, with the ambient Salient `CONVEX_DEPLOY_KEY` unset. Do not reset
-   or redeploy the Salient app as part of this work.
-4. Supply that public backend URL to the root-path build. Have the assigned Test
-   coordinator verify root room links, reload, lazy worker/fonts, both tray URLs
-   and PiP under the new routing/cache configuration. Compare matched delivery
-   timing if claiming a hosting speed improvement.
-5. Confirm the prepared Cloudflare account ID and app-domain binding in Wrangler;
+2. Supply the current dedicated public backend URL to the root-path build.
+   Reuse the accepted Test coordinator checks of root links, assets and PiP;
+   request targeted checks for new failures or changed behavior. Compare
+   matched delivery timing if claiming a hosting speed improvement.
+3. Confirm the prepared Cloudflare account ID and app-domain binding in Wrangler;
    commit and push the completed configuration. Publish from pushed main, record
    the Worker version and canonical URL, then update the landing link/embed.
-6. Set up the app's ongoing build/publication workflow with scoped credentials.
+4. Configure the app's ongoing build/publication workflow with its Actions secret.
    Decide how to redirect the old Pages URL after the new app is accepted.
+5. Confirm or create the Click Clacks Convex team, confirm its plan, and transfer
+   only the standalone project. Verify its existing deployment addresses and
+   permissions in the dashboard.
+6. Select a dedicated production deployment for real users. Publish the accepted
+   backend there, with the ambient Salient `CONVEX_DEPLOY_KEY` unset, then update
+   the frontend's public backend variable and publish. Do not reset or redeploy
+   the Salient app as part of this work.
 
 Browser storage is scoped to an origin, and session identity is additionally
 keyed by backend URL. Moving from `illos.github.io` to a new app domain gives

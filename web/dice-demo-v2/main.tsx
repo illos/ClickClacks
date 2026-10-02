@@ -17,8 +17,7 @@ import clickClacksLogo from '../branding/click-clacks.svg';
 import clickClacksLightLogo from '../branding/click-clacks-light.svg';
 import { useColorTheme } from './theme';
 import { ThemeSwitcher, ThemeOptions } from './theme-controls';
-import { makeFunctionReference } from 'convex/server';
-import { createController, type Identity, type Profile, type DeliveredRoll } from '../../lib/client';
+import { createController, reactTransport, type Controller, type Identity, type Profile, type DeliveredRoll } from '../../lib/client';
 import { displayError, redactError } from '../../lib/errors';
 import { dicePoolCount, genericModifierValue, rollCooldownMs } from '../../shared/dice';
 import { describeRoll, rollDiceNotation, rollNaturalTotal, rollFacesText } from '../../lib/format';
@@ -35,7 +34,6 @@ import { demo } from '../dice-demo/api';
 import type { createThrowPlanner } from '../dice-demo/prepare-throw';
 import type { restingScene } from './resting-scene';
 import { trayDieScale } from './dice-size';
-import { packMotion, unpackTrack } from '../dice-demo/motion-codec';
 import { type Style, type Motion, type DiceConfig } from '../dice-demo/model';
 import type { SitePreferences, CachedRoll } from '../site/storage';
 import { dieFontFamilies, dieFontWeights } from '../dice-demo/font-style';
@@ -102,51 +100,6 @@ export function PowerRoller(options: PowerRollerOptions) {
 type Clock = { offset: number; uncertainty: number };
 type Tray = ReturnType<typeof createRoomTray>;
 
-function TrackCard({
-  member,
-  clock,
-  tray,
-  graphics,
-  onReveal,
-  onTrack,
-  hasTrack,
-}: {
-  member: Participant;
-  clock: Clock | null;
-  tray: React.RefObject<Tray | null>;
-  graphics: boolean;
-  onReveal: (roll: ParticipantRoll, uncertainty: number) => void;
-  onTrack: (owner: string, roll: ParticipantRoll | null) => void;
-  hasTrack: (owner: string, id: string) => boolean;
-}) {
-  const { roomKey, client } = useRoller();
-  const encodedTrack = useQuery(demoV2.track, { key: roomKey, viewer: member.id });
-  const track = useMemo(
-    () => (encodedTrack ? unpackTrack(encodedTrack) : encodedTrack),
-    [encodedTrack],
-  );
-  const roll = track?.roll;
-  useEffect(() => {
-    let active = true;
-    onTrack(member.id, roll ?? null);
-    for (const previous of track?.activeRolls ?? []) {
-      if (previous.id === roll?.id || hasTrack(member.id, previous.id)) continue;
-      void client.query(demoV2.track, { key: roomKey, viewer: member.id, rollId: previous.id })
-        .then(value => { if (active && value) onTrack(member.id, unpackTrack(value).roll); })
-        .catch(() => { /* A single cosmetic path cannot interrupt current playback. */ });
-    }
-    return () => { active = false; };
-  }, [member.id, track, roomKey, client, onTrack, hasTrack]);
-  useEffect(() => () => onTrack(member.id, null), [member.id, onTrack]);
-  useEffect(() => {
-    if (!roll) {
-      tray.current?.clear(member.id);
-      return;
-    }
-    if (clock && graphics && tray.current) tray.current.play(roll, clock);
-  }, [roll, clock, graphics, tray, member.id]);
-  return null;
-}
 
 type SelectedDice = NonNullable<SitePreferences['selectedDice']>;
 const diceChoices: ReadonlyArray<{ value: SelectedDice; label: string }> = [
@@ -335,8 +288,6 @@ function DiceRoom() {
     dice: DiceConfig;
     edges: number;
     banes: number;
-    faces?: number[];
-    motion?: Motion;
   } | null>(null);
   const [edges, setEdges] = useState(options.controls?.edges ?? 0);
   const [banes, setBanes] = useState(options.controls?.banes ?? 0);
@@ -408,7 +359,6 @@ function DiceRoom() {
       return next;
     });
   }, []);
-  const hasTrack = useCallback((owner: string, id: string) => tracks.current.has(`${owner}:${id}`), []);
   useEffect(() => {
     if (!clock) return;
     const expired = [...tracks.current].filter(([, roll]) => trayOpacity(roll, now + clock.offset) === 0).map(([id]) => id);
@@ -426,14 +376,12 @@ function DiceRoom() {
       if (graphics) tray.current?.play(roll, clock);
     }
   }, [trayRolls, clock, graphics]);
-  const ping = useAction(demo.clock),
-    sampleFaces = useAction(demo.sampleFaces);
+  const ping = useAction(demo.clock);
   const chooseName = useMutation(demoV2.randomName);
   const clearSharedTray = useMutation(demoV2.clearTray);
   const leave = useMutation(demoV2.leave);
   const join = useMutation(demoV2.join),
     customize = useMutation(demoV2.customize),
-    throwDice = useMutation(demoV2.throwDice),
     record = useMutation(demoV2.receipt);
   const ready =
     identityReady && nameReady && clockReady && connection.isWebSocketConnected && visible;
@@ -569,18 +517,33 @@ function DiceRoom() {
     },
     [receiptReports, viewer],
   );
+  const delivery = useRef<Controller | null>(null);
+  const [deliveryReady, setDeliveryReady] = useState(false);
   const joinedForDelivery = room?.participants.some(member => member.id === viewer);
   useEffect(() => {
     if (!joinedForDelivery || !historyReady || !clockReady) return;
-    const controller = createController({ key: roomKey, identity, profile: profileRef.current, clock: () => performance.now(), transport: {
-      call: (method, args) => method === 'diceDemo:clock' || method === 'diceDemo:sampleFaces' ? client.action(makeFunctionReference<'action'>(method), args) : ['diceDemoV2:view', 'diceDemoV2:track', 'diceDemoV2:events'].includes(method) ? client.query(makeFunctionReference<'query'>(method), args) : client.mutation(makeFunctionReference<'mutation'>(method), args),
-      watch: (method, args, next, fail) => { const watch = client.watchQuery(makeFunctionReference<'query'>(method), args); const stop = watch.onUpdate(() => { try { const value = watch.localQueryResult(); if (value !== undefined) next(value); } catch (error) { fail(error instanceof Error ? error : new Error(String(error))); } }); const value = watch.localQueryResult(); if (value !== undefined) next(value); return stop; },
-    }});
+    let active = true;
+    const controller = createController({ key: roomKey, identity, profile: profileRef.current,
+      clock: () => performance.now(), clockEstimate: () => clockRef.current ?? { offset: 0, uncertainty: 10000 },
+      transport: reactTransport(client),
+    });
+    delivery.current = controller;
+    controller.on('track', ({ owner, roll, activeRolls }) => {
+      if (!active) return;
+      if (!roll) { rememberTrack(owner, null); tray.current?.clear(owner); }
+      else for (const current of activeRolls ?? [roll]) rememberTrack(owner, current);
+    });
     controller.on('available', roll => report(roll, controller.clockEstimate().uncertainty));
     controller.on('error', error => setError(displayError(error, credential)));
-    void controller.observe().catch(error => setError(displayError(error, credential)));
-    return () => { void controller.dispose(); };
-  }, [joinedForDelivery, historyReady, clockReady, roomKey, viewer, credential, client, report]);
+    void controller.observe().then(() => { if (active) setDeliveryReady(true); })
+      .catch(error => { if (active) setError(displayError(error, credential)); });
+    return () => {
+      active = false;
+      setDeliveryReady(false);
+      if (delivery.current === controller) delivery.current = null;
+      void controller.dispose();
+    };
+  }, [joinedForDelivery, historyReady, clockReady, roomKey, viewer, credential, client, report, rememberTrack]);
   useEffect(() => {
     let cancelled = false;
     let current: Tray | null = null;
@@ -821,55 +784,16 @@ function DiceRoom() {
     };
     retryThrow.current = request;
     try {
-      await customize({
-        key: roomKey,
-        viewer,
-        credential,
-        name: profile.name,
-        style: profile.style,
-      });
-      if (!request.faces)
-        request.faces = await sampleFaces({
-          key: roomKey,
-          viewer,
-          credential,
-          id: request.id,
-          dice: request.dice,
-        });
-      if (
-        !request.motion &&
-        // Read the current tray after the server requests, not the graphics state
-        // captured when Roll was clicked during startup.
-        tray.current &&
-        !preferences.hidden &&
-        planner.current &&
-        makeRestingScene.current
-      ) {
-        const scene = makeRestingScene.current(
-          tracks.current.values(),
-          members,
-          viewer,
-          performance.now() + (clockRef.current?.offset ?? 0),
-          request.faces.length,
-        );
-        try {
-          request.motion = (
-            await planner.current.prepareThrow(request.faces, { ...scene, dice: request.dice })
-          ).motion;
-        } catch {
-          /* Logical acceptance does not require cosmetic physics. */
-        }
-      }
-      await throwDice({
-        key: roomKey,
-        viewer,
-        credential,
-        id: request.id,
-        dice: request.dice,
-        faces: request.faces,
-        ...(request.motion ? { motion: packMotion(request.motion) } : {}),
-        edges: request.edges,
-        banes: request.banes,
+      const controller = delivery.current;
+      if (!controller) throw new Error('The table is reconnecting. Try again shortly.');
+      await controller.profile({ name: profile.name, style: profile.style });
+      await controller.roll(request, async (faces, dice) => {
+        // Read current graphics after authority sampling; initial loading and a
+        // missing cosmetic worker must never change the accepted logical result.
+        if (!tray.current || preferences.hidden || !planner.current || !makeRestingScene.current) return undefined;
+        const scene = makeRestingScene.current(tracks.current.values(), members, viewer,
+          performance.now() + (clockRef.current?.offset ?? 0), faces.length);
+        return (await planner.current.prepareThrow(faces, { ...scene, dice })).motion;
       });
       retryThrow.current = null;
       setEdges(current => current === edges ? 0 : current);
@@ -1127,7 +1051,7 @@ function DiceRoom() {
                       : 'Roll'
                 }
                 aria-busy={pending || clearing}
-                disabled={clearing || !ready || !ownParticipant?.ready || busy || room?.expired}
+                disabled={clearing || !ready || !deliveryReady || !ownParticipant?.ready || busy || room?.expired}
                 onClick={() => void perform()}
               >
                 Roll
@@ -1195,18 +1119,6 @@ function DiceRoom() {
           </section>
         </div>
       </div>
-      {members.map(member => (
-        <TrackCard
-          key={member.id}
-          member={member}
-          clock={clock}
-          tray={tray}
-          graphics={graphics}
-          onReveal={report}
-          onTrack={rememberTrack}
-          hasTrack={hasTrack}
-        />
-      ))}
       <RollLog motion={preferences.motion} revision={rollLog.map(roll => `${roll.roller}:${roll.id}`).join("|")}>
         {rollLog.length ? (
           rollLog.map(roll => (

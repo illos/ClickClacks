@@ -58,7 +58,7 @@ async function database(): Promise<IDBDatabase> {
         if (!row) return;
         const entry = row.value as Entry;
         if (!validEntry(entry) || historyDeadline(entry.roll) <= Date.now()) row.delete();
-        else row.update({ ...entry, startsAt: entry.roll.startsAt, expiresAt: historyDeadline(entry.roll) });
+        else row.update({ ...entry, roll: compact(entry.roll as ParticipantRoll), startsAt: entry.roll.startsAt, expiresAt: historyDeadline(entry.roll) });
         row.continue();
       };
     };
@@ -91,8 +91,11 @@ export async function loadHistory(backend: string, room: string): Promise<Cached
     await writes;
     db = await database();
     return await new Promise<CachedRoll[]>((resolve, reject) => {
-      const tx = db!.transaction('rolls');
-      const request = tx.objectStore('rolls').index('roomStartsAt').openCursor(roomRange(backend, room), 'prev');
+      const tx = db!.transaction('rolls', 'readwrite');
+      const store = tx.objectStore('rolls');
+      const expired = store.index('expiresAt').openCursor(IDBKeyRange.upperBound(Date.now()));
+      expired.onsuccess = () => { const cursor = expired.result; if (cursor) { cursor.delete(); cursor.continue(); } };
+      const request = store.index('roomStartsAt').openCursor(roomRange(backend, room), 'prev');
       const results: CachedRoll[] = [];
       request.onsuccess = () => {
         const cursor = request.result;
@@ -126,10 +129,7 @@ async function writeRoll(backend: string, room: string, roll: ParticipantRoll) {
       const tx = db!.transaction('rolls', 'readwrite');
       const store = tx.objectStore('rolls');
       store.put(entry);
-      let pendingPrunes = 2;
       const globalPrune = () => {
-        if (--pendingPrunes) return;
-        // Count after expiry and room pruning, avoiding unnecessary deletion.
         const total = store.count();
         total.onsuccess = () => {
           let excess = total.result - globalHistoryLimit;
@@ -141,16 +141,20 @@ async function writeRoll(backend: string, room: string, roll: ParticipantRoll) {
           };
         };
       };
+      const roomPrune = () => {
+        let skipped = false;
+        const roomRows = store.index('roomStartsAt').openCursor(roomRange(backend, room), 'prev');
+        roomRows.onsuccess = () => {
+          const cursor = roomRows.result;
+          if (!cursor) { globalPrune(); return; }
+          if (!skipped) { skipped = true; cursor.advance(historyLimit); }
+          else { cursor.delete(); cursor.continue(); }
+        };
+      };
       const expired = store.index('expiresAt').openCursor(IDBKeyRange.upperBound(Date.now()));
       expired.onsuccess = () => {
         const cursor = expired.result;
-        if (cursor) { cursor.delete(); cursor.continue(); } else globalPrune();
-      };
-      let count = 0;
-      const roomRows = store.index('roomStartsAt').openCursor(roomRange(backend, room), 'prev');
-      roomRows.onsuccess = () => {
-        const cursor = roomRows.result;
-        if (cursor) { if (++count > historyLimit) cursor.delete(); cursor.continue(); } else globalPrune();
+        if (cursor) { cursor.delete(); cursor.continue(); } else roomPrune();
       };
       tx.oncomplete = () => resolve();
       tx.onerror = tx.onabort = () => reject(tx.error ?? new Error('History write failed.'));

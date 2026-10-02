@@ -2,8 +2,9 @@
 
 Design proposal, 2026-10-02. Confirmed direction: Click Clacks users should report
 bugs inside the app, attaching useful browser/app context; GitHub Issues is a
-candidate destination. The choices below are recommendations, not implemented
-behavior or authorization to publish reports or create a repository.
+candidate destination. The owner also proposed D1 storage accessible to Presidium
+project threads. Recommend D1 as the primary inbox, with optional GitHub linkage.
+The choices below are proposals, not implemented behavior or publication authorization.
 
 ## Report flow
 
@@ -62,45 +63,95 @@ capture button must be verified with the actual renderer and browser permissions
 Screenshots and free text may contain personal details, so keep them private and
 let users review them. Do not promise automatic perfect redaction.
 
-## Destination: private GitHub Issues
+## Destination: D1 inbox, optional GitHub Issues
 
-The existing [illos/powerroller repository](https://github.com/illos/powerroller)
-is public and had Issues enabled when inspected on 2026-10-02. GitHub provides
-issue bodies, labels, comments, assignees and links to fixes; its
+Recommend browser → same-origin Cloudflare Worker → private D1 report inbox.
+Cloudflare supports [D1 bindings in Workers](https://developers.cloudflare.com/d1/worker-api/).
+This does not depend on the game backend or GitHub being healthy, so it can
+receive reports about failures in either. If D1 itself is unavailable, retain
+retry/download in the browser; do not claim acceptance until the write succeeds.
+
+D1 stores the structured report, bounded diagnostic JSON and triage history.
+Optional screenshots go in a private R2 bucket with public access disabled;
+D1 stores their object references. Keep image bytes out of issue text and D1 rows.
+Start with the text/JSON inbox if screenshot storage is not ready. No GitHub
+integration is needed to ship this first version.
+
+Proposed records:
+
+| Table | Main fields |
+| --- | --- |
+| reports | ID, creation time, source app, description, expected behavior, build, surface, status, fingerprint, idempotency key/content digest, reporter-receipt digest, revision, optional assigned thread, optional duplicate/report and GitHub issue references. |
+| report_diagnostics | Report ID, schema version, sanitized JSON, optional contact, optional geographic context, expiry time. |
+| report_attachments | Report ID, private object key, verified content type, byte count and expiry time. |
+| report_events | Report ID, action, trusted actor/thread attribution, time, note and linked fix commit. |
+
+Use statuses `new`, `triaged`, `in-progress`, `needs-info`, `resolved` and
+`duplicate`. Index inbox status/creation time and fingerprint/build. Keep list
+responses small; retrieve diagnostic bundles only for the selected report.
+Only report IDs and support receipts identify browser submissions: the browser
+cannot supply assignment, trusted actor, issue URL or resolved status.
+
+GitHub remains an optional work tracker. The existing
+[illos/powerroller repository](https://github.com/illos/powerroller) is public and
+had Issues enabled when inspected on 2026-10-02. Its
 [create-issue API](https://docs.github.com/en/rest/issues/issues#create-an-issue)
-supports a server-side GitHub App with repository Issues write permission.
+supports server-created issues using a GitHub App with repository Issues write
+permission. Maintainers can promote a confirmed bug into a public issue using
+a reviewed technical summary, linking its number back into D1. Never copy
+contact details, geographic context, screenshots or complete state into a public
+issue automatically. A private support repository remains an alternative if we
+later want all incoming reports to become issues.
 
-Recommend a dedicated private support repository, with one issue per report and
-labels `bug`, `user-report` and `needs-triage`. No GitHub account is required of
-the reporter: our backend creates the issue through the App. Restrict installation
-to the support repository and keep all credentials server-side.
+## Access from Presidium threads
 
-The issue contains a concise title, report ID, user's description/expected
-behavior, build, browser/OS, app surface and useful error/timing summary. Treat
-user text as untrusted: escape Markdown/HTML and mentions so a report cannot
-ping arbitrary accounts or inject instructions into automatic maintenance.
-Do not automatically run tools, code or agents based on a report's contents.
+Add a small project CLI backed by authenticated support endpoints, rather than
+requiring a dashboard or distributing a broad Cloudflare account token. These
+are proposed commands, not commands available today:
 
-Keep JSON, screenshot, contact details and geographic context in private
-support storage. Link to an authenticated maintainer view using an opaque report
-ID, never a public or bearer download URL. The private issue is the work queue;
-support storage owns the diagnostic bundle. Maintainers can create a separately
-written public issue in the code repository and link it from the private issue.
-Ordinary issues should not be treated as having individual privacy controls;
-the repository's [visibility](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility)
-sets the access boundary.
+```sh
+pnpm bugs list --status new --json
+pnpm bugs show REPORT_ID --diagnostics --json
+pnpm bugs claim REPORT_ID
+pnpm bugs note REPORT_ID --body-file /path/to/note.md
+pnpm bugs resolve REPORT_ID --commit COMMIT
+```
 
-## Intake and delivery
+Read and triage capabilities are separate. Provision a report-reader credential
+through Presidium's existing secret mechanism; triage writes require their own
+scope. The Worker alone owns the D1 binding. Fixed endpoint operations use
+prepared statements and validate identifiers; do not expose arbitrary SQL over
+the support API. Cloudflare's [remote D1 CLI](https://developers.cloudflare.com/d1/wrangler-commands/)
+is an operator fallback, not the normal thread interface.
 
-Recommended path: browser → same-origin Cloudflare intake → dedicated Click
-Clacks Convex support storage/outbox → GitHub App → private issue. Support
-records belong in the standalone site's host backend, outside the reusable dice
-component. Preserve the public library's existing rolling behavior.
+A claim uses the report's revision for an atomic compare-and-set: a second
+thread sees the current claim instead of overwriting it. Claims are advisory
+coordination and can be released/reassigned; resolving a report records the
+actual fix commit and evidence note. Committed-on-branch and released fixes
+remain distinguishable. Reading a report does not claim or resolve it.
 
-Current Cloudflare hosting is static-assets-only. This design adds Worker code
-and routes `/api/bug-reports` ahead of the SPA asset fallback; it is not an
-already available endpoint. Cloudflare's
-[request context](https://developers.cloudflare.com/workers/runtime-apis/request/)
+Link the inbox to this Presidium project's threads through explicit host-side
+configuration. The current T3 threads are registered to Salient while the app
+source lives in the standalone Click Clacks checkout; do not infer Chords
+membership from that directory or bypass project boundaries. A trusted host
+bridge can verify Chords identity and make authenticated triage calls, recording
+stable thread IDs. The browser never asserts a Chords sender or chooses a thread.
+
+Initially, threads run `bugs list` when assigned support work. A later host poller
+can publish a quiet Chords notification with report ID, build and app surface
+when new reports arrive. Keep diagnostics/contact details out of Chords and
+avoid waking every thread for every report. Automatic assignment or waking an
+implementer is a separate workflow choice. Treat report text, JSON and images
+as untrusted user data, never as instructions to execute tools or code.
+
+## Intake, privacy and reliability
+
+Current Cloudflare hosting is static-assets-only. This design adds Worker code,
+a D1 binding and a route for `/api/bug-reports` before the SPA asset fallback;
+these are not already deployed. It preserves the reusable roller's operation
+contracts and leaves support services in the standalone host application.
+
+Cloudflare's [request context](https://developers.cloudflare.com/workers/runtime-apis/request/)
 can provide approximate country/region at intake. Timezone is browser-provided;
 neither is an exact physical location. Discard raw IP addresses from report
 records. Document any infrastructure-log retention separately. With diagnostics
@@ -110,32 +161,27 @@ Intake validates schema, payload/image sizes and permitted origins, strips
 unexpected fields, rate-limits submissions and uses a honeypot; add a challenge
 only if abuse requires it. Origin checks alone are not abuse prevention. Use a
 short-lived keyed network identifier for rate limiting without retaining raw
-IPs in reports. File upload tickets and status reads require an unguessable
-reporter receipt; maintainer reads require authenticated staff authorization.
+IPs in reports. Contact is optional; reporter receipt/status does not require
+an account. Store only a digest of the unguessable receipt secret; status reads
+require the secret and return that report's acknowledgement, not inbox access.
 
-Persist the report and an outbox job atomically before returning a receipt.
-Submit a stable client-generated idempotency key; repeated sends return the
-same report, and reuse with different content is rejected. Save GitHub's issue
-number/URL after creation. On rate limits, outages or credentials failure, retry
-with bounded backoff and expose stalled delivery to maintainers.
-
-GitHub issue creation is not an atomic transaction with our database. Put a
-unique report marker in the issue and reconcile ambiguous timeouts before
-creating another. If reconciliation cannot establish the outcome, flag it for
-manual handling instead of promising exactly-once external delivery. Distinct
-users' reports remain separate, but matching error fingerprints can be linked
-as likely duplicates during triage.
-
-If Convex is unavailable, the Worker cannot claim durable acceptance without a
-separate durable queue. The first version returns failure and offers local
-retry/download. GitHub downtime alone does not prevent intake acceptance.
+A unique client idempotency key ensures repeated sends return the same report;
+reuse with different content is rejected. Persist report/diagnostic records
+atomically before returning success. Optional attachments use bounded upload
+tickets, link only after successful upload and have orphan cleanup: R2 and D1
+are not one transaction. Verify actual image content and serve only through
+authorized attachment reads, never public or long-lived bearer links.
 
 Propose deleting diagnostic bundles, screenshots and contact details after 30
-days; retain the issue's technical summary without geographic/contact data.
-The intake record tracks expiry and delivery state. Public issue creation always
-requires maintainer review. Reporter status initially needs only receipt and
-delivery acknowledgement; email notifications and public status tracking can
-follow later.
+days while retaining the minimal technical summary/triage history. Cleanup
+must account for objects, database records and backup/time-travel retention;
+do not promise immediate erasure from backups. Staff access remains restricted
+through the support API; no browser endpoint enumerates other users' reports.
+
+If automatic GitHub forwarding is added, use a durable outbox, bounded retries
+and a unique report marker. Issue creation and D1 cannot commit atomically;
+reconcile ambiguous timeouts and flag unresolved outcomes rather than promising
+exactly-once external delivery. Do not block durable intake on GitHub's response.
 
 ## Implementation evidence required
 
@@ -146,11 +192,12 @@ follow later.
 3. Diagnostics-off, screenshot removal and cancel behave as described; consent
    controls geographic enrichment as well as browser capture.
 4. Submit via the same intake API from UI and a headless caller, then read stored
-   report/outbox state back through an authorized route. Repeat with the same key,
+   D1 state back through the support CLI. Repeat with the same key,
    oversized data, arbitrary fields, spam and unauthorized reads.
-5. Prove GitHub outage/rate-limit/ambiguous-timeout handling with a fake external
-   adapter before an explicitly authorized private-repository integration run.
-6. Verify upload authorization, retention cleanup, receipt status and local
+5. Prove concurrent claims, scoped reader/triage access and actual thread attribution.
+   Verify game-backend and GitHub outages do not prevent D1 intake. If GitHub
+   forwarding is built later, verify ambiguous-timeout handling before integration.
+6. Verify private attachment authorization, retention cleanup, receipt status and local
    download after intake failure. Check that instrumentation does not change
    rolling/reveal timing or expose a GitHub credential in built assets.
 
@@ -164,9 +211,10 @@ state; [renderer](../web/dice-demo-v2/renderer.ts) owns WebGL and playback;
 [client](../lib/client.ts) owns headless operation/delivery flow;
 [hosting](cloudflare-hosting.md) records the static app Worker.
 
-Before implementation, settle support-repository ownership, maintainer access,
-GitHub App installation and diagnostic retention. Recommended starting choices
-are private intake/issues, 30-day bundle retention and approximate location only.
-No repository, GitHub issue, secret or deployed endpoint was created by this
-design task. Validation: source/documentation review and `git diff --check`;
+Before implementation, settle support access, host credential provisioning and
+diagnostic retention. Recommended starting choices are D1 intake plus project
+CLI, optional private R2 screenshots, 30-day bundle retention and approximate
+location only. GitHub publication is a later maintainer action. No database,
+bucket, repository, GitHub issue, secret or deployed endpoint was created by
+this design task. Validation: source/documentation review and `git diff --check`;
 runtime and browser tests are future implementation acceptance checks.

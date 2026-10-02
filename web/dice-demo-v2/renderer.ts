@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 import * as THREE from 'three';
 import { disposeGroup } from '../dice-demo/d10';
+import { PresentationAssets } from '../dice-demo/presentation-assets';
 import { createDie, dieModel } from '../dice-demo/dice-models';
 import { unpackRoll } from '../dice-demo/motion-codec';
 import type { Style } from '../dice-demo/model';
@@ -42,6 +43,7 @@ export function createRoomTray(
     highContrast: options.highContrast ?? false,
     colorTheme: options.colorTheme ?? 'dark',
   };
+  const assets = new PresentationAssets();
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     alpha: options.transparent === true,
@@ -68,11 +70,26 @@ export function createRoomTray(
     scene.add(light);
   }
   const lanes = new Map<string, Lane>();
+  const labelLanes = new Map<Element, Lane>();
+  const labelSizes = new ResizeObserver(entries => {
+    let changed = false;
+    for (const entry of entries) {
+      const lane = labelLanes.get(entry.target);
+      const box = entry.borderBoxSize[0];
+      if (lane && box && box.inlineSize > 0 && lane.resultWidth !== box.inlineSize) {
+        lane.resultWidth = box.inlineSize;
+        changed = true;
+      }
+    }
+    if (changed) wake();
+  });
   const members = new Map<string, Participant>();
   const rollKey = (roll: ParticipantRoll) => JSON.stringify([roll.roller, roll.id]);
   function removeLane(key: string, lane: Lane) {
     scene.remove(lane.group);
     disposeGroup(lane.group);
+    labelSizes.unobserve(lane.result);
+    labelLanes.delete(lane.result);
     lane.result.remove();
     lanes.delete(key);
   }
@@ -90,6 +107,7 @@ export function createRoomTray(
     lastDraw = -Infinity;
   let width = host.clientWidth,
     height = host.clientHeight;
+  const supportPoint = new THREE.Vector3();
   const startQ = new THREE.Quaternion(),
     endQ = new THREE.Quaternion(),
     numbering = new THREE.Quaternion();
@@ -104,18 +122,21 @@ export function createRoomTray(
     camera.updateMatrixWorld();
   }
   function shadow(group: THREE.Group) {
-    const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = 64;
-    const ctx = canvas.getContext('2d')!,
-      g = ctx.createRadialGradient(32, 32, 2, 32, 32, 32);
-    g.addColorStop(0, 'rgba(0,0,0,.5)');
-    g.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, 64, 64);
+    const map = assets.texture('shadow', () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = 64;
+      const ctx = canvas.getContext('2d')!,
+        g = ctx.createRadialGradient(32, 32, 2, 32, 32, 32);
+      g.addColorStop(0, 'rgba(0,0,0,.5)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 64, 64);
+      return new THREE.CanvasTexture(canvas);
+    });
     const mesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.5, 1.5),
+      assets.geometry('shadow', () => new THREE.PlaneGeometry(1.5, 1.5)),
       new THREE.MeshBasicMaterial({
-        map: new THREE.CanvasTexture(canvas),
+        map,
         transparent: true,
         depthWrite: false,
       }),
@@ -137,7 +158,7 @@ export function createRoomTray(
         disposeGroup(die);
       }
       lane.dice = Array.from({ length: lane.roll?.faces.length ?? 2 }, (_, index) =>
-        createDie(appearance, lane.roll?.dice, index),
+        createDie(appearance, lane.roll?.dice, index, assets),
       );
       while (lane.shadows.length < lane.dice.length) lane.shadows.push(shadow(lane.group));
       while (lane.shadows.length > lane.dice.length) {
@@ -191,7 +212,9 @@ export function createRoomTray(
       numbering.fromArray(motion.offsets, i * 4);
       die.quaternion.copy(startQ).slerp(endQ, blend).multiply(numbering);
       // Keep the enlarged visual hull above the recorded physical floor contact.
-      const support = Math.min(...vertices.map(v => v.clone().applyQuaternion(die.quaternion).y));
+      let support = Infinity;
+      for (const vertex of vertices)
+        support = Math.min(support, supportPoint.copy(vertex).applyQuaternion(die.quaternion).y);
       die.position.y -= support * (die.scale.x - 0.5);
       const h = Math.max(0, die.position.y - 0.5);
       const shadow = lane.shadows[i]!;
@@ -217,7 +240,6 @@ export function createRoomTray(
         right = Math.max(right, x);
         bottom = Math.max(bottom, y);
       }
-    if (!lane.resultWidth) lane.resultWidth = lane.result.offsetWidth;
     const half = lane.resultWidth / 2 + 8;
     lane.result.style.left = `${Math.max(half, Math.min(width - half, (left + right) / 2))}px`;
     lane.result.style.top = `${Math.max(0, Math.min(height - 40, bottom + 8))}px`;
@@ -252,9 +274,8 @@ export function createRoomTray(
         (!reduced || now >= roll.startsAt + lane.revealAfter) &&
         (!reduced || now < fadeAt);
       for (const material of lane.materials) material.opacity = alpha;
-      [...lane.dice, ...lane.shadows].forEach(d => {
-        d.visible = visible;
-      });
+      for (const die of lane.dice) die.visible = visible;
+      for (const shadow of lane.shadows) shadow.visible = visible;
       if (visible) {
         pose(lane, t);
         for (const shadow of lane.shadows)
@@ -303,7 +324,6 @@ export function createRoomTray(
     height = host.clientHeight;
     if (!width || !height) return;
     renderer.setSize(width, height, false);
-    for (const lane of lanes.values()) lane.resultWidth = 0;
     layout();
     wake();
   });
@@ -332,6 +352,7 @@ export function createRoomTray(
     onFailure();
   };
   renderer.domElement.addEventListener('webglcontextlost', lost);
+  let disposed = false;
   return {
     setPreferences(value: TrayPreferences) {
       preferences = { ...preferences, ...value };
@@ -430,6 +451,8 @@ export function createRoomTray(
       };
       group.userData.slot = member.slot;
       lanes.set(key, lane);
+      labelLanes.set(result, lane);
+      labelSizes.observe(result, { box: 'border-box' });
       style(lane, member);
       const total = document.createElement('strong');
       total.textContent = String(
@@ -475,16 +498,25 @@ export function createRoomTray(
       wake();
     },
     dispose() {
+      if (disposed) return;
+      disposed = true;
       stopped = true;
       cancelAnimationFrame(frame);
       clearTimeout(fadeTimer);
       resize.disconnect();
+      labelSizes.disconnect();
+      labelLanes.clear();
       document.removeEventListener('visibilitychange', visibility);
       motionPreference.removeEventListener('change', motionChanged);
       renderer.domElement.removeEventListener('webglcontextlost', lost);
       for (const lane of lanes.values()) lane.result.remove();
       disposeGroup(scene);
+      assets.dispose();
+      lanes.clear();
+      queued.clear();
+      members.clear();
       renderer.dispose();
+      renderer.forceContextLoss();
       renderer.domElement.remove();
     },
   };

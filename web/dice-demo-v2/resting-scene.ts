@@ -15,6 +15,7 @@ export function restingScene(
   nextDieCount = 2,
 ): ThrowScene {
   const obstacles = [];
+  const supportPoint = new Vector3();
   const active = new Set(members.map(member => member.id));
   for (const roll of [...rolls].sort((a, b) => a.roller.localeCompare(b.roller))) {
     if (
@@ -34,7 +35,9 @@ export function restingScene(
         .normalize()
         .multiply(new Quaternion().fromArray(roll.motion.offsets, die * 4));
       const position = new Vector3().fromArray(final, die * 7);
-      const support = Math.min(...vertices.map(v => v.clone().applyQuaternion(rotation).y));
+      let support = Infinity;
+      for (const vertex of vertices)
+        support = Math.min(support, supportPoint.copy(vertex).applyQuaternion(rotation).y);
       position.y -= support * (scale - 0.5);
       obstacles.push({
         scale,

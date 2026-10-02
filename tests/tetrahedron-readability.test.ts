@@ -7,13 +7,19 @@ it('a tetrahedron prints the accepted upper vertex on all three adjoining visibl
   vi.stubGlobal('document', {
     createElement() {
       const labels: Label[] = [];
+      let origin = { x: 0, y: 0 };
+      const stack: typeof origin[] = [];
       return {
         labels,
         getContext() {
           return {
             fillRect() {},
+            save() { stack.push({ ...origin }); },
+            restore() { origin = stack.pop()!; },
+            translate(x: number, y: number) { origin.x += x; origin.y += y; },
+            rotate() {},
             fillText(text: string, x: number, y: number) {
-              labels.push({ text, x, y });
+              labels.push({ text, x: origin.x + x, y: origin.y + y });
             },
           };
         },

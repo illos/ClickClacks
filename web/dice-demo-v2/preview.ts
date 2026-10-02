@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 import * as THREE from 'three';
 import { createD10, disposeGroup } from '../dice-demo/d10';
+import { PresentationAssets } from '../dice-demo/presentation-assets';
 import type { TrayPreferences } from './renderer';
 import type { Style } from '../dice-demo/model';
 
@@ -15,6 +16,7 @@ export function createDicePreview(
     highContrast: options.highContrast ?? false,
   };
   let appearance: Style | null = null;
+  const assets = new PresentationAssets();
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     alpha: true,
@@ -79,7 +81,7 @@ export function createDicePreview(
           disposeGroup(die);
         }
         try {
-          die = createD10(pending);
+          die = createD10(pending, 0, 'power', assets);
           // Bigger than an in-tray die, framing one model above the style controls.
           die.scale.setScalar(0.9);
           scene.add(die);
@@ -190,6 +192,7 @@ export function createDicePreview(
   document.addEventListener('visibilitychange', visibility);
   preference.addEventListener('change', motion);
   renderer.domElement.addEventListener('webglcontextlost', lost);
+  let disposed = false;
   return {
     setPreferences(value: TrayPreferences) {
       preferences = { ...preferences, ...value };
@@ -207,6 +210,8 @@ export function createDicePreview(
       wake();
     },
     dispose() {
+      if (disposed) return;
+      disposed = true;
       stopped = true;
       cancelAnimationFrame(frame);
       resize.disconnect();
@@ -221,6 +226,9 @@ export function createDicePreview(
       preference.removeEventListener('change', motion);
       renderer.domElement.removeEventListener('webglcontextlost', lost);
       disposeGroup(scene);
+      assets.dispose();
+      die = null;
+      pending = appearance = null;
       renderer.dispose();
       renderer.forceContextLoss();
       renderer.domElement.remove();

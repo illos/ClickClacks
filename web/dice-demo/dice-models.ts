@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 import * as THREE from 'three';
+import type { PresentationAssets } from './presentation-assets';
 import {
   createD10,
   createDieMaterial,
@@ -167,7 +168,7 @@ export function dieModel(config?: DiceConfig, index = 0): DieModel {
     model.faces.forEach((f, i) => (f.value = i + 1));
   } else {
     let next = 1;
-    for (const f of model.faces) {
+    for (const [faceIndex, f] of model.faces.entries()) {
       if (f.value) continue;
       f.value = next++;
       const opposite = model.faces.find(other => other.normal.dot(f.normal) < -0.99999);
@@ -238,13 +239,13 @@ export function modelNumberingOrientation(
   }
   throw new Error('No valid polyhedral numbering symmetry.');
 }
-export function createDie(style: Style, config: DiceConfig | undefined, index = 0): THREE.Group {
-  if (!config || config.kind === 'power') return createD10(style, index);
-  if (config.kind === 'percentile' && index < 2) return createD10(style, index, 'percentile');
+export function createDie(style: Style, config: DiceConfig | undefined, index = 0, assets?: PresentationAssets): THREE.Group {
+  if (!config || config.kind === 'power') return createD10(style, index, 'power', assets);
+  if (config.kind === 'percentile' && index < 2) return createD10(style, index, 'percentile', assets);
   const model = dieModel(config, index),
     group = new THREE.Group();
   group.scale.setScalar(0.5);
-  for (const f of model.faces) {
+  for (const [faceIndex, f] of model.faces.entries()) {
     const v = f.points[0]!.clone().sub(f.centroid).normalize(),
       u = v.clone().cross(f.normal).normalize(),
       coords = f.points.map(p => {
@@ -259,10 +260,15 @@ export function createDie(style: Style, config: DiceConfig | undefined, index = 
         positions.push(...f.points[k]!.toArray());
         uv.push(0.5 + coords[k]![0]! / span, 0.5 + coords[k]![1]! / span);
       }
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-    geometry.computeVertexNormals();
+    const buildGeometry = () => {
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      geometry.computeVertexNormals();
+      return geometry;
+    };
+    const shapeKey = `generic:${dieSides(config, index)}:${faceIndex}`;
+    const geometry = assets ? assets.geometry(shapeKey, buildGeometry) : buildGeometry();
     const painter = (ctx: CanvasRenderingContext2D, style: Style) => {
       const family = style.font
         ? `"${dieFontFamilies[style.font]}", Georgia, serif`
@@ -289,7 +295,7 @@ export function createDie(style: Style, config: DiceConfig | undefined, index = 
         if (f.value === 6 || f.value === 9) ctx.fillRect(108, 174, 40, 3);
       }
     };
-    group.add(new THREE.Mesh(geometry, createDieMaterial(style, f.value, 0, painter)));
+    group.add(new THREE.Mesh(geometry, createDieMaterial(style, f.value, 0, painter, assets, shapeKey)));
   }
   return group;
 }

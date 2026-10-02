@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 import * as THREE from 'three';
 import type { Style } from './model';
+import { PresentationAssets, releasePresentationAssets } from './presentation-assets';
 import { paintDiePattern } from './pattern';
 import { dieFontFamilies, dieFontWeights, type DieFont } from './font-style';
 export { dieFonts, dieFontFamilies, dieFontWeights, type DieFont } from './font-style';
@@ -109,9 +110,13 @@ export function createDieMaterial(
   value: number,
   index = 0,
   painter?: NumeralPainter,
+  assets?: PresentationAssets,
+  numeralKey = `power:${index}:${value}`,
 ) {
   const material = new THREE.MeshStandardMaterial({
-    map: texture(style, value, index, painter),
+    map: assets
+      ? assets.texture(JSON.stringify([style, numeralKey]), () => texture(style, value, index, painter))
+      : texture(style, value, index, painter),
     roughness: style.pattern.startsWith('frosted') ? 0.88 : 0.34,
     metalness: style.pattern.startsWith('frosted') ? 0 : 0.12,
     transparent: style.pattern.startsWith('frosted'),
@@ -136,11 +141,11 @@ export function createDieMaterial(
   }
   return material;
 }
-export function createD10(style: DieStyle, index = 0, mode: D10LabelMode = 'power') {
+export function createD10(style: DieStyle, index = 0, mode: D10LabelMode = 'power', assets?: PresentationAssets) {
   const group = new THREE.Group();
   group.scale.setScalar(0.5);
   const materials = new Map<number, THREE.MeshStandardMaterial>();
-  for (const face of faces) {
+  for (const [faceIndex, face] of faces.entries()) {
     const vAxis = face.points[0]!.clone().sub(face.centroid).normalize();
     const uAxis = vAxis.clone().cross(face.normal).normalize();
     const coords = face.points.map(p => {
@@ -154,10 +159,14 @@ export function createD10(style: DieStyle, index = 0, mode: D10LabelMode = 'powe
       positions.push(...face.points[i]!.toArray());
       uv.push(0.5 + coords[i]![0]! / span, 0.5 + coords[i]![1]! / span);
     }
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-    geometry.computeVertexNormals();
+    const buildGeometry = () => {
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      geometry.computeVertexNormals();
+      return geometry;
+    };
+    const geometry = assets ? assets.geometry(`power:${faceIndex}`, buildGeometry) : buildGeometry();
     let material = materials.get(face.value);
     if (!material) {
       material = createDieMaterial(
@@ -167,6 +176,8 @@ export function createD10(style: DieStyle, index = 0, mode: D10LabelMode = 'powe
         mode === 'percentile'
           ? (ctx, style) => paintNumbers(ctx, face.value, index, style.font, mode)
           : undefined,
+        assets,
+        `${mode}:${index}:${face.value}`,
       );
       materials.set(face.value, material);
     }
@@ -174,19 +185,26 @@ export function createD10(style: DieStyle, index = 0, mode: D10LabelMode = 'powe
   }
   return group;
 }
+const disposedGroups = new WeakSet<THREE.Object3D>();
 export function disposeGroup(group: THREE.Object3D) {
-  const geometries = new Set<THREE.BufferGeometry>();
+  if (disposedGroups.has(group)) return;
+  const geometries: THREE.BufferGeometry[] = [];
   const materials = new Set<THREE.Material>();
-  const textures = new Set<THREE.Texture>();
   group.traverse(object => {
-    if (!(object instanceof THREE.Mesh)) return;
-    geometries.add(object.geometry);
+    if (!(object instanceof THREE.Mesh) || disposedGroups.has(object)) return;
+    disposedGroups.add(object);
+    geometries.push(object.geometry);
     for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
       materials.add(material);
-      if ('map' in material && material.map instanceof THREE.Texture) textures.add(material.map);
     }
   });
-  geometries.forEach(g => g.dispose());
+  disposedGroups.add(group);
+  releasePresentationAssets(geometries);
   materials.forEach(m => m.dispose());
-  textures.forEach(t => t.dispose());
+  // Texture references are acquired once per material, including shared numeral maps.
+  const textures: THREE.Texture[] = [];
+  for (const material of materials)
+    if ('map' in material && material.map instanceof THREE.Texture)
+      textures.push(material.map);
+  releasePresentationAssets(textures);
 }

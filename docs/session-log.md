@@ -13,6 +13,8 @@ changes/reloads start a new session. Local/shared mode revisions clear notices,
 while preserving a newcomer that caused the transition. The existing `historySince`
 presentation boundary applies to all entry types; `Infinity` hides the entire log.
 The demo can await `.join-log-entry[data-participant="<viewer>"]` before rolling.
+Each mounted view establishes its own membership baseline. Opening PiP does not
+copy notices that appeared before it opened; subsequent arrivals appear in both views.
 
 A successful room heartbeat also dismisses the exact stale membership error
 `Reconnect to this room before throwing.` Other errors retain their own recovery

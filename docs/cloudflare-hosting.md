@@ -1,5 +1,10 @@
 # Click Clacks hosting migration
 
+The subsequent [bug-reporting release](bug-reports.md#publication-result--2026-10-02)
+adds a Worker API and D1 inbox. Current app publication uses
+`wrangler.bugs.jsonc`; the static-only `wrangler.jsonc` below records the initial
+hosting migration and would disable reporting if redeployed.
+
 Prepared from standalone main `6c15c17` on 2026-10-02. The owner confirmed the
 app hostname and active domain in Blackgate Studio. Frontend publication now
 uses the current dedicated backend; Convex team transfer and production backend

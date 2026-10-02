@@ -143,9 +143,35 @@ findings. Evidence is outside Git at
 Phone popup screenshots were visually inspected. All test-owned services and
 checkouts were removed. Local authoring typecheck and Worker dry-run also passed.
 
-Release results are recorded below after publication.
-
 The release credential-routing delta `99f1713` received source QC PASS and
 Test coordinator PASS: three focused CLI authentication tests and typecheck,
 both exit 0. The prior runtime and browser evidence was reused. Logs are at
 `/srv/presidium/home/projects/powerroller/test-artifacts/bug-auth-99f1713-{focused,typecheck}.log`.
+
+## Publication result — 2026-10-02
+
+Source `ff553a3` was merged into standalone main and pushed to GitHub before
+publication. The root-path build completed with the existing dedicated public
+backend `https://nautical-partridge-636.convex.cloud`. Wrangler 4.134.0 applied
+`0001_bug_reports.sql` to the remote D1 database, provisioned all three Worker
+secrets, and published the complete 39-file app asset build plus intake Worker.
+Each required operation exited 0.
+
+- App: <https://app.clickclacks.app>
+- Worker: `clickclacks-app`
+- Version: `cbace644-c81e-49d5-923f-f71367e76568`
+- D1: `clickclacks-bug-reports`, `9eddbb4b-5dbd-4093-99c3-c533605fab18`
+- Report limiter: five requests per 60 seconds per Cloudflare location
+- Private-field cleanup: daily at 03:17 UTC
+
+The deployment reported the D1, rate-limiter and assets bindings, custom domain
+and cleanup schedule. Accepted Test/QC evidence was reused; no live probe or
+suite was repeated solely for promotion. No credentials were printed or
+committed. Project readers use the CLI with their existing broker-granted
+Cloudflare credential. The dedicated game backend and separate landing Worker
+were not republished by this release.
+
+The manual GitHub publication workflow now applies the D1 migration and uses
+`wrangler.bugs.jsonc`. Its repository Actions secret remains an operator setup
+item inherited from the hosting release: the available GitHub credential cannot
+manage repository secrets. This publication used the host's broker credential.

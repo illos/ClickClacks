@@ -865,13 +865,13 @@ function DiceRoom() {
       <DiceDesignControls disabled={busy} active={customizing} style={profile.style} onChange={edit} />
     </fieldset>
 
-    {customizing && error && <ErrorAlert message={error} onReportBug={options.onReportBug ? reportBug : undefined} />}
+    {customizing && error && <ErrorAlert message={error} />}
   </>;
   const settingsContent = <>
     <ThemeOptions value={preferences.theme} onChange={theme => changePreferences({...preferences, theme})} />
     <AccessibilityControls preferences={preferences} onChange={changePreferences} />
     {options.onReportBug && <button type="button" className="leave-table" onClick={reportBug}>Report a bug</button>}
-    {configuring && error && <ErrorAlert message={error} onReportBug={options.onReportBug ? reportBug : undefined} />}
+    {configuring && error && <ErrorAlert message={error} />}
   </>;
   return (
     <main onPointerDown={unlockSound} onPointerUp={unlockSound} onKeyDown={unlockSound} data-theme={colorTheme} className={`lab v2${preferences.highContrast ? ' high-contrast' : ''}`}>
@@ -1188,9 +1188,9 @@ function DiceRoom() {
 
       </RollLog>
       {createPortal(<span className="visually-hidden" role="status" aria-live="polite" aria-atomic="true">{announcement}</span>, (options.trayHistory && socializing ? socialDialog.current : customizing ? customization.current : socializing ? socialDialog.current : configuring ? settingsDialog.current : null) ?? host.current?.parentElement ?? document.body)}
-      {error && !customizing && !socializing && !configuring && <ErrorAlert message={error} onReportBug={options.onReportBug ? reportBug : undefined} />}
+      {error && !customizing && !socializing && !configuring && <ErrorAlert message={error} />}
       {options.popoutError && <p className="error" role="alert">{options.popoutError}</p>}
-      {presenceError && <ErrorAlert message={presenceError} onReportBug={options.onReportBug ? reportBug : undefined} />}
+      {presenceError && <ErrorAlert message={presenceError} />}
       {room?.expired && (
         <p className="error">
           This room has expired. <a href={import.meta.env.BASE_URL}>Start a new room</a>
@@ -1261,7 +1261,7 @@ function DiceRoom() {
             onChange={e => changeProfile({ ...profileRef.current, name: e.target.value })}
           />
         </label>
-        {socializing && error && <ErrorAlert message={error} onReportBug={options.onReportBug ? reportBug : undefined} />}
+        {socializing && error && <ErrorAlert message={error} />}
         <section className="menu-sharing" aria-label="Share table">
           <div>
             <label htmlFor={`${instanceId}-menu-table-code`}>Table code</label>

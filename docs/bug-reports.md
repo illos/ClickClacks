@@ -9,8 +9,8 @@ Reports go to a same-origin Cloudflare Worker and private D1 database, independe
 of the game backend. Success includes a report ID after persisted readback. A
 failed or uncertain submission keeps the text, retries the identical payload,
 and offers a local JSON download. Cancel sends nothing. The popup is available
-from Settings and recoverable errors, including the tray Settings tab;
-a React render failure offers reporting outside the failed application subtree.
+from Settings, including the tray Settings tab. Error alerts keep their
+recovery actions; the reload error does not offer a reporting button.
 
 ## Captured context
 
@@ -180,7 +180,8 @@ manage repository secrets. This publication used the host's broker credential.
 
 The header keeps Dice customization and Sharing, with one Settings cog for
 appearance, accessibility and reporting. Light/Dark/System choices and
-accessibility controls are removed from Dice customization. The tray keeps its
+accessibility controls are removed from Dice customization. Reload errors do
+not include a Report a bug button. The tray keeps its
 single cog with Sharing, Dice and Settings tabs. Existing preference persistence
 and synchronization are reused. Reporting snapshots Settings before it closes
 and returns focus to the visible Settings trigger after dismissal.

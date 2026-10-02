@@ -95,17 +95,17 @@ function Site({ onReportBug }: { onReportBug: (context: BugContext) => void }) {
     onJoin={joinTable} roomLink={roomLink}
     loadHistory={code => loadHistory(backend, code)} onRoll={(code, roll) => cacheRoll(backend, code, roll)} />;
 }
-class ReportBoundary extends Component<{ children: ReactNode; onReport: () => void }, { failed: boolean }> {
+class ReportBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
-  render() { return this.state.failed ? <div className="bug-report-fallback"><p>The app ran into a problem.</p><button type="button" aria-label="Report a bug" onClick={this.props.onReport}>Report a bug</button><button type="button" onClick={() => location.reload()}>Reload</button></div> : this.props.children; }
+  render() { return this.state.failed ? <div className="bug-report-fallback"><p>The app ran into a problem.</p><button type="button" onClick={() => location.reload()}>Reload</button></div> : this.props.children; }
 }
 function ReportHost() {
   const returnFocus = useRef<HTMLElement | null>(null);
   const [draft, setDraft] = useState<BugDraft | null>(null);
   useEffect(() => installBugDiagnostics(), []);
   function open(context: BugContext) { returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; setDraft({ id: crypto.randomUUID(), diagnostics: captureBugDiagnostics(context) }); }
-  return <><ReportBoundary onReport={() => open({ surface: 'startup' })}><Site onReportBug={open} /></ReportBoundary>
+  return <><ReportBoundary><Site onReportBug={open} /></ReportBoundary>
     <BugReportDialog draft={draft} onClose={() => { setDraft(null); const visible = (element: HTMLElement | null) => !!element?.isConnected && !!element.getClientRects().length && !element.closest('dialog:not([open])');
       const target = visible(returnFocus.current) ? returnFocus.current : [...document.querySelectorAll<HTMLButtonElement>('[aria-label="Open tray settings"], [aria-label="Open settings"], [aria-label="Report a bug"]')].find(visible);
       target?.focus(); }} /></>;

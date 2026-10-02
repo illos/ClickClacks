@@ -13,17 +13,17 @@ This gives control over browser caching and delivery; hosting alone does not
 reduce physics/rendering work or the roll's sequential Convex requests. Measure
 matched startup and roll timing before claiming an improvement over Pages.
 
-The landing thread's proposed split is `clickclacks.app` for the landing page
-and a dedicated app subdomain for the roller. `app.clickclacks.app` and
-`dice.clickclacks.app` are candidates; the owner has not chosen one yet. The
-landing demo remains a separate branch and is not included in this migration.
+The owner confirmed on 2026-10-02 that `clickclacks.app` is reserved for the
+landing page and `app.clickclacks.app` is the roller's canonical hostname.
+The landing demo remains a separate branch and is not included in this migration.
 
 ## Prepared frontend configuration
 
 - `pnpm build:cloudflare` runs the existing shared main/PiP build with base `/`.
   The ordinary Pages build keeps its `/powerroller/` default.
 - `wrangler.jsonc` names an independent `clickclacks-app` Worker and serves
-  `dist/`. Account and domain bindings must be selected at cutover.
+  `dist/`. It selects the accessible Blackgate Studio account and binds only
+  the approved `app.clickclacks.app` hostname; zone access is needed at cutover.
 - HTML handling is disabled to preserve the explicit tray `.html` URLs;
   navigation fallback serves the app shell. Room links use query parameters.
 - `public/_headers` gives fingerprinted `/assets/*` a one-year immutable
@@ -94,12 +94,14 @@ of a Cloudflare/DNS/production-backend cutover.
 The available Cloudflare token can access the Blackgate Studio account, but
 its zone lookup returned no accessible `clickclacks.app` zone. Domain onboarding
 or access to its existing zone is still needed. The destination Convex team and
-app hostname are also not yet selected.
+production backend are also not yet selected. The owner has selected
+`app.clickclacks.app`; this configuration change does not publish it.
 
 ## Cutover sequence
 
-1. Choose the app hostname and Cloudflare account; verify ownership/access to
-   the domain. Keep the existing Pages URL live during preparation.
+1. Verify ownership/access to the `clickclacks.app` zone in the selected
+   Cloudflare account. The app hostname is approved as `app.clickclacks.app`.
+   Keep the existing Pages URL live during preparation.
 2. Confirm or create the Click Clacks Convex team, confirm its plan, and transfer
    only the standalone project. Verify its existing deployment addresses and
    permissions in the dashboard.
@@ -110,8 +112,8 @@ app hostname are also not yet selected.
    coordinator verify root room links, reload, lazy worker/fonts, both tray URLs
    and PiP under the new routing/cache configuration. Compare matched delivery
    timing if claiming a hosting speed improvement.
-5. Set the explicit Cloudflare account ID and app-domain binding in Wrangler;
-   commit and push the approved configuration. Publish from pushed main, record
+5. Confirm the prepared Cloudflare account ID and app-domain binding in Wrangler;
+   commit and push the completed configuration. Publish from pushed main, record
    the Worker version and canonical URL, then update the landing link/embed.
 6. Set up the app's ongoing build/publication workflow with scoped credentials.
    Decide how to redirect the old Pages URL after the new app is accepted.

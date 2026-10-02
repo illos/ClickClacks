@@ -128,4 +128,45 @@ describe('automatic solo authority', () => {
     const fresh = controller(session), available = vi.fn(); fresh.on('available', available); await fresh.observe();
     expect(available).not.toHaveBeenCalled(); await fresh.dispose(); stop();
   });
+  it('binds modifiers and the tap cooldown across main/PiP controllers, not just within one controller', async () => {
+    const { session, stop, observe } = setup(); observe(); const main = controller(session), pip = controller(session);
+    await main.observe(); await pip.observe();
+    const first = await main.roll({ id: 'shared-id', edges: 1 });
+    expect(await pip.roll({ id: 'shared-id', edges: 1 })).toEqual(first);
+    await expect(pip.roll({ id: 'shared-id', edges: 2 })).rejects.toThrow('REQUEST_CONFLICT');
+    await expect(pip.roll({ id: 'next' })).rejects.toThrow('Wait two seconds');
+    await vi.advanceTimersByTimeAsync(2000);
+    await pip.roll({ id: 'next' }); await main.dispose(); await pip.dispose(); stop();
+  });
+  it.each([-120000, 120000])('uses trusted server presence with client clock skew %ims', async skew => {
+    const { session, stop } = setup();
+    const serverRoom = room();
+    vi.setSystemTime(Date.now() + skew);
+    session.observe(serverRoom, Date.now() - skew, true);
+    expect(session.getSnapshot().mode).toBe('local');
+    serverRoom.participants.push({ ...member('peer'), seenAt: Date.now() - skew });
+    session.observe(serverRoom, Date.now() - skew, true);
+    expect(session.getSnapshot().mode).toBe('shared');
+    serverRoom.participants.pop(); session.observe(serverRoom, Date.now() - skew, true);
+    const refresh = () => { serverRoom.participants[0]!.seenAt = Date.now() - skew; session.observe(serverRoom, Date.now() - skew, true); };
+    await soloMinutes(refresh, soloReturnDelayMs - 10000); expect(session.getSnapshot().mode).toBe('shared');
+    await soloMinutes(refresh, 10000); expect(session.getSnapshot().mode).toBe('local'); stop();
+  });
+  it('applies completed profile edits to subsequent main/PiP rolls without recreating delivery', async () => {
+    const { session, stop, observe } = setup(); observe(); const main = controller(session), pip = controller(session);
+    await main.observe(); await pip.observe();
+    const edited: Profile = { name: 'Renamed', style: { ...profile.style, color: '#102030', font: 'gothic' } };
+    await main.profile(edited);
+    const fromMain = await main.roll({ id: 'edited-main' });
+    expect(fromMain.name).toBe('Renamed'); expect(fromMain.styles.every(style => style.color === '#102030' && style.font === 'gothic')).toBe(true);
+    await vi.advanceTimersByTimeAsync(2000); await pip.profile(edited);
+    expect((await pip.roll({ id: 'edited-pip' })).name).toBe('Renamed'); await main.dispose(); await pip.dispose(); stop();
+  });
+  it('drops heavy motion on its visibility deadline even without another operation', async () => {
+    const { session, stop, observe } = setup(); observe(); const c = controller(session); await c.observe();
+    const motion: Motion = { seed: 1, stepMs: 1000 / 60, offsets: Array(8).fill(0), samples: Array(28).fill(0) };
+    const roll = await c.roll({ id: 'idle' }, async () => motion);
+    expect(roll.motion).toBeDefined();
+    await vi.advanceTimersByTimeAsync(6000); expect(roll.motion).toBeUndefined(); await c.dispose(); stop();
+  });
 });

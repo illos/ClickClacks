@@ -9,7 +9,8 @@ const browser = await chromium.launch();
 const errors = [];
 function trace(page) {
   page.on('pageerror', error => errors.push(error.message));
-  return page.addInitScript(() => {
+  return page.addInitScript(skew => {
+    const wall = Date.now; Date.now = () => wall() + skew;
     window.rpc = [];
     const send = WebSocket.prototype.send;
     WebSocket.prototype.send = function(data) {
@@ -20,7 +21,7 @@ function trace(page) {
       } catch {}
       return send.call(this, data);
     };
-  });
+  }, Number(process.env.CLOCK_SKEW_MS ?? 0));
 }
 try {
   const context = await browser.newContext({ viewport: { width: 430, height: 932 } });
@@ -40,6 +41,19 @@ try {
   await expect(page.locator('.roll-log-entry')).toHaveCount(2, { timeout: 15000 });
   await page.getByRole('button', { name: 'Clear tray', exact: true }).click();
   await expect(page.locator('.tray-roll-result')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Open social menu', exact: true }).click();
+  await page.getByLabel('Display name').fill('Edited solo');
+  const ownProfile = async () => (await http.query(makeFunctionReference('diceDemoV2:view'), { key: session.key })).participants.find(p => p.id === session.identity.viewer);
+  await expect.poll(async () => (await ownProfile()).name).toBe('Edited solo');
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Customize dice', exact: true }).click();
+  await page.getByRole('slider', { name: 'Die color lightness', exact: true }).fill('0');
+  await expect.poll(async () => (await ownProfile()).style.color).toBe('#000000');
+  await page.keyboard.press('Escape');
+  await expect(roll).toBeEnabled(); await roll.click();
+  await expect(page.locator('.roll-log-entry')).toHaveCount(3, { timeout: 15000 });
+  const edited = await page.evaluate(async () => (await window.fixture.localHistory()).rolls.at(-1));
+  expect(edited.name).toBe('Edited solo'); expect(edited.styles.every(style => style.color === '#000000')).toBe(true);
   const localCalls = await page.evaluate(start => window.rpc.slice(start), marker);
   expect(localCalls.filter(call => !['diceDemoV2:join', 'diceDemoV2:customize'].includes(call.method))).toEqual([]);
   expect((await events()).rolls).toEqual([]); // Persisted readback: local rolls were never accepted.
@@ -66,6 +80,7 @@ try {
   await http.mutation(makeFunctionReference('diceDemoV2:leave'), { key: peerSession.key, ...peerSession.identity });
   await peerContext.close();
   await expect.poll(async () => (await http.query(makeFunctionReference('diceDemoV2:view'), { key: session.key })).participants.length).toBe(1);
+  await expect.poll(() => page.evaluate(() => window.fixture.participantCount())).toBe(1);
   await page.evaluate(() => window.fixture.advanceSolo(599000));
   await expect(main).toHaveAttribute('data-roll-mode', 'shared');
   await page.evaluate(() => window.fixture.advanceSolo(1000));

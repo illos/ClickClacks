@@ -2,7 +2,7 @@
 import type { Identity, Profile, Transport } from './client';
 import { generatePool } from './dice';
 import { resolvePowerRoll } from './draw-steel';
-import { defaultDice, dicePoolSides, genericModifier, naturalDiceTotal, validateDiceConfiguration, type DiceConfiguration } from '../shared/dice';
+import { defaultDice, dicePoolSides, genericModifier, naturalDiceTotal, rollCooldownMs, validateDiceConfiguration, type DiceConfiguration } from '../shared/dice';
 import type { ParticipantRoll, Room } from '../shared/room';
 import type { Motion } from '../shared/model';
 import { recordedRevealDelay } from '../shared/timing';
@@ -10,11 +10,17 @@ import { validateMotion } from '../component/lib/recordedMotion';
 
 /** One browser session, shared by its main page and same-origin floating tray. */
 export function createLocalTransport(identity: Identity, initialRoom: Room, initialProfile: Profile, clock = Date.now) {
-  let room = initialRoom, profile = initialProfile, sequence = 0, closed = false;
-  const requests = new Map<string, { fingerprint: string; faces: number[]; roll?: ParticipantRoll; expiresAt: number }>();
+  let room = initialRoom, profile = initialProfile, sequence = 0, closed = false, lastStartedAt = -Infinity;
+  const requests = new Map<string, { fingerprint: string; faces: number[]; semantic?: string; roll?: ParticipantRoll; expiresAt: number }>();
   const records: ParticipantRoll[] = [];
   let active: ParticipantRoll[] = [];
   const listeners = new Set<{ method: string; next: (value: any) => void }>();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  function scheduleTrim() {
+    clearTimeout(timer); timer = undefined;
+    const deadlines = [...active.map(r => r.startsAt + r.duration + 5600), ...[...requests.values()].map(r => r.expiresAt)];
+    if (!closed && deadlines.length) timer = setTimeout(() => { trim(); scheduleTrim(); }, Math.max(1, Math.min(...deadlines) - clock()));
+  }
   function view() {
     const member = room.participants.find(p => p.id === identity.viewer)!;
     return { ...room, cursor: sequence, participants: [{ ...member, ...profile }] };
@@ -50,23 +56,29 @@ export function createLocalTransport(identity: Identity, initialRoom: Room, init
         return { rolls, cursor, hasMore: records.some(r => r.sequence! > cursor) };
       }
       if (method === 'diceDemoV2:customize') { profile = { name: String(args.name), style: args.style as Profile['style'] }; publish(); return null; }
-      if (method === 'diceDemoV2:clearTray') { active = []; publish(); return null; }
+      if (method === 'diceDemoV2:clearTray') { active = []; trim(); scheduleTrim(); publish(); return null; }
       if (method !== 'diceDemo:sampleFaces' && method !== 'diceDemoV2:throwDice') throw new Error(`Unsupported local operation: ${method}`);
-      const dice = validateDiceConfiguration((args.dice as DiceConfiguration | undefined) ?? defaultDice);
+      const configured = validateDiceConfiguration((args.dice as DiceConfiguration | undefined) ?? defaultDice);
+      const dice = { kind: configured.kind, sides: configured.sides, count: configured.count, ...(configured.bonusD4 ? { bonusD4: true } : {}) };
       const id = String(args.id), fingerprint = JSON.stringify(dice);
       let request = requests.get(id);
       if (request && request.fingerprint !== fingerprint) throw new Error('REQUEST_CONFLICT: different dice for this request.');
       if (method === 'diceDemo:sampleFaces') {
         if (!request) {
+          if (clock() - lastStartedAt < rollCooldownMs) throw new Error('Wait two seconds before another roll.');
           if (requests.size >= 1000) throw new Error('Local request limit reached. Start a new session.');
           request = { fingerprint, faces: generatePool(dicePoolSides(dice).map(sides => ({ sides, count: 1 }))).map(d => d.value), expiresAt: clock() + 3600000 };
           requests.set(id, request);
+          lastStartedAt = clock();
+          scheduleTrim();
         }
         return [...request.faces];
       }
       if (!request || JSON.stringify(args.faces) !== JSON.stringify(request.faces)) throw new Error('INVALID_REQUEST: sample this local roll first.');
-      if (request.roll) return request.roll;
       const faces = [...request.faces], edges = Number(args.edges ?? 0), banes = Number(args.banes ?? 0);
+      const semantic = JSON.stringify([faces, edges, banes]);
+      if (request.semantic && request.semantic !== semantic) throw new Error('REQUEST_CONFLICT: different modifiers for this request.');
+      if (request.roll) return request.roll;
       const power = dice.kind === 'power' ? resolvePowerRoll(faces, edges, banes) : undefined;
       const modifier = power?.adjustment.modifier ?? genericModifier(edges, banes);
       const total = naturalDiceTotal(faces, dice) + modifier;
@@ -80,8 +92,8 @@ export function createLocalTransport(identity: Identity, initialRoom: Room, init
         historyExpiresAt: request.expiresAt, revealAt: startsAt + recordedRevealDelay({ duration, faces, motion }),
         ...(motion ? { motion } : {}), ...(power ? { power: { edges, banes, total, tier: power.tier } } : {}),
       };
-      request.roll = roll;
-      records.push(roll); active.push(roll); trim(); publish();
+      request.roll = roll; request.semantic = semantic;
+      records.push(roll); active.push(roll); trim(); scheduleTrim(); publish();
       return roll;
     },
     watch(method, _args, next) {
@@ -95,6 +107,6 @@ export function createLocalTransport(identity: Identity, initialRoom: Room, init
   return {
     transport,
     update(next: Room, nextProfile: Profile) { room = next; profile = nextProfile; },
-    invalidate() { closed = true; requests.clear(); records.length = 0; active = []; listeners.clear(); },
+    invalidate() { closed = true; clearTimeout(timer); timer = undefined; requests.clear(); records.length = 0; active = []; listeners.clear(); },
   };
 }

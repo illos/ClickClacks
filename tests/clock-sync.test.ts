@@ -3,6 +3,16 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { startClockSync } from '../web/dice-demo-v2/clock-sync';
 
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
+
+it('samples solo presence once on resume with no periodic clock actions', async () => {
+  const { page } = environment(); const ping = vi.fn(async () => Date.now()), update = vi.fn();
+  const stop = startClockSync(ping, () => true, update, { initial: false, periodic: false });
+  await vi.advanceTimersByTimeAsync(60000); expect(ping).not.toHaveBeenCalled();
+  page.dispatchEvent(new Event('pageshow'));
+  await vi.advanceTimersByTimeAsync(100); expect(ping).toHaveBeenCalledTimes(7);
+  await vi.advanceTimersByTimeAsync(60000); expect(ping).toHaveBeenCalledTimes(7);
+  stop(); expect(vi.getTimerCount()).toBe(0);
+});
 function environment(framed = false) {
   vi.useFakeTimers();
   const events = new EventTarget(), page = Object.assign(new EventTarget(), { parent: null as EventTarget | null });

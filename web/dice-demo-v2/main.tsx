@@ -323,6 +323,8 @@ function DiceRoom() {
   const [clock, setClock] = useState<Clock | null>(null);
   const [clockConnection, setClockConnection] = useState(-1);
   const [clockMode, setClockMode] = useState(rollSession.mode);
+  const [presenceClock, setPresenceClock] = useState<{ estimate: Clock; connection: number } | null>(null);
+  const presenceReady = !!presenceClock && presenceClock.connection === connection.connectionCount;
   const clockReady = !!clock && clockConnection === connection.connectionCount && clockMode === rollSession.mode;
   const clockRef = useRef(clock);
   useEffect(() => {
@@ -357,8 +359,8 @@ function DiceRoom() {
   const room = useQuery(demoV2.view, { key: roomKey });
   codeRef.current = room?.code ?? null;
   useLayoutEffect(() => {
-    automaticSession?.observe(room, performance.now() + (clock?.offset ?? Date.now() - performance.now()), connection.isWebSocketConnected);
-  }, [automaticSession, room, clock, connection.isWebSocketConnected]);
+    automaticSession?.observe(room, presenceClock ? performance.now() + presenceClock.estimate.offset : 0, connection.isWebSocketConnected && presenceReady);
+  }, [automaticSession, room, presenceClock, presenceReady, connection.isWebSocketConnected]);
   useEffect(() => {
     if (localRolls) { setHistoryReady(true); return; }
     if (!room?.code || !options.loadHistory) return;
@@ -408,6 +410,8 @@ function DiceRoom() {
     retryThrow.current = null;
     // A stalled preparation from the previous mode must not hold up shared rolls.
     rollQueue.current = Promise.resolve();
+    submissionRevision.current++;
+    submissions.current = 0; setPending(false); setClearing(false);
   }, [automaticSession, rollSession.revision]);
   useEffect(() => {
     const owners = new Set([...tracks.current.values()].map(roll => roll.roller));
@@ -426,7 +430,7 @@ function DiceRoom() {
     customize = useMutation(demoV2.customize),
     record = useMutation(demoV2.receipt);
   const ready =
-    identityReady && nameReady && clockReady && connection.isWebSocketConnected && visible;
+    identityReady && nameReady && clockReady && (!automaticSession || presenceReady) && connection.isWebSocketConnected && visible;
   useEffect(() => {
     if (nameReady) return;
     let cancelled = false;
@@ -466,7 +470,7 @@ function DiceRoom() {
     }
   }
   useEffect(() => {
-    if (automaticSession && rollSession.mode !== 'shared') {
+    if (localRolls) {
       // Epoch time is sufficient for one local authority; keep the socket for presence.
       const refresh = () => {
         if (document.hidden) return;
@@ -484,17 +488,23 @@ function DiceRoom() {
         window.removeEventListener('focus', refresh);
       };
     }
+  }, [localRolls, connection.connectionCount, rollSession.mode]);
+  useEffect(() => {
     const stop = startClockSync(
       () => ping({}),
       () => client.connectionState().isWebSocketConnected,
       value => {
-        setClock(value);
-        setClockConnection(value ? connection.connectionCount : -1);
-        setClockMode(rollSession.mode);
+        setPresenceClock(value ? { estimate: value, connection: connection.connectionCount } : null);
+        if (!localRolls) {
+          setClock(value);
+          setClockConnection(value ? connection.connectionCount : -1);
+          setClockMode(rollSession.mode);
+        }
       },
+      { periodic: !localRolls, initial: !localRolls || !presenceReady },
     );
     return stop;
-  }, [ping, connection.isWebSocketConnected, connection.connectionCount, automaticSession, rollSession.mode]);
+  }, [ping, connection.isWebSocketConnected, connection.connectionCount, localRolls, rollSession.mode]);
   useEffect(() => {
     const change = () => {
       setVisible(!document.hidden);
@@ -679,9 +689,9 @@ function DiceRoom() {
   const members = useMemo(
     () =>
       (room?.participants ?? [])
-        .filter(p => p.seenAt > now + (clock?.offset ?? 0) - 30000)
+        .filter(p => p.seenAt > now + (presenceClock?.estimate.offset ?? clock?.offset ?? 0) - 30000)
         .map(p => (p.id === viewer ? { ...p, ...profile } : p)),
-    [room, profile, viewer, now, clock],
+    [room, profile, viewer, now, clock, presenceClock],
   );
   useEffect(() => {
     tray.current?.participants(members);
@@ -751,7 +761,7 @@ function DiceRoom() {
   const serverOffset = clock?.offset ?? Date.now() - performance.now();
   useDeadlineClock([
     rollLockUntil,
-    ...(room?.participants ?? []).map(member => member.seenAt + 30000 - serverOffset),
+    ...(room?.participants ?? []).map(member => member.seenAt + 30000 - (presenceClock?.estimate.offset ?? serverOffset)),
     ...Object.values(trayRolls).flatMap(roll => [roll.startsAt, roll.startsAt + roll.duration, roll.startsAt + roll.duration + 5600].map(time => time - serverOffset)),
     ...rollLog.map(roll => historyDeadline(roll) - serverOffset),
   ], now, setNow);
@@ -778,6 +788,7 @@ function DiceRoom() {
     options.onControls?.({diceCount, bonusD4, edges, banes, readyAt:rollLockUntil ? Math.round(performance.timeOrigin + rollLockUntil) : 0});
   }, [diceCount, bonusD4, edges, banes, rollLockUntil, options.controls]);
   const submissions = useRef(0);
+  const submissionRevision = useRef(0);
   const rollQueue = useRef<Promise<void>>(Promise.resolve());
   const busy =
     changingTable || now < rollLockUntil;
@@ -836,9 +847,11 @@ function DiceRoom() {
     // Capture this tap's configuration; serialize authority requests while the
     // original recorded dice paths continue playing independently in the tray.
     const controller = delivery.current;
+    const queueRevision = submissionRevision.current;
     rollQueue.current = rollQueue.current.catch(() => {}).then(() => {
       if (controller && delivery.current === controller) return submit(controller);
     }).finally(() => {
+      if (queueRevision !== submissionRevision.current) return;
       submissions.current--;
       setPending(submissions.current > 0);
     });
@@ -861,7 +874,7 @@ function DiceRoom() {
         known.style.font === profile.style.font;
       // A matching authoritative profile needs no save on an ordinary Roll tap.
       // Pending edits or an older queued tap retain the explicit profile write.
-      if (customizeTimer.current || customizePending.current ||
+      if (localRolls || customizeTimer.current || customizePending.current ||
           !matches(ownParticipant) || !matches(profileRef.current))
         await controller.profile({ name: profile.name, style: profile.style });
       await controller.roll(request, async (faces, dice) => {

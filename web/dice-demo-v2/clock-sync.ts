@@ -6,6 +6,7 @@ export function startClockSync(
   ping: () => Promise<number>,
   connected: () => boolean,
   update: (clock: ReturnType<typeof estimateClock> | null) => void,
+  options: { periodic?: boolean; initial?: boolean } = {},
 ) {
   let stopped = false,
     generation = 0,
@@ -57,7 +58,7 @@ export function startClockSync(
       if (!connected()) throw new Error('Connection changed');
       update(estimateClock(samples));
       failures = 0;
-      schedule(30000);
+      if (options.periodic !== false) schedule(30000);
     } catch {
       if (stopped || batch !== generation || document.hidden) return;
       update(null);
@@ -92,7 +93,7 @@ export function startClockSync(
   window.addEventListener('pageshow', resume);
   window.addEventListener('focus', focus);
   window.addEventListener('online', resume);
-  schedule(0);
+  if (options.initial !== false) schedule(0);
   return () => {
     stopped = true;
     invalidate();

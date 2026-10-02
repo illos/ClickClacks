@@ -45,7 +45,7 @@ export function createAutomaticSession(identity: Identity, clock = Date.now) {
     getSnapshot: () => snapshot,
     subscribe(notify: () => void) {
       listeners.add(notify); evaluate();
-      return () => { listeners.delete(notify); if (!listeners.size) { clearTimeout(timer); timer = undefined; } };
+      return () => { listeners.delete(notify); if (!listeners.size) { clearTimeout(timer); timer = undefined; local?.invalidate(); local = undefined; } };
     },
     observe(next: Room | undefined, serverNow: number, isConnected: boolean) {
       room = next; serverOffset = serverNow - clock(); connected = isConnected; evaluate();

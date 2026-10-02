@@ -14,7 +14,7 @@ const presets: { name: string; style: Style }[] = [
 function Customizer() {
   const [style, setStyle] = useState<Style>(presets[0]!.style);
   const [selected, setSelected] = useState<'color' | 'ink'>('color');
-  const [paused, setPaused] = useState(false);
+  const paused = false;
   const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
   const host = useRef<HTMLDivElement>(null);
   const preview = useRef<ReturnType<typeof createDicePreview> | null>(null);
@@ -67,10 +67,8 @@ function Customizer() {
   return (
     <div className="customizer" style={{ '--die-color': style.color, '--die-ink': style.ink } as CSSProperties}>
       <div className="die-stage">
-        <div className="stage-topline"><span><span className="live-dot" aria-hidden="true" /> 3D PREVIEW</span><span>D10</span></div>
         <div ref={host} className="landing-preview" role="img" aria-label={`3D ten-sided die, ${style.color} body, ${style.ink} numbers, ${style.pattern} finish. Drag to rotate.`} />
         {status !== 'ready' && <p className="preview-status" role="status">{status === 'failed' ? '3D preview unavailable on this device. You can still explore the colors.' : 'Loading your die…'}</p>}
-        <div className="stage-bottomline"><span>DRAG TO SPIN</span><button type="button" aria-pressed={paused} onClick={() => setPaused(value => !value)}>{paused ? 'Resume rotation' : 'Pause rotation'}</button></div>
       </div>
       <div className="customizer-controls">
         <div className="control-title"><h3>Colors</h3></div>
@@ -83,7 +81,6 @@ function Customizer() {
           <label>Finish<select value={style.pattern} onChange={event => setStyle(value => ({ ...value, pattern: event.target.value as Style['pattern'] }))}><option value="solid">Solid</option><option value="frosted">Frosted</option><option value="marble">Marble</option><option value="speckle">Speckled</option></select></label>
           <label>Numbers<select value={style.font} onChange={event => setStyle(value => ({ ...value, font: event.target.value as Style['font'] }))}><option value="modern">Modern</option><option value="serif">Serif</option><option value="rune">Rune</option><option value="gothic">Gothic</option></select></label>
         </div>
-        <div className="presets" role="group" aria-label="Try a dice design">{presets.map(preset => <button type="button" key={preset.name} aria-label={preset.name} title={preset.name} aria-pressed={JSON.stringify(style) === JSON.stringify(preset.style)} onClick={() => setStyle(preset.style)} style={{ background: preset.style.color, color: preset.style.ink }}><span aria-hidden="true">✦</span></button>)}</div>
       </div>
     </div>
   );

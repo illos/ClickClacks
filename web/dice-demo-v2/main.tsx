@@ -547,7 +547,11 @@ function DiceRoom() {
         heartbeatPending.current = request;
         await request;
         hasJoined.current = true;
-        if (!cancelled) setPresenceError('');
+        if (!cancelled) {
+          setPresenceError('');
+          // This acknowledgement restores membership; other failures need their own recovery.
+          setError(current => current === 'Reconnect to this room before throwing.' ? '' : current);
+        }
       } catch (e) {
         if (!cancelled && !document.hidden && client.connectionState().isWebSocketConnected)
           setPresenceError(displayError(e, credential));

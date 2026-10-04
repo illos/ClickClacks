@@ -64,7 +64,8 @@ export async function writeSocialPreview(path) {
   <path d="M-50 600L700-70M650 680L1260 70" stroke="#6edbc0" stroke-opacity=".07" stroke-width="70"/>
   ${logo}
   <g font-family="DejaVu Sans, sans-serif" fill="#e8e5df">
-    <text x="475" y="103" font-size="43" font-weight="700">Multiplayer 3D dice</text>
+    <text x="475" y="82" font-size="43" font-weight="700">Multiplayer 3D dice</text>
+    <text x="478" y="123" font-size="23" fill="#b6c7c3">Free - Open source</text>
     <rect x="46" y="170" width="1108" height="416" rx="25" fill="url(#tray)" stroke="url(#rim)" stroke-width="2"/>
     <g clip-path="url(#clip)">
       <circle cx="76" cy="204" r="5" fill="#6edbc0"/>

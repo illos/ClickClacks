@@ -5,6 +5,7 @@ instructions and package entry points.
 
 ## Guides
 
+- [v1.0.0 release](releases/v1.0.0.md): exact package installation, preparation and limits.
 - [API coverage](api-coverage.md): library capabilities and shared-backend limits.
 - [Backend integration](component.md): installing the Convex component, public
   wrappers, guest sessions and roll authority.

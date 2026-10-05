@@ -1,7 +1,9 @@
 {
   "name": "clickclacks",
-  "version": "0.1.0",
-  "private": true,
+  "version": "1.0.0",
+  "repository": { "type": "git", "url": "https://github.com/illos/ClickClacks.git" },
+  "homepage": "https://clickclacks.app",
+  "bugs": { "url": "https://github.com/illos/ClickClacks/issues" },
   "files": [
     "lib/",
     "shared/",
@@ -9,6 +11,7 @@
     "component/",
     "component/_generated/*.ts",
     "scripts/cli.ts",
+    "scripts/check-package.mjs",
     "examples/",
     "patches/",
     "docs/",
@@ -22,6 +25,7 @@
     "node": "24.18.0"
   },
   "scripts": {
+    "prepack": "node scripts/check-package.mjs",
     "dev": "vite --host 127.0.0.1 --port 9591 --strictPort",
     "build": "node scripts/build-site.mjs",
     "build:cloudflare": "node scripts/build-cloudflare.mjs",

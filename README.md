@@ -178,20 +178,22 @@ a frontend that requires them. The live Cloudflare roller uses
 
 ## Embedding
 
-The package is not published to npm. Install a pinned Git revision or local
-checkout in a TypeScript application with a bundler such as Vite:
+The stable library/component release is **v1.0.0**, distributed as a GitHub
+Release package. It is not published to npm. Install the exact artifact in a
+TypeScript application with a bundler such as Vite:
 
 ```sh
-pnpm add 'clickclacks@git+https://github.com/illos/ClickClacks.git#COMMIT'
+pnpm add 'clickclacks@https://github.com/illos/ClickClacks/releases/download/v1.0.0/clickclacks-1.0.0.tgz'
 ```
 
-Replace `COMMIT` with the revision you reviewed. The package exports TypeScript
+Commit your lockfile to retain the archive's integrity pin. The package exports TypeScript
 source; a raw JavaScript-only consumer needs to compile it first. A Vite consumer
 should include `vite/client` types and the `DOM.Iterable` TypeScript library for
 font assets. Node's native TypeScript runner does not load TypeScript packages
 from `node_modules`; use a bundler for these source exports.
 
-Generated Convex bindings are excluded from Git. To distribute a local
+The release artifact includes generated Convex component bindings; they are excluded
+from Git. See [v1 release preparation and boundaries](docs/releases/v1.0.0.md). To distribute a local
 backend component artifact, generate bindings during your Convex setup, then run
 `pnpm pack` and install the resulting `.tgz` into the consumer. The package includes
 the generated component bindings without committing them. A Git-only installation

@@ -5,7 +5,7 @@ original demo functions and current participant tracks live in `component/`.
 The repository's `convex/` directory contains app-facing forwarders. It has no
 roller tables. This uses Convex 1.45.0; npm publication is deferred.
 
-Use a versioned repository checkout or package artifact in your application. The
+Install the [v1.0.0 release artifact](releases/v1.0.0.md) in your application. The
 package entry `clickclacks/convex.config.js` installs the component:
 
 ```ts

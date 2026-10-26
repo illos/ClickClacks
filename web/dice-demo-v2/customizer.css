@@ -1,0 +1,209 @@
+/* SPDX-License-Identifier: MIT */
+/* Host stylesheet for clickclacks/customizer: the Customize dice panel's geometry (style.css) for
+   apps that don't adopt the roller's scoped theme. Put `dice-customizer` on the panel element that
+   holds the preview and the controls. Colours come from these custom properties, set on that
+   element or an ancestor; each falls back to the roller's dark palette:
+   --customizer-text, --customizer-muted, --customizer-surface, --customizer-border,
+   --customizer-selected, --customizer-selected-border, --customizer-swatch-border,
+   --customizer-thumb, --customizer-thumb-border, --customizer-focus.
+   Selectors start at :where(.dice-customizer), so a host's own rules override them. */
+:where(.dice-customizer) {
+  container-type: inline-size;
+}
+:where(.dice-customizer) .dice-preview {
+  position: relative;
+  height: clamp(170px, 25dvh, 230px);
+  margin: -8px 0 16px;
+}
+:where(.dice-customizer) .preview-canvas {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  cursor: grab;
+}
+:where(.dice-customizer) .preview-canvas:active {
+  cursor: grabbing;
+}
+:where(.dice-customizer) .preview-canvas::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 1%;
+  width: 30%;
+  max-width: 130px;
+  height: 12%;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse, #0008 0%, #0004 35%, #0000 72%);
+  pointer-events: none;
+}
+:where(.dice-customizer) .preview-canvas canvas {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+:where(.dice-customizer) .preview-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  padding: 16px;
+}
+:where(.dice-customizer) :is(.design-tabs button, .design-swatch-grid button) {
+  font: inherit;
+  font-weight: 600;
+  color: var(--customizer-text, #e8e5df);
+  background: var(--customizer-surface, #242b2d);
+  cursor: pointer;
+}
+:where(.dice-customizer) :is(.design-tabs button, .design-swatch-grid button):disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+:where(.dice-customizer) .design-tabs {
+  display: flex;
+  border: 1px solid var(--customizer-border, #3b4548);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+:where(.dice-customizer) .design-tabs button {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 0;
+  padding: 10px 6px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+:where(.dice-customizer) .design-tabs button + button {
+  border-left: 1px solid var(--customizer-border, #3b4548);
+}
+:where(.dice-customizer) .design-tabs button[aria-selected='true'] {
+  background: var(--customizer-selected, #354043);
+}
+/* A host segment makes four: a narrow panel drops "color" from "Die color" and "Text color", the
+   swatch beside each saying it. */
+@container (max-width: 340px) {
+  :where(.dice-customizer) .design-tab-noun {
+    display: none;
+  }
+}
+:where(.dice-customizer) .color-swatch {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  border-radius: 50%;
+  border: 1px solid var(--customizer-swatch-border, #ffffff40);
+}
+:where(.dice-customizer) .design-options-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: var(--customizer-muted, #a9b2b4);
+}
+:where(.dice-customizer) .design-swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+:where(.dice-customizer) .design-swatch-grid button {
+  min-width: 0;
+  padding: 6px;
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  text-align: center;
+  border: 1px solid var(--customizer-border, #3b4548);
+  border-radius: 12px;
+}
+:where(.dice-customizer) .design-swatch-grid button[aria-pressed='true'] {
+  border-color: var(--customizer-selected-border, #aeb8b8);
+  background: var(--customizer-selected, #354043);
+}
+:where(.dice-customizer) .design-swatch-grid :is(canvas, svg) {
+  display: block;
+  width: 100%;
+  height: 54px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+:where(.dice-customizer) .design-options + .design-options {
+  margin-top: 16px;
+}
+:where(.dice-customizer) .inline-colors {
+  min-width: 0;
+}
+:where(.dice-customizer) .color-wheel {
+  position: relative;
+  width: min(220px, 100%);
+  aspect-ratio: 1;
+  margin: 16px auto;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle closest-side, #fff, #ffffff00),
+    conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
+  touch-action: none;
+  cursor: crosshair;
+}
+:where(.dice-customizer) .color-wheel-cursor {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 2px solid white;
+  box-shadow: 0 0 0 1px #182023;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+:where(.dice-customizer) .color-slider {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0;
+  font-size: 13px;
+  color: var(--customizer-muted, #a9b2b4);
+}
+:where(.dice-customizer) .color-slider input {
+  touch-action: none;
+  appearance: none;
+  width: 100%;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--customizer-border, #3b4548);
+  border-radius: 999px;
+  cursor: pointer;
+}
+:where(.dice-customizer) .color-slider input::-webkit-slider-thumb {
+  appearance: none;
+  width: 32px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--customizer-thumb, #e8e5df);
+  border: 2px solid var(--customizer-thumb-border, #354043);
+}
+:where(.dice-customizer) .color-slider input::-moz-range-thumb {
+  width: 28px;
+  height: 36px;
+  border-radius: 999px;
+  background: var(--customizer-thumb, #e8e5df);
+  border: 2px solid var(--customizer-thumb-border, #354043);
+}
+:where(.dice-customizer) :is(.design-swatch-grid button, .color-slider input):focus-visible {
+  outline: 2px solid var(--customizer-focus, #ff8f96);
+  outline-offset: 3px;
+}
+:where(.dice-customizer) .design-tabs button:focus-visible {
+  outline: 2px solid var(--customizer-focus, #ff8f96);
+  outline-offset: -3px;
+}
+:where(.dice-customizer) .color-wheel:focus-visible {
+  outline: 2px solid var(--customizer-focus, #e8e5df);
+  outline-offset: 4px;
+}

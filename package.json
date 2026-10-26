@@ -68,6 +68,8 @@
     "./three": "./lib/three.ts",
     "./react": "./lib/react.ts",
     "./styles.css": "./lib/styles.css",
+    "./customizer": "./lib/customizer.ts",
+    "./customizer.css": "./web/dice-demo-v2/customizer.css",
     "./convex.config.js": "./component/convex.config.ts",
     "./_generated/component.js": "./component/_generated/component.ts"
   }

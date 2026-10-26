@@ -178,12 +178,12 @@ a frontend that requires them. The live Cloudflare roller uses
 
 ## Embedding
 
-The stable library/component release is **v1.0.0**, distributed as a GitHub
+The stable library/component release is **v1.1.0**, distributed as a GitHub
 Release package. It is not published to npm. Install the exact artifact in a
 TypeScript application with a bundler such as Vite:
 
 ```sh
-pnpm add 'clickclacks@https://github.com/illos/ClickClacks/releases/download/v1.0.0/clickclacks-1.0.0.tgz'
+pnpm add 'clickclacks@https://github.com/illos/ClickClacks/releases/download/v1.1.0/clickclacks-1.1.0.tgz'
 ```
 
 Commit your lockfile to retain the archive's integrity pin. The package exports TypeScript
@@ -193,7 +193,7 @@ font assets. Node's native TypeScript runner does not load TypeScript packages
 from `node_modules`; use a bundler for these source exports.
 
 The release artifact includes generated Convex component bindings; they are excluded
-from Git. See [v1 release preparation and boundaries](docs/releases/v1.0.0.md). To distribute a local
+from Git. See [v1 release preparation and boundaries](docs/releases/v1.0.0.md) and [v1.1.0](docs/releases/v1.1.0.md). To distribute a local
 backend component artifact, generate bindings during your Convex setup, then run
 `pnpm pack` and install the resulting `.tgz` into the consumer. The package includes
 the generated component bindings without committing them. A Git-only installation
@@ -208,6 +208,8 @@ needs component codegen before using `clickclacks/_generated/component.js`.
 | `clickclacks/three` | Optional 3D tray, fonts, physics utilities and isolated planners. |
 | `clickclacks/react` | The roller interface as a mountable `ClickClacks` component. |
 | `clickclacks/styles.css` | Styles for the React interface. |
+| `clickclacks/customizer` | The Customize dice panel's parts: design controls, pattern and font tiles, color wheel, preview. |
+| `clickclacks/customizer.css` | Themable styles for those parts outside the roller interface. |
 | `clickclacks/convex.config.js` | Isolated backend component installation. |
 
 Core arithmetic and controller imports do not load React, Three.js or application
